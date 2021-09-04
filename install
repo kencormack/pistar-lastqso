@@ -1,0 +1,97 @@
+#!/bin/bash
+
+WHI="$(tput setaf 7)"
+GRE="$(tput setaf 2)"
+RED="$(tput setaf 1)"
+
+clear
+echo -en "${WHI}"
+cat <<'EOF'
+
+PISTAR-LASTDMR INSTALLAION:
+
+This install script will perform the
+following operations...
+
+1.) remount the rootfs as read-write
+
+2.) copy the "pistar-lastqso" script to
+    /usr/local/sbin and enable execute
+    permission
+
+3.) install the package "figlet" from
+    the standard repositories using
+    "apt-get -y install figlet"
+
+4.) copy the supplemental "ansi_shadow.flf"
+    font file to /usr/share/figlet
+
+5.) remount the rootfs as read-only
+
+Press ENTER to proceed, or Ctrl-C to abort...
+EOF
+read FOO
+
+echo -e "Beginning install."
+
+echo -e "${GRE}Step 1. - Mounting rootfs filesystem as read-write...${WHI}"
+sudo mount -o remount,rw /
+
+echo -e "${GRE}Step 2. - Installing the pistar-lastqso script...${WHI}"
+if [ ! -f ./pistar-lastqso ]
+then
+  echo -e "${RED}\n  Error... pistar-lastqso not found in current directory.${WHI}"
+  echo -e "${RED}  Installation failed.\n${WHI}"
+  exit
+else
+  if [ "$(sudo cp ./pistar-lastqso /usr/local/sbin 2> /dev/null)" ]
+  then
+    echo -e "${RED}\n  Unable to copy script to /usr/local/sbin.${WHI}"
+    echo -e "${RED}  Installation failed.\n${WHI}"
+    exit
+  fi
+  if [ "$( sudo chmod +x /usr/local/sbin/pistar-lastqso 2> /dev/null)" ]
+  then
+    echo -e "${RED}\n  Unable to set execute permission.${WHI}"
+    echo -e "${RED}  Installation failed.\n${WHI}"
+    exit
+  fi
+fi
+
+if [ -n "$(command -v figlet)" ]
+then
+  echo -e "${GRE}Step 3. - Figlet is already installed.  Continuing...${WHI}"
+else
+  echo -e "${GRE}Step 3. - Installing figlet from repositories...${WHI}"
+  sudo apt-get update
+  sudo apt-get -y install figlet
+  sudo apt-get clean
+fi
+
+if [ ! -f /usr/share/figlet/ansi_shadow.flf ]
+then
+  if [ ! -f ./ansi_shadow.flf ]
+  then
+    echo -e "${RED}\n  Error... ansi_shadow.flf not found in current directory.${WHI}"
+    echo -e "${RED}  Installation failed.\n${WHI}"
+    exit
+  else
+    echo -e "${GRE}Step 4. - Installing ansi_shadow font...${WHI}"
+    if [ "$(sudo cp ./ansi_shadow.flf /usr/share/figlet/ansi_shadow.flf 2> /dev/null)" ]
+    then
+      echo -e "${RED}\n  Unable to copy ansi_shadow.flf to /usr/share/figlet${WHI}"
+      echo -e "${RED}  Installation failed.\n${WHI}"
+      exit
+    fi
+  fi
+else
+  echo -e "${GRE}Step 4. - Font file is already installed.  Continuing...${WHI}"
+fi
+
+echo "${GRE}Step 5. - Returning the rootfs filesystem to read-only...${WHI}"
+sync ; sync ; sync
+sudo mount -o remount,rw /
+
+echo -e "${WHI}\nInstallation complete."
+tput sgr0
+
