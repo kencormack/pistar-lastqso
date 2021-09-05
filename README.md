@@ -78,7 +78,7 @@ Run the install script...
   $ ./install
   (The install script will return the filesystem to read-only mode)
 
-You are now ready to monitor DMR and/or traffic from the commandline.
+You are now ready to monitor DMR and/or YSF traffic from the commandline.
   $ pistar-lastqso
 ```
 
