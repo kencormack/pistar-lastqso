@@ -24,7 +24,7 @@
 
 -------------------------------------------------------------------
 ## About
-**pistar-lastqso is a tool to monitor DMR and YSF traffic (including DMR2YSF and YSF2DMR cross-mode) on a PI-STAR node, either via SSH, or, on an HDMI-connected console.  Written as a bash shell script (with just a few lines of python), no web browser or other GUI client is required.**
+**pistar-lastqso is a tool to monitor DMR and YSF traffic (including DMR2YSF and YSF2DMR cross-modes) on a PI-STAR node, either via SSH, or, on an HDMI-connected console.  Written as a bash shell script (with just a few lines of python), no web browser or other GUI client is required.**
 
 **For each QSO (either DMR or YSF), the program displays the following data:**
 - The localized Time and Date of the contact
@@ -78,7 +78,7 @@ Run the install script...
   $ ./install
   (The install script will return the filesystem to read-only mode)
 
-You are now ready to monitor DMR traffic from the commandline.
+You are now ready to monitor DMR and/or traffic from the commandline.
   $ pistar-lastqso
 ```
 
