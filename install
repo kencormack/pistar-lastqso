@@ -8,7 +8,7 @@ clear
 echo -en "${WHI}"
 cat <<'EOF'
 
-PISTAR-LASTDMR INSTALLAION:
+PISTAR-LASTQSO INSTALLAION:
 
 This install script will perform the
 following operations...
