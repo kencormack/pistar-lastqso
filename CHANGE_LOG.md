@@ -34,6 +34,7 @@ CHANGES: V2.00
 
 ** PISTAR-LASTDMR ENDS - PISTAR-LASTQSO BEGINS **
 
+
 CHANGES: V1.39
  1. Tighten up the leading with figlet's "big" and
     "ansi_shadow" fonts.  These two fonts have an

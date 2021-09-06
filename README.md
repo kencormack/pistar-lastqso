@@ -297,3 +297,4 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 I want to offer a big "Vielen Dank!" to Wolfgang Wendefeuer (DC6LK), for the testing, input, discussion, ideas, and sample TG entries he provided.  Thanks also, to Facebook users Cal Kutemeier (N9KO) for spotting a time-sensitive bug in the conversion of UTC date-stamps to local dates, and "Neil Neil" for reporting a problem with Talker Alias.
 
 - **[Back](https://github.com/kencormack/pistar-lastqso#contents)**
+
