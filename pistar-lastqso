@@ -7,7 +7,7 @@
 
 set -o allexport
 
-VERSION=2.00
+VERSION=2.01
 
 umask 0077
 
@@ -533,8 +533,8 @@ fnTOP_DATA()
   # GATHER LINE 1 DATA...
   # Hotspot TX & RX frequencies
   # <rant> I hate that bash can't do simple floating-point math without external help. </rant>
-  TX="$(printf %.3f "$(echo print "$(grep "TX Frequency:" /var/log/pi-star/MMDVM* 2> /dev/null | tail -1 | awk '{ print $6 }' | sed 's/Hz//')"/1000000 | perl)")"
-  RX="$(printf %.3f "$(echo print "$(grep "RX Frequency:" /var/log/pi-star/MMDVM* 2> /dev/null | tail -1 | awk '{ print $6 }' | sed 's/Hz//')"/1000000 | perl)")"
+  TX="$(printf %.4f "$(echo print "$(grep "TX Frequency:" /var/log/pi-star/MMDVM* 2> /dev/null | tail -1 | awk '{ print $6 }' | sed 's/Hz//')"/1000000 | perl)")"
+  RX="$(printf %.4f "$(echo print "$(grep "RX Frequency:" /var/log/pi-star/MMDVM* 2> /dev/null | tail -1 | awk '{ print $6 }' | sed 's/Hz//')"/1000000 | perl)")"
 
   # Details about the modem
   DESCRIPTION="$(grep "description:" /var/log/pi-star/MMDVM* | tail -1)"
@@ -551,6 +551,7 @@ fnTOP_DATA()
   then
     YSF_MASTER="$(grep -A 5 "\[Network\]" /etc/ysfgateway | grep "^Startup" | cut -f2 -d"=")"
   else
+    # shellcheck disable=SC2143
     if [[ -n "$(systemctl status dmr2ysf | grep "active (running)")" ]]
     then
       YSF_MASTER="YSF2DMR ($(grep -A 5 "\[Network\]" /etc/ysfgateway | grep "^Startup" | cut -f2 -d"="))"
@@ -564,6 +565,7 @@ fnTOP_DATA()
   then
     DMR_MASTER="$(grep -A 10 "\[DMR Network\]" /etc/mmdvmhost | grep "^Address" | cut -f2 -d"=")"
   else
+    # shellcheck disable=SC2143
     if [[ -n "$(systemctl status ysf2dmr | grep "active (running)")" ]]
     then
       DMR_MASTER="DMR2YSF ($(grep -A 5 "\[DMR Network 3\]" /etc/dmrgateway | grep "^Name" | cut -f2 -d"="))"
@@ -607,6 +609,7 @@ fnNOSCROLL_ZONE()
   echo -n "${CUR_HOME}"
 
   # Print line 0
+  echo -en "${CYA}LASTQSO:        PISTAR:         CSV:            LOG:                       ${SGR0}\r"
   echo -en "${CYA}LASTQSO:${SGR0} ${WHI}${BOLD}${VERSION}${SGR0}\r"
   tput cuf 16
   echo -en "${CYA}PISTAR:${SGR0} ${WHI}${BOLD}${PS_VER}${SGR0}\r"
@@ -616,6 +619,7 @@ fnNOSCROLL_ZONE()
   echo -e "${CYA}LOG:${SGR0} ${WHI}${BOLD}$(basename "${WORKING_LOG}")${SGR0}${CLR_EL}"
 
   # Print line 1
+  echo -en "${CYA}TX:             RX:             TCXO:           FW:                         ${SGR0}\r"
   echo -en "${CYA}TX:${SGR0} ${WHI}${BOLD}${TX}${SGR0}\r"
   tput cuf 16
   echo -en "${CYA}RX:${SGR0} ${WHI}${BOLD}${RX}${SGR0}\r"
@@ -625,6 +629,7 @@ fnNOSCROLL_ZONE()
   echo -e "${CYA}FW:${SGR0} ${WHI}${BOLD}${FW}${SGR0}${CLR_EL}"
 
   # Print line 2
+  echo -en "${CYA}YSF MASTER:                     DMR MASTER:                                 ${SGR0}\r"
   echo -en "${CYA}YSF MASTER:${SGR0} ${WHI}${BOLD}${YSF_MASTER}${SGR0}\r"
   tput cuf 32
   echo -e "${CYA}DMR MASTER:${SGR0} ${WHI}${BOLD}${DMR_MASTER}${SGR0}${CLR_EL}"
@@ -670,9 +675,9 @@ fnRESET_SCROLLING()
 #----------
 fnUSAGE()
 {
-  echo "Usage:" >&2
-  echo -e "  $(basename "${0}") [-c] [-f <1-4>] [-h] [-n] [-t] [-v]" >&2
-  echo -e "  $(basename "${0}") [--csv] [--font <1-4>] [--help] [--nobig] [--top] [--version]" >&2
+  echo -e "\nUSAGE - valid options and parameters include:" >&2
+  echo -e "  Short: [-c] [-f <1-4>] [-h] [-m] [-n] [-t] [-v]" >&2
+  echo -e "   Long: [--csv] [--font <1-4>] [--help] [--mono] [--nobig] [--top] [--version]\n" >&2
 }
 
 #----------
@@ -689,21 +694,21 @@ fnPARSE_CMDLINE()
 
   INDEX=0
   GET_CSV_NOW=0
-  PARSE_STATUS=NOT_OK
+  #PARSE_STATUS=NOT_OK
   for ARGUMENT in ${MY_CMDLINE}
   do
     INDEX=$((INDEX + 1))
     case "${ARGUMENT}" in
       -c|--csv)
         GET_CSV_NOW=1
-        PARSE_STATUS=OK
+        #PARSE_STATUS=OK
         ;;
       -f|--font)
         if [[ ${ARG_LIST[INDEX]} =~ ^-?[1-4]+$ ]]
         then
           MY_FONT="${ARG_LIST[INDEX]}"
           INDEX=$((INDEX + 1))
-          PARSE_STATUS=OK
+          #PARSE_STATUS=OK
         else
           echo -en "${BELL}"
           cat <<'EOF' | more
@@ -739,13 +744,38 @@ EOF
         fnGET_HELP
         exit
         ;;
+      -m|--mono)
+        # Forground colors
+        # shellcheck disable=SC2034
+        BLA=""
+        RED=""
+        GRE=""
+        YEL=""
+        BLU=""
+        MAG=""
+        CYA=""
+        WHI=""
+        DEF=""
+
+        # Background colors
+        # Reserved for possible future use
+        # BG_BLA=""
+        # BG_RED=""
+        # BG_GRE=""
+        # BG_YEL=""
+        # BG_BLU=""
+        # BG_MAG=""
+        # BG_CYA=""
+        # BG_WHI=""
+        # BG_DEF=""
+        ;;
       -n|--nobig)
         USE_FIGLET=0
-        PARSE_STATUS=OK
+        #PARSE_STATUS=OK
         ;;
       -t|--top)
         TOP=1
-        PARSE_STATUS=OK
+        #PARSE_STATUS=OK
         ;;
       -v|--version)
         fnVERSION
@@ -816,6 +846,9 @@ PISTAR-LASTQSO - HELP
 
   -h|--help
       Display this help screen, then exit.
+
+  -m|--mono
+      For monochrome displays, this option suppresses all color codes.
 
   -n|--nobig
       Disable the large font display of callsigns and ID #s, on systems
@@ -928,6 +961,11 @@ EOF
   fnDRAW_BOX 14 9 4 59 1 0 0
   fnDRAW_BOX 10 62 2 6 1 0 0
   fnDRAW_BOX 10 9 2 6 1 0 0
+
+  tput cup 11 64
+  echo -en "${SGR0}${DIM}${WHI}YSF${SGR0}"
+  tput cup 11 11
+  echo -en "${SGR0}${DIM}${WHI}DMR${SGR0}"
 
   tput cup 15 30
   echo -e "${SGR0}${BOLD}${YEL}PISTAR-LASTQSO v${VERSION}${WHI}${SGR0}"
@@ -1071,14 +1109,14 @@ fnSEPERATOR()
 #----------
 fnLISTENING()
 {
-  echo -n "  ${GRE}${BOLD}Listening for Traffic...${SGR0}${WHI} "
+  echo -n "  ${GRE}${BOLD}Listening for Traffic...${SGR0}${WHI}${CLR_EL} "
   TA_DISPLAYED=0
 }
 
 #----------
 fnQSO_IN_PROGRESS()
 {
-  echo -n "  ${YEL}${BOLD}QSO In Progress...${SGR0}${WHI} "
+  echo -n "  ${YEL}${BOLD}QSO In Progress...${SGR0}${WHI}${CLR_EL} "
   TA_DISPLAYED=0
 }
 
@@ -1325,6 +1363,7 @@ fnFIGLET()
     else
       BANNER_COLOR="${WHI}"
     fi
+
     echo "${BOLD}${BANNER_COLOR}${BANNER}${SGR0}"
 
     # Tighten up the leading with these two fonts.
@@ -1361,16 +1400,17 @@ fnYSF_SHOW_CURRENT_CALL()
   echo -n "${DIM}Date:${SGR0} ${BLU}${BOLD}${DATE}${SGR0}${WHI}"
   tput cuf 11
   echo -n "${DIM}Time:${SGR0} ${BLU}${BOLD}${TIME}${SGR0}${WHI}"
-
   tput cuf 4
   echo -n "${DIM}QSOs Watched:${SGR0} ${BLU}${BOLD}"
-
   printf %05d "${QSO_COUNT}"
   echo "${SGR0}${WHI}"
 
   echo -en "${DIM}From:${SGR0} ${BOLD}${FROM}${SGR0}\r"
   tput cuf 31
   echo "${DIM} To..:${SGR0} ${BOLD}${LOGREC_DG_ID} ${LOGREC_DG_ID_NUM} ${DIM}at${SGR0} ${BOLD}${LOGREC_MASTER}${SGR0}${WHI}"
+  echo -en "${DIM}Mode:${SGR0} ${BOLD}${CYA}System Fusion${SGR0}${WHI}\r"
+  tput cuf 32
+  echo -e "${DIM}Src.:${SGR0} ${BOLD}${CYA}${SOURCE}${SGR0}${WHI}"
 
   fnQSO_IN_PROGRESS
 }
@@ -1632,7 +1672,7 @@ fnBUILD_HISTORY()
     if [[ -n "${LOSS}" ]] || [[ -n "${BER}" ]] || [[ ${DATA} -eq 1 ]]
     then
       FROM="$(echo "${FROM}" | cut -f1 -d"/" | cut -f1 -d"-" | cut -c1-8)"
-      if [[ ${#FROM} > 8 ]]
+      if [[ ${#FROM} -gt 8 ]]
       then
         FROM="${FROM}*"
       fi
@@ -1741,8 +1781,9 @@ fnMAIN_LOOP()
       continue
     fi
 
-    #KPC-BEGIN YSF-SPECIFIC LOG RECORDS
+    # BEGIN YSF-SPECIFIC LOG RECORDS
     # Grab the record type (^M:, ^E:, etc.), date and timestamps, and mode (DMR, YSF, etc.)
+    # shellcheck disable=SC2034
     read -r LOGREC_TYPE LOGREC_DATE LOGREC_TIME LOGREC_MODE <<<"$(echo "${RECORD}" | awk '{ print $1 " " $2 " " $3 " " $4 }')"
     # Grab everything that follows the mode...
     read -r LOGREC_REMAINING_DATA <<<"$(echo "${RECORD}" | awk '{ print substr($0, index($0,$4)) }')"
@@ -1757,8 +1798,16 @@ fnMAIN_LOOP()
         fnCONVERT_DATE_TIME
         QSO_START_TIME="${TIME}"
 
-        read -r LOGREC_CALLSIGN  LOGREC_DG_ID  LOGREC_DG_ID_NUM  LOGREC_MASTER \
-          <<<"$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $6 " " $8 " " $9 " " $11 }')"
+        #KPC
+        if [[ "$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $7 }')" = "to" ]]
+        then
+          read -r LOGREC_CALLSIGN  LOGREC_DG_ID  LOGREC_DG_ID_NUM  LOGREC_MASTER \
+            <<<"$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $6 " " $8 " " $9 " " $11 }')"
+        else
+          # This drops space-separated values from the transmitted callsigns.
+          read -r LOGREC_CALLSIGN  LOGREC_DG_ID  LOGREC_DG_ID_NUM  LOGREC_MASTER \
+            <<<"$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $6 " " $9 " " $10 " " $12 }')"
+        fi
 
         #FROM="${LOGREC_CALLSIGN}"
         FROM="$(echo "${LOGREC_CALLSIGN}" | cut -f1 -d"/" | cut -f1 -d"-")"
@@ -1771,6 +1820,7 @@ fnMAIN_LOOP()
         QSO_COUNT=$((QSO_COUNT + 1))
         echo "${QSO_COUNT}" > "${QSO_COUNT_FILE}"
         fnYSF_SHOW_CURRENT_CALL
+
         continue
       fi
 
@@ -1781,10 +1831,17 @@ fnMAIN_LOOP()
         fnCONVERT_DATE_TIME
         QSO_START_TIME="${TIME}"
 
-        read -r LOGREC_CALLSIGN  LOGREC_DG_ID  LOGREC_DG_ID_NUM \
-          <<<"$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $6 " " $8 " " $9 " " $11 }')"
+        #KPC
+        if [[ "$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $7 }')" = "to" ]]
+        then
+          read -r LOGREC_CALLSIGN  LOGREC_DG_ID  LOGREC_DG_ID_NUM \
+              <<<"$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $6 " " $8 " " $9 }')"
+        else
+          # This drops space-separated values from the transmitted callsigns.
+          read -r LOGREC_CALLSIGN  LOGREC_DG_ID  LOGREC_DG_ID_NUM \
+              <<<"$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $6 " " $8 " " $10 }')"
+        fi
 
-        #FROM="${LOGREC_CALLSIGN}"
         FROM="$(echo "${LOGREC_CALLSIGN}" | cut -f1 -d"/" | cut -f1 -d"-")"
         TO="${LOGREC_DG_ID} ${LOGREC_DG_ID_NUM}"
         fnCLEAR_CURRENT_LINE
@@ -1843,7 +1900,7 @@ fnMAIN_LOOP()
       then
         read -r LOGREC_SECS  LOGREC_BER  LOGREC_RSSI \
           <<<"$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $12 " " $15 " " $17 }')"
-        LOGREC_DG_ID_NUM="$(echo "${LOGREC_ID_NUM}" | cut -f1 -d",")"
+        LOGREC_DG_ID_NUM="$(echo "${LOGREC_DG_ID_NUM}" | cut -f1 -d",")"
         LOGREC_BER="$(echo "${LOGREC_BER}" | cut -f1 -d",")"
 
         # Fields to pass to the history...
@@ -1885,9 +1942,9 @@ fnMAIN_LOOP()
         continue
       fi
     fi
-    #KPC-END YSF-SPECIFIC LOG RECORDS
+    # END YSF-SPECIFIC LOG RECORDS
 
-    #BEGIN DMR-SPECIFIC LOG RECORDS
+    # BEGIN DMR-SPECIFIC LOG RECORDS
     if echo "${RECORD}" | grep -q "DMR Talker Alias"
     then
       fnDMR_TALKER_ALIAS
@@ -1991,8 +2048,8 @@ fnMAIN_LOOP()
         fnLISTENING
       fi
     fi
-    #END DMR-SPECIFIC LOG RECORDS
-#   fnNOSCROLL_ZONE
+    # END DMR-SPECIFIC LOG RECORDS
+    WINCH_TRIGGER=0
   done
 }
 
@@ -2023,10 +2080,14 @@ fnEXIT()
   exit
 }
 
+#----------
 fnWINCH()
 {
-  fnNOSCROLL_ZONE		# define the region and display the data
-  tput cup 11 0			# position the cursor below the no-scroll region
+  # shellcheck disable=SC2034
+  WINCH_TRIGGER=1
+  clear
+  fnNOSCROLL_ZONE
+  tput cup 11 0
 }
 
 ###########################################################
@@ -2079,7 +2140,6 @@ then
   fnNOSCROLL_ZONE		# define the region and display the data
   tput cup 11 0			# position the cursor below the no-scroll region
   echo -en "${CLR_ED}"		# clear the screen from here, to end of display
-  #trap fnNOSCROLL_ZONE WINCH	# call this any time screen changes size
   trap fnWINCH WINCH		# call this any time screen changes size
 fi
 

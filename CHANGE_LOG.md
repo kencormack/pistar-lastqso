@@ -1,9 +1,26 @@
 ```
+CHANGES: V2.01
+ 1. Added a new "-m|--mono" commandline option, to
+    supress all color control codes when using a
+    monochrome display or terminal.
+ 2. Added "Mode" and "Src" fields to the YSF QSOs.
+ 3. Tweaks to the "-t" display area.
+ 4. YSF callsigns would sometimes skew log parsing
+    when the callsign was in the form "KE8DPF KEN",
+    where people would add space-separated text
+    (such as their first name) to their radio's
+    transmitted callsign.  Such extra data is now
+    filtered out.
+ 5. Increased decimal precision from 3 to 4 places,
+    in the display of TX and RX frequencies, in the
+    "-t" display area.
+ 6. Addd "DMR" and "YSF" to the title screen.
+
 CHANGES: V2.00
  1. The script has been renamed, to PISTAR-LASTQSO,
     as it is no longer DMR only.
  2. The script now supports the following modes:
-    DMR. YSF, DMR2YSF, and YSF2DMR.  In addition
+    DMR, YSF, DMR2YSF, and YSF2DMR.  In addition
     to new routines, several existing ones were
     modified to accomodate the additional modes.
  3. Removed the "Type" and "ESS" fields from the
@@ -14,6 +31,8 @@ CHANGES: V2.00
     commandline.  (Broke, when adding the forcing
     of a font for figlet, on the commandline.)
  5. A few minor cleanups suggested by shellcheck.
+
+** PISTAR-LASTDMR ENDS - PISTAR-LASTQSO BEGINS **
 
 CHANGES: V1.39
  1. Tighten up the leading with figlet's "big" and
