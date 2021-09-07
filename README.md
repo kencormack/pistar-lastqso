@@ -59,7 +59,8 @@
 
 *If the Callsign maps to multiple ID#'s, I indicate that the ID shown is just a "guess", by displaying an asterisk, immediately after the ID#.*
 
-- **[Back](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
 ## Installation
 
@@ -82,7 +83,8 @@ You are now ready to monitor DMR and/or YSF traffic from the commandline.
   $ pistar-lastqso
 ```
 
-- **[Back](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
 ## Updating
 
@@ -110,7 +112,8 @@ $ git reset --hard origin
 
 Once the "git pull" is successful, run the install script, as described above.
 
-- **[Back](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
 ## Large Font Display of the Callsign and Talkgroup or DG-ID
 One of the functions of the "install" script (see the "Installation" section, above) is to install the package "figlet" on your system.  With figlet, **pistar-lastqso** can display the Callsign and TG or DG-IG as a large banner, at the beginning of each QSO.
@@ -119,7 +122,8 @@ If figlet is disabled (see the "Commandline options" section, below), the large 
 
 **SEE ADDITIONAL INFORMATION BELOW REGARDING LARGE-FONT SUPPORT**
 
-- **[Back](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
 ## City, State, Country Lookups for Callsigns (DMR only)
 
@@ -129,7 +133,8 @@ If the user.csv file is already present on your hotspot, but is older than 7 day
 
 **pistar-lastqso** uses the user.csv file to display the "City", "State", and "Country" data related to the callsign.
 
-- **[Back](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
 ## Commandline Options
 
@@ -144,13 +149,15 @@ The program remembers which options (if any) you specified at launch, so that it
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/help-screen2.jpg)
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/help-screen3.jpg)
 
-- **[Back](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
 ## Daily Log Rotation
 
 When **pistar-lastqso** is launched, it searches for the most recent MMDVM log in the /var/log/pi-star directory.  It then watches only that log, to perform it's monitoring.  When the MMDVMHost service opens a new day's log (at midnight UTC), this program detects this, and re-launches itself to monitor the new log.
 
-- **[Back](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
 ## User-Custom Talkgroup List (DMR only)
 
@@ -182,7 +189,8 @@ You can also add certain 'private contact' IDs here that may not be listed.  Not
 9999999;0;PISTAR-SVC-KILL;PC9999999
 ```
 
-- **[Back](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
 ## QSO, Kerchunk, and MMDVM Error Counts
 
@@ -198,7 +206,8 @@ Don't panic if you see a single transient occurrance of something like a "queue 
 
 Finally, all three of the counters (QSO, Kerchunks, and Errors) are reset each time the user exits **pistar-lastqso** using Ctrl-C.  However, when the script auto-restarts itself, either at log rotation or when PI-STAR's services get cycled during the nightly PI-STAR update, the running counts for each counter are carried forward to the restarted session.
 
-- **[Back](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
 ## More About the Large Font Support
 
@@ -220,7 +229,8 @@ The "-f | --font" commandline option requires a numeric parameter to select betw
   "-f 3" or "--font 3" will force figlet's "big" font
 ```
 
-- **[Back](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
 ## One More Thing About Large Fonts
 
@@ -254,7 +264,8 @@ These are the 3 basic fonts supplied with the basic "figlet" package, along with
 
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/font-samples.jpg)
 
-- **[Back](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
 ## Other Notes
 
@@ -272,7 +283,8 @@ Key elements of the tool's operation include:
 
 The rest of the program is mainly parsing the log entries, and presenting the data on-screen.
 
-- **[Back](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
 ## Getting Help
 
@@ -282,7 +294,8 @@ The rest of the program is mainly parsing the log entries, and presenting the da
 
 Every effort has been made to anticipate and address any questions users may have about **pistar-lastqso**, in this README.  Please read through the above carefully.  That having been said, should you have questions, or encounter a problem that is not addressed above, please use the "Issues" tab at the top of this page, to report it.  Others will then be able to look to see if a problem they are having has already been resolved.
 
-- **[Back](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
 ## License
 
@@ -290,11 +303,12 @@ This program is free software; you can redistribute it and/or modify it under th
 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the [GNU General Public License](http://www.gnu.org/licenses/) for more details.
 
-- **[Back](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
 ## Special Thanks
 
 I want to offer a big "Vielen Dank!" to Wolfgang Wendefeuer (DC6LK), for the testing, input, discussion, ideas, and sample TG entries he provided.  Thanks also, to Facebook users Cal Kutemeier (N9KO) for spotting a time-sensitive bug in the conversion of UTC date-stamps to local dates, and "Neil Neil" for reporting a problem with Talker Alias.
 
-- **[Back](https://github.com/kencormack/pistar-lastqso#contents)**
-
+- **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
