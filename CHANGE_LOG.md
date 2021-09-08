@@ -1,4 +1,34 @@
 ```
+CHANGES: V2.02
+ 1. Added new "-e|--errors" commandline option, to
+    suppress the reporting of error messages found
+    in the MMDVM log as they occur.  THIS DOES NOT
+    FIX ANY ISSUES.  IT MERELY STOPS THIS SCRIPT
+    FROM TELLING YOU ABOUT THEM.  Any error msgs
+    are still tallied for the session, and that
+    number is still reported on the exit screen.
+    You simply wont see them as they occur.
+
+    NOTE: Ocassional or sporadic low numbers are
+    to be expected from time to time.  Errors,
+    such as RF queue overflows, can and do happen.
+    But significant numbers of such errors are
+    YOU'RE RESPONSIBILITY to investigate.  Also,
+    any logged errors are coming from pi-star, not
+    from pistar-lastqso.  I cannot resolve them.
+    They are a matter for the pi-star forums to
+    address.
+
+ 2. Finally fixed traps on SIGWINCH, to catch the
+    resizing of SSH windows.  Hadn't occurred to
+    me that traps for that signal aren't inherited.
+    As a result, incoming traffic no longer corrupts
+    the "-t" display area, when an SSH windows is
+    resized.
+
+ 3. Small changes to the order of some of the
+    initializations steps, and other misc. cleanups.
+
 CHANGES: V2.01
  1. Added a new "-m|--mono" commandline option, to
     supress all color control codes when using a

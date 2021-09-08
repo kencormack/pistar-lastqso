@@ -6,18 +6,22 @@
 
 set -o allexport
 
-VERSION=2.01
+VERSION=2.02
 
 umask 0077
 
 # If user presses Ctrl-C, stop the background job
 trap fnEXIT SIGINT SIGTERM
 
+# This trap has been problematic - it isn't inherited.
+trap fnWINCH WINCH	# This trap is also set inside most functions
+
 # NOTE #1: Originally written for pi-star >= 4.1.4, for DMR mode ONLY.
-# If the logfile data changes in any way with future releases of pi-star,
-# or if you want to display modes other than DMR (YSF, D-Star, P25, etc.)
-# you may need to modify this script accordingly.  I only use DMR, so
-# that's the mode I wrote this for.
+# Support for YSF (plus DMR2YSF and YSF2DMR) was added later.  If the
+# logfile data changes in any way with future releases of pi-star, or
+# if you want to display modes other than DMR and YSF (D-Star, P25, etc.)
+# you will need to modify this script accordingly.  I started with DMR,
+# and later added YSF, so that's the mode I wrote this for.
 
 # NOTE #2: I've tried to write this script with readability in mind.
 # A year after having last touched a script, I like to look at it and
@@ -66,7 +70,7 @@ BELL="$(tput bel)"		# Sound a bell
 # Not all term types (including the pi console's "TERM=linux") support
 # tput's alternate screen buffers.  If not, just clear the screen.
 # shellcheck disable=SC2143
-if [[ -n "$(infocmp | grep "smcup=")" ]] && [[ -n "$(infocmp | grep "rmcup=")" ]]
+if [[ -n "$(infocmp -1 | grep "smcup=")" ]] && [[ -n "$(infocmp -1 | grep "rmcup=")" ]]
 then
   SMCUP="$(tput smcup)"		# Set alternate screen buffer
   RMCUP="$(tput rmcup)"		# Restore primary screen buffer
@@ -141,8 +145,8 @@ DEF="$(tput setaf 9)"		# Default
 GTAB=$'\t'
 
 DMR_ENABLED="$(grep -A 2 "^\[DMR\]" /etc/mmdvmhost | grep "^Enable" | cut -f2 -d"=")"
-#DSTAR_ENABLED="$(grep -A 2 "^\[D-Star\]" /etc/mmdvmhost | grep "^Enable" | cut -f2 -d"=")"
 YSF_ENABLED="$(grep -A 2 "^\[System Fusion\]" /etc/mmdvmhost | grep "^Enable" | cut -f2 -d"=")"
+#DSTAR_ENABLED="$(grep -A 2 "^\[D-Star\]" /etc/mmdvmhost | grep "^Enable" | cut -f2 -d"=")"
 #P25_ENABLED="$(grep -A 2 "^\[P25\]" /etc/mmdvmhost | grep "^Enable" | cut -f2 -d"=")"
 #NXDN_ENABLED="$(grep -A 2 "^\[NXDN\]" /etc/mmdvmhost | grep "^Enable" | cut -f2 -d"=")"
 #POCSAG_ENABLED="$(grep -A 2 "^\[POCSAG\]" /etc/mmdvmhost | grep "^Enable" | cut -f2 -d"=")"
@@ -179,6 +183,9 @@ then
 else
   USE_FIGLET=0
 fi
+
+# This can be overridden with the "-e|--error" option
+SHOW_LOG_ERRORS=1
 
 # Finding a way to get the screen width of a window that can
 # be dynamically re-sized is funky, in bash.  Neither tput,
@@ -349,8 +356,8 @@ fnDRAW_BOX()
   BOX_BOTTOM=$((BOX_TOP + BOX_HEIGHT))
   BOX_RIGHT=$((BOX_LEFT + BOX_WIDTH))
 
-  # TO DO: Add limit-checks comparing against current screen-size
-  # get current screen dimensions
+  # TO DO: Add limit-checks comparing against current screen-size.
+  # Get current screen dimensions
   # read -r LINES COLUMNS <<<"$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
 
   if [[ "${BOX_STYLE}" = "1" ]]
@@ -450,31 +457,6 @@ fnDRAW_BOX()
 
 #KPC
 #----------
-# Get current cursor X and Y coordinates
-# Call it as:
-#   fnGET_CPOS
-#
-# It sets the following variables:
-#   current row:  ${CPOS_Y}
-#   current col:  ${CPOS_X}
-#
-# These variables are zero-referenced, to match "tput cup"
-#
-# shellcheck disable=SC2155,SC2034,SC2206
-fnGET_CPOS()
-{
-  local V=() T=$(stty -g)
-  stty -echo
-  tput u7
-  IFS='[;' read -rd R -a V
-  stty "${T}"
-  CPOS=(${V[@]:1})
-  CPOS_Y="$((CPOS[0] - 1))"  # row
-  CPOS_X="$((CPOS[1] - 1))"  # column
-}
-
-#KPC
-#----------
 # Reserved for possible future use.
 # This allows centering a string of text without overwriting
 # anything that might already be to the left of the string we
@@ -506,14 +488,14 @@ fnDMR_BM_STATIC_TGS()
 {
   curl -s "https://api.brandmeister.network/v1.0/repeater/?action=profile&q=${HOTSPOT_ID}" \
     | sed 's/"talkgroup":/\n/g' | grep "${HOTSPOT_ID}" | cut -f1,4 -d"," | sed 's/,"slot":/ /' \
-    > "${STATIC_TG_LIST}"
+    > "${STATIC_TG_FILE}"
 
   STATIC_LIST=""
   while FS='' read -r TALKGROUP SLOT
   do
     STATIC_LIST="${STATIC_LIST} ${TALKGROUP}(${SLOT})"
     echo "${STATIC_LIST}"
-  done < "${STATIC_TG_LIST}"
+  done < "${STATIC_TG_FILE}"
 }
 
 #----------
@@ -521,6 +503,8 @@ fnTOP_DATA()
 {
   # This function deals with the optional non-scrolling zone,
   # created when the -t|--top option is specified on the commandline.
+
+  MY_LOG="$(basename "${WORKING_LOG}")"
 
   # GATHER LINE 0 DATA...
   # Pi-star version
@@ -578,7 +562,7 @@ fnTOP_DATA()
   if [[ -n "$(grep "${GTAB}${DMR_MASTER}${GTAB}" "${DMRHOSTS}" | grep "^BM_")" ]]
   then
     STATIC_LIST="$(fnDMR_BM_STATIC_TGS | tail -1 | awk '{ print $1" "$2" "$3" "$4" "$5}')"
-    STATIC_COUNT="$(grep -c . "${STATIC_TG_LIST}")"
+    STATIC_COUNT="$(grep -c . "${STATIC_TG_FILE}")"
     STATIC_LINE="${CYA}STATIC TGs (${WHI}${BOLD}${STATIC_COUNT}${SGR0} ${CYA}Found, ${WHI}${BOLD}5${SGR0} ${CYA}Max Shown): ${SGR0}${WHI}${BOLD}${STATIC_LIST}${SGR0}"
   else
     STATIC_LINE="${CYA}Network is not BrandMeister - No API available to retrieve any Static TGs${SGR0}"
@@ -608,17 +592,15 @@ fnNOSCROLL_ZONE()
   echo -n "${CUR_HOME}"
 
   # Print line 0
-  echo -en "${CYA}LASTQSO:        PISTAR:         CSV:            LOG:                       ${SGR0}\r"
   echo -en "${CYA}LASTQSO:${SGR0} ${WHI}${BOLD}${VERSION}${SGR0}\r"
   tput cuf 16
   echo -en "${CYA}PISTAR:${SGR0} ${WHI}${BOLD}${PS_VER}${SGR0}\r"
   tput cuf 32
   echo -en "${CYA}CSV:${SGR0} ${WHI}${BOLD}${CSV_DATE}${SGR0}\r"
   tput cuf 48
-  echo -e "${CYA}LOG:${SGR0} ${WHI}${BOLD}$(basename "${WORKING_LOG}")${SGR0}${CLR_EL}"
+  echo -e "${CYA}LOG:${SGR0} ${WHI}${BOLD}${MY_LOG}${SGR0}${CLR_EL}"
 
   # Print line 1
-  echo -en "${CYA}TX:             RX:             TCXO:           FW:                         ${SGR0}\r"
   echo -en "${CYA}TX:${SGR0} ${WHI}${BOLD}${TX}${SGR0}\r"
   tput cuf 16
   echo -en "${CYA}RX:${SGR0} ${WHI}${BOLD}${RX}${SGR0}\r"
@@ -628,7 +610,6 @@ fnNOSCROLL_ZONE()
   echo -e "${CYA}FW:${SGR0} ${WHI}${BOLD}${FW}${SGR0}${CLR_EL}"
 
   # Print line 2
-  echo -en "${CYA}YSF MASTER:                     DMR MASTER:                                 ${SGR0}\r"
   echo -en "${CYA}YSF MASTER:${SGR0} ${WHI}${BOLD}${YSF_MASTER}${SGR0}\r"
   tput cuf 32
   echo -e "${CYA}DMR MASTER:${SGR0} ${WHI}${BOLD}${DMR_MASTER}${SGR0}${CLR_EL}"
@@ -674,9 +655,16 @@ fnRESET_SCROLLING()
 #----------
 fnUSAGE()
 {
-  echo -e "\nUSAGE - valid options and parameters include:" >&2
-  echo -e "  Short: [-c] [-f <1-4>] [-h] [-m] [-n] [-t] [-v]" >&2
-  echo -e "   Long: [--csv] [--font <1-4>] [--help] [--mono] [--nobig] [--top] [--version]\n" >&2
+  echo "
+USAGE - valid options and parameters include:
+
+  Short Form:
+    [-c] [-e] [-f <1-4>] [-h] [-m] [-n] [-t] [-v]
+
+  Long Form:
+    [--csv] [--errors] [--font <1-4>] [--help]
+    [--mono] [--nobig] [--top] [--version]
+" >&2
 }
 
 #----------
@@ -684,30 +672,30 @@ fnPARSE_CMDLINE()
 {
   # Loop through all the commandline arguments.
   # In the loop, current value would be the option,
-  # and the next one would be the parameter.  At
-  # present, none of this script's options require
-  # parameters, so next value is just next option.
+  # and the next one would be the parameter.
+  # An example would be the option, and it's
+  # parameter, for font selection.
 
   # shellcheck disable=SC2206
   ARG_LIST=(${MY_CMDLINE})
 
   INDEX=0
   GET_CSV_NOW=0
-  #PARSE_STATUS=NOT_OK
   for ARGUMENT in ${MY_CMDLINE}
   do
     INDEX=$((INDEX + 1))
     case "${ARGUMENT}" in
       -c|--csv)
         GET_CSV_NOW=1
-        #PARSE_STATUS=OK
+        ;;
+      -e|--errors)
+        SHOW_LOG_ERRORS=0
         ;;
       -f|--font)
         if [[ ${ARG_LIST[INDEX]} =~ ^-?[1-4]+$ ]]
         then
           MY_FONT="${ARG_LIST[INDEX]}"
           INDEX=$((INDEX + 1))
-          #PARSE_STATUS=OK
         else
           echo -en "${BELL}"
           cat <<'EOF' | more
@@ -770,11 +758,9 @@ EOF
         ;;
       -n|--nobig)
         USE_FIGLET=0
-        #PARSE_STATUS=OK
         ;;
       -t|--top)
         TOP=1
-        #PARSE_STATUS=OK
         ;;
       -v|--version)
         fnVERSION
@@ -809,7 +795,6 @@ EOF
 #----------
 fnGET_HELP()
 {
-  # clear
   cat <<'EOF' | less -M
 PISTAR-LASTQSO - HELP
 
@@ -821,6 +806,20 @@ PISTAR-LASTQSO - HELP
       Download an updated user.csv from radioid.net now, rather than
       waiting for the presently installed copy to age 7 days before it
       updates automatically.
+
+  -e|--errors
+      By default, pistar-lastqso will display any error messages found
+      in the MMDVM log, as they occur.  It ia NOT unusual to see an
+      occasional, or sporadic message, such as a queue overflow.  But
+      if these or other errors are frequent or persist, you may need
+      to get help from the pi-star forums.  In the meantime, you can use
+      the "-e" or "--error" option to suppress the onscreen reporting
+      of these errors.  The errors will however still be counted for
+      the current session, and the count will still be reported on the
+      exit screen.  It is your responsibility to investigate any cause.
+
+      Use of this option DOES NOT FIX THE ERRORS coming from pi-star.
+      It only stops telling you that they are happening.
 
   -f|--font <1-4>
       The [-f|--font] option forces use of the selected font, regardless of
@@ -1034,11 +1033,6 @@ fnGOODBYE_BOX()
     KERCHUNK_COUNT=$(< "${KERCHUNK_FILE}")
     tput cup 12 27
     echo -n "${DIM}${WHI}(Includes ${SGR0}${YEL}$(printf %05d "${KERCHUNK_COUNT}")${DIM}${WHI} Kerchunks)${SGR0}"
-
-    #KPC
-    # Test of fnGET_CPOS
-    # tput cup 13 32
-    # fnGET_CPOS ; echo -n "ROW: ${CPOS_Y}  COL: ${CPOS_X}"
   fi
 
   if [[ -f "${ERROR_FILE}" ]]
@@ -1095,12 +1089,16 @@ fnMMDVMLOG_FUSER()
 #----------
 fnCLEAR_CURRENT_LINE()
 {
+  trap fnWINCH WINCH
+
   echo -en "\r${CLR_EL}"
 }
 
 #----------
 fnSEPERATOR()
 {
+  trap fnWINCH WINCH
+
   fnCLEAR_CURRENT_LINE
   echo "${DBL_LINE}${WHI}${SGR0}${CLR_EL}"
 }
@@ -1108,6 +1106,8 @@ fnSEPERATOR()
 #----------
 fnLISTENING()
 {
+  trap fnWINCH WINCH
+
   echo -n "  ${GRE}${BOLD}Listening for Traffic...${SGR0}${WHI}${CLR_EL} "
   TA_DISPLAYED=0
 }
@@ -1115,6 +1115,8 @@ fnLISTENING()
 #----------
 fnQSO_IN_PROGRESS()
 {
+  trap fnWINCH WINCH
+
   echo -n "  ${YEL}${BOLD}QSO In Progress...${SGR0}${WHI}${CLR_EL} "
   TA_DISPLAYED=0
 }
@@ -1124,6 +1126,8 @@ fnQSO_IN_PROGRESS()
 # city, state, and country fields
 fnDMR_CSV_SEARCH()
 {
+  trap fnWINCH WINCH
+
   # Fields in the file:
   # RADIO_ID,CALLSIGN,FIRST_NAME,LAST_NAME,CITY,STATE,COUNTRY
   # We want the last three.
@@ -1161,6 +1165,8 @@ fnDMR_CSV_SEARCH()
 #----------
 fnCONVERT_DATE_TIME()
 {
+  trap fnWINCH WINCH
+
   # Convert the log entry UTC date/timestamps to localized, human-readable form
   DATE="$(date -d "${LOGREC_DATE} ${LOGREC_TIME} UTC" +"%a %d %b %Y")"
   TIME="$(date -d "${LOGREC_DATE} ${LOGREC_TIME} UTC" +"%I:%M:%S %p %Z")"
@@ -1169,6 +1175,8 @@ fnCONVERT_DATE_TIME()
 #----------
 fnDMR_PAD_ABSENT_TG()
 {
+  trap fnWINCH WINCH
+
   # "private" call log entries lack "TG" in the log line, which skews
   # the data returned when awk parses positional fields.  These few
   # lines will inject a bogus "PC" (private contact) place-holder to
@@ -1187,6 +1195,8 @@ fnDMR_PAD_ABSENT_TG()
 #----------
 fnDMR_GET_FROM()
 {
+  trap fnWINCH WINCH
+
   FROM="$(echo "${RECORD}" | awk '{ print $12 }')"
 
   # The MMDVMHost daemon internally knows the actual DMR ID# of the user,
@@ -1239,6 +1249,8 @@ fnDMR_GET_FROM()
 #----------
 fnDMR_GET_TO()
 {
+  trap fnWINCH WINCH
+
   TO="$(echo "${RECORD}" | awk '{ print $15 }' | cut -f1 -d",")"
   # See if the recipient is a callsign
   #TO_NAME="$(grep "${GTAB}${TO}${GTAB}" "${DMRIDS}" | awk '{ print $NF }' | sort -u)"
@@ -1303,6 +1315,8 @@ fnDMR_GET_TO()
 #----------
 fnFIGLET_AUTO_FONT_SELECT()
 {
+  trap fnWINCH WINCH
+
   # A screen width of less than 80 columns will select figlet's
   # "small" font.  A screen width greater than 80 columns will
   # use figlet's larger "standard" font.  A screen width greater
@@ -1322,6 +1336,8 @@ fnFIGLET_AUTO_FONT_SELECT()
 #----------
 fnFIGLET()
 {
+  trap fnWINCH WINCH
+
   if [[ "${USE_FIGLET}" -eq 1 ]]
   then
     # Disable the large font display callsign to save screen space,
@@ -1329,7 +1345,6 @@ fnFIGLET()
     #
     #     pistar-lastqso -n|--nobig
     #
-
     read -r LINES COLUMNS <<<"$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
     case ${MY_FONT} in
       1)
@@ -1348,12 +1363,6 @@ fnFIGLET()
         fnFIGLET_AUTO_FONT_SELECT
         ;;
     esac
-
-    #fnGET_CPOS
-    #if [[ ${CPOS_X} < 12 ]]
-    #then
-    #  tput cup 12 0
-    #fi
 
     BANNER="$(figlet -t -w "${COLUMNS}" -f "${FONT}" "${FROM} ... ${TO}")"
     if [[ "${LOGREC_MODE}" = "YSF" ]]
@@ -1381,6 +1390,8 @@ fnFIGLET()
 #----------
 fnDMR_GET_VOICE_OR_DATA()
 {
+  trap fnWINCH WINCH
+
   # Determine if voice or data
   TYPE="$(echo "${RECORD}" | awk '{ print $9 }')"
   if [[ "${TYPE}" = "data" ]]
@@ -1395,6 +1406,8 @@ fnDMR_GET_VOICE_OR_DATA()
 #----------
 fnYSF_SHOW_CURRENT_CALL()
 {
+  trap fnWINCH WINCH
+
   # Show our human-readable date/time
   echo -n "${DIM}Date:${SGR0} ${BLU}${BOLD}${DATE}${SGR0}${WHI}"
   tput cuf 11
@@ -1417,6 +1430,8 @@ fnYSF_SHOW_CURRENT_CALL()
 #----------
 fnDMR_SHOW_CURRENT_CALL()
 {
+  trap fnWINCH WINCH
+
   # Show our human-readable date/time
   echo -n "${DIM}Date:${SGR0} ${BLU}${BOLD}${DATE}${SGR0}${WHI}"
   tput cuf 11
@@ -1475,6 +1490,8 @@ fnDMR_SHOW_CURRENT_CALL()
 #----------
 fnDMR_GET_NET_BER()
 {
+  trap fnWINCH WINCH
+
   # BER is in different positions, for network and RF log entries
   BER="$(echo "${RECORD}" | awk '{ print $NF }' | cut -f1 -d'%')"
 }
@@ -1482,6 +1499,8 @@ fnDMR_GET_NET_BER()
 #----------
 fnDMR_GET_RF_BER()
 {
+  trap fnWINCH WINCH
+
   # BER is in different positions, for network and RF log entries
   BER="$(echo "${RECORD}" | awk '{ print $21 }' | cut -f1 -d"," | cut -f1 -d'%')"
 }
@@ -1489,6 +1508,8 @@ fnDMR_GET_RF_BER()
 #----------
 fnCOLORIZE_BER()
 {
+  trap fnWINCH WINCH
+
   # Default to Good/Green
   BER_COLOR="${GRE}"
   if [[ -n "$(echo "${BER}" | awk '$1 >=2.0{print}')" ]] && [[ -n "$(echo "${BER}" | awk '$1 <=4.9{print}')" ]]
@@ -1507,6 +1528,8 @@ fnCOLORIZE_BER()
 #----------
 fnDMR_GET_LOSS()
 {
+  trap fnWINCH WINCH
+
   # Get the packet loss
   LOSS="$(echo "${RECORD}" | cut -f4 -d"," | awk '{ print $1 }' | sed 's/%//')"
 }
@@ -1514,6 +1537,8 @@ fnDMR_GET_LOSS()
 #----------
 fnCOLORIZE_LOSS()
 {
+  trap fnWINCH WINCH
+
   # Default to Good/Green
   LOSS_COLOR="${GRE}"
   if [[ -n "$(echo "${LOSS}" | awk '$1 >1.0{print}')" ]] && [[ -n "$(echo "${LOSS}" | awk '$1 <3.0{print}')" ]]
@@ -1532,6 +1557,8 @@ fnCOLORIZE_LOSS()
 #----------
 fnDMR_GET_RSSI()
 {
+  trap fnWINCH WINCH
+
   # Get the RSSI
   RSSI="$(echo "${RECORD}" | awk '{ print $23 }')"
   DBM="$(echo "${RSSI}" | cut -f1 -d"/" | cut -f2 -d"-")"
@@ -1540,6 +1567,8 @@ fnDMR_GET_RSSI()
 #----------
 fnCOLORIZE_RSSI()
 {
+  trap fnWINCH WINCH
+
   # What follows converts RSSI dBm to S-Meter values.
   # We look for S9 through S1 signal strength...
   # Very Strong
@@ -1610,6 +1639,8 @@ fnCOLORIZE_RSSI()
 #----------
 fnDMR_TALKER_ALIAS()
 {
+  trap fnWINCH WINCH
+
   # The log entries show that TA arrives in chunks.  Make sure we have
   # the whole thing before we print it.  Don't bother displaying, if
   # we don't get the whole thing (Kerchunkers, for example, don't
@@ -1666,6 +1697,8 @@ fnDMR_DOWNLOAD_USERCSV()
 #----------
 fnBUILD_HISTORY()
 {
+  trap fnWINCH WINCH
+
   if [[ -n "${FROM}" ]]
   then
     if [[ -n "${LOSS}" ]] || [[ -n "${BER}" ]] || [[ ${DATA} -eq 1 ]]
@@ -1738,6 +1771,8 @@ fnBUILD_HISTORY()
 #----------
 fnMAIN_LOOP()
 {
+  trap fnWINCH WINCH
+
   tail -f -n 1 "${WORKING_LOG}" | grep -E --line-buffered " DMR | YSF, |MMDVMHOST-STOP|SIGTERM" \
     | grep -v -E --line-buffered "^D:|^I:|0000:|Opening|Closing|Embedded Talker Alias" \
     | while read -r RECORD
@@ -1768,15 +1803,21 @@ fnMAIN_LOOP()
       ERROR_COUNT=$((ERROR_COUNT + 1))
       echo "${ERROR_COUNT}" > "${ERROR_FILE}"
 
-      echo -en "${YEL}"
-      fnSEPERATOR
+      # If we've masked the reporting of logged errors by
+      # using the "-e|--error" commandline option, then
+      # skip displaying the error, but still tally it.
+      if [[ "${SHOW_LOG_ERRORS}" = "1" ]]
+      then
+        echo -en "${YEL}"
+        fnSEPERATOR
 
-      echo -en "${BOLD}${RED}ERROR: ${WHI}${ERROR_MSG}\r"
-      tput cuf 64
-      echo -e "${BOLD}${RED} Count: $(printf %04d "${ERROR_COUNT}")"
+        echo -en "${BOLD}${RED}ERROR: ${WHI}${ERROR_MSG}\r"
+        tput cuf 64
+        echo -e "${BOLD}${RED} Count: $(printf %04d "${ERROR_COUNT}")"
 
-      echo -en "${YEL}"
-      fnSEPERATOR
+        echo -en "${YEL}"
+        fnSEPERATOR
+      fi
       continue
     fi
 
@@ -1797,7 +1838,6 @@ fnMAIN_LOOP()
         fnCONVERT_DATE_TIME
         QSO_START_TIME="${TIME}"
 
-        #KPC
         if [[ "$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $7 }')" = "to" ]]
         then
           read -r LOGREC_CALLSIGN  LOGREC_DG_ID  LOGREC_DG_ID_NUM  LOGREC_MASTER \
@@ -1808,7 +1848,6 @@ fnMAIN_LOOP()
             <<<"$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $6 " " $9 " " $10 " " $12 }')"
         fi
 
-        #FROM="${LOGREC_CALLSIGN}"
         FROM="$(echo "${LOGREC_CALLSIGN}" | cut -f1 -d"/" | cut -f1 -d"-")"
         TO="${LOGREC_DG_ID} ${LOGREC_DG_ID_NUM}"
         fnCLEAR_CURRENT_LINE
@@ -1830,7 +1869,6 @@ fnMAIN_LOOP()
         fnCONVERT_DATE_TIME
         QSO_START_TIME="${TIME}"
 
-        #KPC
         if [[ "$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $7 }')" = "to" ]]
         then
           read -r LOGREC_CALLSIGN  LOGREC_DG_ID  LOGREC_DG_ID_NUM \
@@ -2048,7 +2086,6 @@ fnMAIN_LOOP()
       fi
     fi
     # END DMR-SPECIFIC LOG RECORDS
-    WINCH_TRIGGER=0
   done
 }
 
@@ -2072,7 +2109,7 @@ fnEXIT()
 
   fnGOODBYE_BOX
 
-  rm "${STATIC_TG_LIST}" 2> /dev/null
+  rm "${STATIC_TG_FILE}" 2> /dev/null
   rm "${QSO_COUNT_FILE}" 2> /dev/null
   rm "${KERCHUNK_FILE}" 2> /dev/null
   rm "${ERROR_FILE}" 2> /dev/null
@@ -2082,11 +2119,12 @@ fnEXIT()
 #----------
 fnWINCH()
 {
-  # shellcheck disable=SC2034
-  WINCH_TRIGGER=1
-  clear
-  fnNOSCROLL_ZONE
-  tput cup 11 0
+  if [[ ${TOP} -eq 1 ]]
+  then
+    clear
+    fnNOSCROLL_ZONE
+    tput cup 11 0
+  fi
 }
 
 ###########################################################
@@ -2122,7 +2160,14 @@ echo -en "${WRAP_OFF}"
 fnLOGO
 fnCHECK_MODES_ENABLED
 echo -en "\n\n\n\n  ${WHI}Initializing... "
-sleep 2
+
+# When we query Brandmeister to learn a hotspot's statically
+# linked TGs, the findings are written to this tmpfile.
+STATIC_TG_FILE="$(mktemp --tmpdir static_tg_file.$$.XXX)"
+
+# collect the data for the no-scroll region
+fnTOP_DATA
+
 echo -en "\r${CLR_EL}${SMCUP}"
 echo -n "${CUR_HOME}"
 
@@ -2131,24 +2176,16 @@ fnDMR_DOWNLOAD_USERCSV
 
 if [[ ${TOP} -eq 1 ]]
 then
-  # When we query Brandmeister to learn a hotspot's statically
-  # linked TGs, the findings are written to this tmpfile.
-  STATIC_TG_LIST="$(mktemp --tmpdir static_tg_list.$$.XXX)"
-
-  fnTOP_DATA			# collect the data for the no-scroll region
-  fnNOSCROLL_ZONE		# define the region and display the data
-  tput cup 11 0			# position the cursor below the no-scroll region
-  echo -en "${CLR_ED}"		# clear the screen from here, to end of display
-  trap fnWINCH WINCH		# call this any time screen changes size
+  fnNOSCROLL_ZONE
+  tput cup 11 0	
+  echo -en "${CLR_ED}"
 fi
-
-fnLISTENING
 
 # This forks fnMMDVMLOG_FUSER into the background as a child process.
 # It runs "fuser" against the log.  If "MMDVMHost" no longer shows
 # in the output, then MMDVMHost is no longer writing to the log.  The
 # function then appends "MMDVMHOST-STOP" to the log file.  The "read" in
-# fnMAIN_LOOP will spot (and will act on) this, to re-launch the script.
+# fnMAIN_LOOP will spot this and will act on it, to re-launch the script.
 #
 # If the background job is already running, don't spawn another copy.
 export -f fnMMDVMLOG_FUSER
@@ -2157,6 +2194,8 @@ then
   /bin/bash -c fnMMDVMLOG_FUSER > /dev/null 2>&1 &
 fi
 
+# If we've auto-restarted, get our stored QSO, kerchunk, and error counts
+# else, start each of those counters at zero.
 if [[ -f "${QSO_COUNT_FILE}" ]]
 then
   QSO_COUNT=$(< "${QSO_COUNT_FILE}")
@@ -2181,6 +2220,9 @@ else
   echo "${ERROR_COUNT}" > "${ERROR_FILE}"
 fi
 
+fnLISTENING
+
+# And here we go...
 fnMAIN_LOOP
 
 # If we've exited the loop, it's because MMDVMHost is no longer writing
@@ -2188,9 +2230,9 @@ fnMAIN_LOOP
 # during pi-star's nightly update, or it has rolled to a new day's log.
 
 # We don't need this anymore.
-if [[ -n "${STATIC_TG_LIST}" ]]
+if [[ -n "${STATIC_TG_FILE}" ]]
 then
-  rm "${STATIC_TG_LIST}" 2> /dev/null
+  rm "${STATIC_TG_FILE}" 2> /dev/null
 fi
 
 # Sleep to let things settle, then restart the script.
