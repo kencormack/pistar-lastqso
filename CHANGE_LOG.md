@@ -1,4 +1,16 @@
 ```
+CHANGES: V2.03
+ 1. Fixed a DMR bug which under some circumstances
+    would overwrite Duration, BER, and Loss values
+    with the solid-line separator.
+ 2. Clear the screen upon auto-restart.
+ 3. Tweaked the "-t" section to do a better job
+    of clearing any artifacts created when an SSH
+    window is re-sized.
+ 4. Added some instructions to the top of the
+    help, explaining how to navigate the help.
+ 5. Rearranged a few settings in initialization.
+
 CHANGES: V2.02
  1. Added new "-e|--errors" commandline option, to
     suppress the reporting of error messages found
