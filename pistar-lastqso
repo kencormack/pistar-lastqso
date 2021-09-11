@@ -6,7 +6,7 @@
 
 set -o allexport
 
-VERSION=2.02
+VERSION=2.03
 
 umask 0077
 
@@ -14,7 +14,7 @@ umask 0077
 trap fnEXIT SIGINT SIGTERM
 
 # This trap has been problematic - it isn't inherited.
-trap fnWINCH WINCH	# This trap is also set inside most functions
+# trap fnWINCH WINCH	# This trap is now set inside most functions
 
 # NOTE #1: Originally written for pi-star >= 4.1.4, for DMR mode ONLY.
 # Support for YSF (plus DMR2YSF and YSF2DMR) was added later.  If the
@@ -59,6 +59,25 @@ set -E -o functrace
 
 # Get the full path to this script
 SCRIPT="$(readlink -f "${0}")"
+
+# Defaults that can be overriden with cmdline options...
+#
+# Don't force immediate download of user.csv file.
+# Can be overriden with "-c|--csv" cmdline option
+GET_CSV_NOW=0
+#
+# Show errors as they appear in the MMDVM log.
+# Can be overriden with "-e|--errors" cmdline option
+SHOW_LOG_ERRORS=1
+#
+# Display Callsigns & TGs/DG-ISs in large font.
+# Can be overriden with "-n|--nobig" cmdline option
+USE_FIGLET=1
+#
+# Don't display the config and history section at top of screen.
+# Can be overridden with "-t|--top" cmdline option
+TOP=0
+#
 
 # Define some ways to make things bold, use different colors, control
 # scrolling and cursor positioning, and so on.
@@ -144,6 +163,8 @@ DEF="$(tput setaf 9)"		# Default
 # For grepping stuff that includes tabs
 GTAB=$'\t'
 
+MY_CALLSIGN="$(grep -A 8 "^\[General\]" /etc/mmdvmhost | grep "^Enable" | cut -f2 -d"=")"
+
 DMR_ENABLED="$(grep -A 2 "^\[DMR\]" /etc/mmdvmhost | grep "^Enable" | cut -f2 -d"=")"
 YSF_ENABLED="$(grep -A 2 "^\[System Fusion\]" /etc/mmdvmhost | grep "^Enable" | cut -f2 -d"=")"
 #DSTAR_ENABLED="$(grep -A 2 "^\[D-Star\]" /etc/mmdvmhost | grep "^Enable" | cut -f2 -d"=")"
@@ -168,24 +189,12 @@ MY_LIST=/usr/local/etc/MY_LIST.txt
 # This is the master DMR user.csv file from radioid.net.
 # We download this, and update it if older than 7 days.
 USERCSV=/usr/local/etc/user.csv
-GET_CSV_NOW=0
 
 # Find the latest log
 LOGDIR="$(grep -A 4 "^\[Log\]" /etc/mmdvmhost | grep "^FilePath=" | cut -f2 -d"=")"
 LOGROOT="$(grep -A 4 "^\[Log\]" /etc/mmdvmhost | grep "^FileRoot=" | cut -f2 -d"=")"
 # shellcheck disable=SC2012
 WORKING_LOG="$(ls -1tr "${LOGDIR}/${LOGROOT}"*.log | tail -1)"
-
-# See if figlet is installed
-if command -v figlet > /dev/null 2>&1
-then
-  USE_FIGLET=1
-else
-  USE_FIGLET=0
-fi
-
-# This can be overridden with the "-e|--error" option
-SHOW_LOG_ERRORS=1
 
 # Finding a way to get the screen width of a window that can
 # be dynamically re-sized is funky, in bash.  Neither tput,
@@ -209,10 +218,6 @@ EOF
 )
 # The above is called like this, whenever needed...
 # read -r LINES COLUMNS <<<"$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
-
-# Assume (until we parse the commandline) that the no-scroll
-# top section of the screen will not be called upon.
-TOP=0
 
 # APIKEY="$(grep "^apikey=" /etc/bmapi.key 2> /dev/null | cut -f2 -d"=")"
 HOTSPOT_ID="$(grep -A 13 "\[DMR\]" /etc/mmdvmhost | grep "^Id=" | cut -f2 -d"=")"
@@ -504,29 +509,47 @@ fnTOP_DATA()
   # This function deals with the optional non-scrolling zone,
   # created when the -t|--top option is specified on the commandline.
 
+  # This padding is appended to most of the displayed values at top of
+  # the "-t" screen, and then truncated to an appropriate length.  This
+  # acts to clear out any artifacts of previous screens that are some-
+  # times left behind when the user changes the size of an SSH window.
+  TOP_PAD="                              "
+
   MY_LOG="$(basename "${WORKING_LOG}")"
+  MY_LOG="$(echo "${MY_LOG}${TOP_PAD}" | cut -c1-23)"
 
   # GATHER LINE 0 DATA...
+  # This script's version
+  MY_VER="$(echo "${VERSION}${TOP_PAD}" | cut -c1-7)"
+
   # Pi-star version
   PS_VER="$(grep "^Version" /etc/pistar-release | awk '{ print $NF }')"
+  PS_VER="$(echo "${PS_VER}${TOP_PAD}" | cut -c1-8)"
 
   # Datestamp of the user.csv file
   CSV_DATE="$(stat /usr/local/etc/user.csv 2> /dev/null | grep "^Modify" | awk '{ print $2 }')"
+  CSV_DATE="$(echo "${CSV_DATE}${TOP_PAD}" | cut -c1-11)"
 
   # GATHER LINE 1 DATA...
   # Hotspot TX & RX frequencies
   # <rant> I hate that bash can't do simple floating-point math without external help. </rant>
   TX="$(printf %.4f "$(echo print "$(grep "TX Frequency:" /var/log/pi-star/MMDVM* 2> /dev/null | tail -1 | awk '{ print $6 }' | sed 's/Hz//')"/1000000 | perl)")"
+  TX="$(echo "${TX}${TOP_PAD}" | cut -c1-12)"
+
   RX="$(printf %.4f "$(echo print "$(grep "RX Frequency:" /var/log/pi-star/MMDVM* 2> /dev/null | tail -1 | awk '{ print $6 }' | sed 's/Hz//')"/1000000 | perl)")"
+  RX="$(echo "${RX}${TOP_PAD}" | cut -c1-12)"
 
   # Details about the modem
   DESCRIPTION="$(grep "description:" /var/log/pi-star/MMDVM* | tail -1)"
   # Firmware version
   FW="$(echo "${DESCRIPTION}" | awk '{ print $9 }')"
+  FW="$(echo "${FW}${TOP_PAD}" | cut -c1-24)"
+
   # Isolate the field that contains "MHz" within the record
   TCXO="$(printf %2.4f "$(echo "${DESCRIPTION}" | awk '/MHz/ {for(i=NF;i>=1;i--) {if($i~/MHz/) {$0=i":"$i}} print}' | cut -f3 -d":" | sed 's/MHz//')")"
   # If we can't find it, set it to "unknown"
   TCXO=${TCXO:-'unknown'}
+  TCXO="$(echo "${TCXO}${TOP_PAD}" | cut -c1-10)"
 
   # GATHER LINE 2 DATA...
   YSF_ENABLED="$(grep -A 6 "\[System Fusion\]" /etc/mmdvmhost | grep "^Enable" | cut -f2 -d"=")"
@@ -542,6 +565,7 @@ fnTOP_DATA()
       YSF_MASTER="Not Enabled"
     fi
   fi
+  YSF_MASTER="$(echo "${YSF_MASTER}${TOP_PAD}" | cut -c1-20)"
 
   DMR_ENABLED="$(grep -A 6 "\[DMR\]" /etc/mmdvmhost | grep "^Enable" | cut -f2 -d"=")"
   if [[ "${DMR_ENABLED}" = "1" ]]
@@ -556,6 +580,7 @@ fnTOP_DATA()
       DMR_MASTER="Not Enabled"
     fi
   fi
+  DMR_MASTER="$(echo "${DMR_MASTER}${TOP_PAD}" | cut -c1-32)"
 
   # GATHER LINE 3 DATA...
   # shellcheck disable=SC2143
@@ -563,9 +588,9 @@ fnTOP_DATA()
   then
     STATIC_LIST="$(fnDMR_BM_STATIC_TGS | tail -1 | awk '{ print $1" "$2" "$3" "$4" "$5}')"
     STATIC_COUNT="$(grep -c . "${STATIC_TG_FILE}")"
-    STATIC_LINE="${CYA}STATIC TGs (${WHI}${BOLD}${STATIC_COUNT}${SGR0} ${CYA}Found, ${WHI}${BOLD}5${SGR0} ${CYA}Max Shown): ${SGR0}${WHI}${BOLD}${STATIC_LIST}${SGR0}"
+    STATIC_LINE="${CYA}STATIC TGs (${WHI}${BOLD}${STATIC_COUNT}${SGR0} ${CYA}Found, ${WHI}${BOLD}5${SGR0} ${CYA}Max Shown): ${SGR0}${WHI}${BOLD}${STATIC_LIST}${SGR0}${CLR_EL}"
   else
-    STATIC_LINE="${CYA}Network is not BrandMeister - No API available to retrieve any Static TGs${SGR0}"
+    STATIC_LINE="${CYA}Network is not BrandMeister - No API available to retrieve any Static TGs${SGR0}${CLR_EL}"
   fi
 }
 
@@ -592,7 +617,7 @@ fnNOSCROLL_ZONE()
   echo -n "${CUR_HOME}"
 
   # Print line 0
-  echo -en "${CYA}LASTQSO:${SGR0} ${WHI}${BOLD}${VERSION}${SGR0}\r"
+  echo -en "${CYA}LASTQSO:${SGR0} ${WHI}${BOLD}${MY_VER}${SGR0}\r"
   tput cuf 16
   echo -en "${CYA}PISTAR:${SGR0} ${WHI}${BOLD}${PS_VER}${SGR0}\r"
   tput cuf 32
@@ -680,7 +705,6 @@ fnPARSE_CMDLINE()
   ARG_LIST=(${MY_CMDLINE})
 
   INDEX=0
-  GET_CSV_NOW=0
   for ARGUMENT in ${MY_CMDLINE}
   do
     INDEX=$((INDEX + 1))
@@ -798,6 +822,8 @@ fnGET_HELP()
   cat <<'EOF' | less -M
 PISTAR-LASTQSO - HELP
 
+(Cursor Up/Down keys to scroll, Page Up/Dn to page, Q to quit help.)
+
   With no options, the script watches for DMR and YSF traffic.
   Log entries are parsed and presented as each log line is read.
   Use Ctrl-C to exit.
@@ -844,6 +870,9 @@ PISTAR-LASTQSO - HELP
 
   -h|--help
       Display this help screen, then exit.
+
+  -l|--logo
+      Disables the animated logo screen at startup
 
   -m|--mono
       For monochrome displays, this option suppresses all color codes.
@@ -980,8 +1009,8 @@ fnCHECK_MODES_ENABLED()
   if [[ ${DMR_ENABLED} -eq 0 ]] && [[ ${YSF_ENABLED} -eq 0 ]]
   then
     echo -en "${SGR0}${RED}"
-    tput cup 11 17
-    for ((I=17; I<=60; I++))
+    tput cup 11 18
+    for ((I=18; I<=59; I++))
     do
       printf "${DBOX_HL}%0.s"
     done
@@ -991,13 +1020,13 @@ fnCHECK_MODES_ENABLED()
     #fnDRAW_BOX 7 15 8 47 2 1 1
 
     tput cup 10 24
-    echo -e "${SGR0}${SMUL}${BOLD}${YEL}NEITHER DMR NOR YSF IS ENABLED${WHI}${SGR0}"
+    echo -e "${SGR0}${SMUL}${BOLD}${YEL}NEITHER DMR NOR YSF IS ENABLED${SGR0}${WHI}"
     tput cuf 27
-    echo -e "${SGR0}${RED}AT LEAST ONE IS REQUIRED${WHI}${SGR0}"
+    echo "AT LEAST ONE IS REQUIRED"
     tput cuf 20
-    echo -e "${SGR0}${RED}PLEASE ENABLE, THEN RE-RUN THIS SCRIPT${WHI}${SGR0}"
-    tput cup 22 0
-    echo -e "  ${SGR0}${WHI}${CUR_ON}Aborting... "
+    echo "PLEASE ENABLE, THEN RE-RUN THIS SCRIPT"
+    tput cup 22 2
+    echo -e "${CUR_ON}Aborting... "
     exit
   fi
 }
@@ -1007,8 +1036,8 @@ fnGOODBYE_BOX()
 {
   # Usage: fnDRAW_BOX BOX_TOP BOX_LEFT BOX_HEIGHT BOX_WIDTH BOX_STYLE BOX_FILL BOX_SHADOW
   echo -en "${SGR0}${BLU}"
-  tput cup 11 17
-  for ((I=17; I<=60; I++))
+  tput cup 11 18
+  for ((I=17; I<=59; I++))
   do
     printf "${DBOX_HL}%0.s"
   done
@@ -1095,7 +1124,7 @@ fnCLEAR_CURRENT_LINE()
 }
 
 #----------
-fnSEPERATOR()
+fnSEPARATOR()
 {
   trap fnWINCH WINCH
 
@@ -1691,7 +1720,6 @@ fnDMR_DOWNLOAD_USERCSV()
     sync
     sudo mount -o remount,ro / 2> /dev/null
   fi
-  GET_CSV_NOW=0
 }
 
 #----------
@@ -1771,8 +1799,6 @@ fnBUILD_HISTORY()
 #----------
 fnMAIN_LOOP()
 {
-  trap fnWINCH WINCH
-
   tail -f -n 1 "${WORKING_LOG}" | grep -E --line-buffered " DMR | YSF, |MMDVMHOST-STOP|SIGTERM" \
     | grep -v -E --line-buffered "^D:|^I:|0000:|Opening|Closing|Embedded Talker Alias" \
     | while read -r RECORD
@@ -1809,14 +1835,14 @@ fnMAIN_LOOP()
       if [[ "${SHOW_LOG_ERRORS}" = "1" ]]
       then
         echo -en "${YEL}"
-        fnSEPERATOR
+        fnSEPARATOR
 
         echo -en "${BOLD}${RED}ERROR: ${WHI}${ERROR_MSG}\r"
         tput cuf 64
         echo -e "${BOLD}${RED} Count: $(printf %04d "${ERROR_COUNT}")"
 
         echo -en "${YEL}"
-        fnSEPERATOR
+        fnSEPARATOR
       fi
       continue
     fi
@@ -1927,7 +1953,7 @@ fnMAIN_LOOP()
         fnBUILD_HISTORY
         fnNOSCROLL_ZONE
         echo -en "${MAG}"
-        fnSEPERATOR
+        fnSEPARATOR
         fnLISTENING
         continue
       fi
@@ -1969,7 +1995,7 @@ fnMAIN_LOOP()
         fnBUILD_HISTORY
         fnNOSCROLL_ZONE
         echo -en "${MAG}"
-        fnSEPERATOR
+        fnSEPARATOR
         fnLISTENING
         continue
       fi
@@ -2052,13 +2078,10 @@ fnMAIN_LOOP()
           # are not counted.
           if [[ -n "${FROM}" ]] && [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
           then
-            if [[ "${SENDER_IS_CALLSIGN}" -eq 1 ]]
-            then
-              KERCHUNK_COUNT=$((KERCHUNK_COUNT + 1))
-              echo "${KERCHUNK_COUNT}" > "${KERCHUNK_FILE}"
-              tput cuf 57
-              echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
-            fi
+            KERCHUNK_COUNT=$((KERCHUNK_COUNT + 1))
+            echo "${KERCHUNK_COUNT}" > "${KERCHUNK_FILE}"
+            tput cuf 57
+            echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
           else
             echo
           fi
@@ -2081,7 +2104,7 @@ fnMAIN_LOOP()
         fnBUILD_HISTORY
         fnNOSCROLL_ZONE
         echo -en "${BLU}"
-        fnSEPERATOR
+        fnSEPARATOR
         fnLISTENING
       fi
     fi
@@ -2158,8 +2181,9 @@ fi
 echo -en "${WRAP_OFF}"
 
 fnLOGO
+tput cup 22 2
 fnCHECK_MODES_ENABLED
-echo -en "\n\n\n\n  ${WHI}Initializing... "
+echo -en "${WHI}Initializing... "
 
 # When we query Brandmeister to learn a hotspot's statically
 # linked TGs, the findings are written to this tmpfile.
@@ -2245,5 +2269,6 @@ fnRESET_SCROLLING
 echo -e "${BOLD}${GRE}RE-LAUNCHING AS \"${SCRIPT} ${MY_CMDLINE}\"...${WHI}${SGR0}"
 echo "${GRE}${DBL_LINE}${WHI}${SGR0}${CLR_EL}"
 sleep 2
+clear
 exec /bin/bash -c "${SCRIPT} ${MY_CMDLINE}"
 
