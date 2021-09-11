@@ -871,9 +871,6 @@ PISTAR-LASTQSO - HELP
   -h|--help
       Display this help screen, then exit.
 
-  -l|--logo
-      Disables the animated logo screen at startup
-
   -m|--mono
       For monochrome displays, this option suppresses all color codes.
 
