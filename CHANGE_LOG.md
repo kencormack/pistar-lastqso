@@ -1,4 +1,13 @@
 ```
+CHANGES: V2.04
+ 1. Added option "-l|--logo" to disable the logo
+    screen at startup.  This option is now invoked
+    when the script restarts (at service bounce or
+    when the log is rotated) regardless of whether
+    it was originally passed on the cmdline.
+ 2. Fixed a bug that was downloading the user.csv
+    file twice at startup, when "-c|--csv" was used.
+
 CHANGES: V2.03
  1. Fixed a DMR bug which under some circumstances
     would overwrite Duration, BER, and Loss values

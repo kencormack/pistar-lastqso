@@ -6,7 +6,7 @@
 
 set -o allexport
 
-VERSION=2.03
+VERSION=2.04
 
 umask 0077
 
@@ -78,6 +78,9 @@ USE_FIGLET=1
 # Can be overridden with "-t|--top" cmdline option
 TOP=0
 #
+# By default, display logo screen.
+# Can be disabled with "-l|--logo" cmdline option
+LOGO=1
 
 # Define some ways to make things bold, use different colors, control
 # scrolling and cursor positioning, and so on.
@@ -684,11 +687,11 @@ fnUSAGE()
 USAGE - valid options and parameters include:
 
   Short Form:
-    [-c] [-e] [-f <1-4>] [-h] [-m] [-n] [-t] [-v]
+    [-c] [-e] [-f <1-4>] [-h] [-l] [-m] [-n] [-t] [-v]
 
   Long Form:
     [--csv] [--errors] [--font <1-4>] [--help]
-    [--mono] [--nobig] [--top] [--version]
+    [--logo] [--mono] [--nobig] [--top] [--version]
 " >&2
 }
 
@@ -755,6 +758,9 @@ EOF
         fnGET_HELP
         exit
         ;;
+      -l|--logo)
+        LOGO=0
+        ;;
       -m|--mono)
         # Forground colors
         # shellcheck disable=SC2034
@@ -802,6 +808,7 @@ EOF
   if [[ "${GET_CSV_NOW}" -eq 1 ]]
   then
     fnDMR_DOWNLOAD_USERCSV
+    GET_CSV_NOW=0
   fi
 
   # In normal operation, this script restarts itself any time the
@@ -813,7 +820,7 @@ EOF
   # file each time it restarts, we'll remove any "-c" or "--csv"
   # that was passed to the initial commandline, so that it does not
   # get passed to subsequent restarts.
-  MY_CMDLINE="$(echo "${MY_CMDLINE}" | sed 's/--csv// ; s/-c//')"
+  MY_CMDLINE="$(echo "${MY_CMDLINE}" | sed 's/--csv// ; s/-c// ; s/--logo// ; s/-l//')"
 }
 
 #----------
@@ -871,6 +878,11 @@ PISTAR-LASTQSO - HELP
   -h|--help
       Display this help screen, then exit.
 
+  -l|--logo
+      Disables the animated logo at startup.  Automatically applied
+      when the program restarts at service bounce, or when the log
+      is rotated.  Optional, when launching from the cmdline.
+
   -m|--mono
       For monochrome displays, this option suppresses all color codes.
 
@@ -914,6 +926,17 @@ Copyright (c) 2021 Ken Cormack, KE8DPF
   along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 EOF
+}
+
+#----------
+fnNO_LOGO()
+{
+  clear
+  echo -en "${WRAP_OFF}${SGR0}${WHI}"
+  echo -e "PISTAR-LASTQSO v${VERSION}"
+  echo -e "Copyright 2021 Ken Cormack - KE8DPF"
+  echo -e "https://github.com/kencormack/pistar-lastqso"
+  echo -en "${SGR0}${WHI}"
 }
 
 #----------
@@ -1043,8 +1066,8 @@ fnGOODBYE_BOX()
   fnDRAW_BOX 8 16 6 45 2 1 1
   #fnDRAW_BOX 7 15 8 47 2 1 1
 
-  tput cup 10 22
-  echo -e "${BOLD}${WHI}THANK YOU FOR USING PISTAR-LASTQSO!${SGR0}${DEF}"
+  tput cup 10 19
+  echo -e "${BOLD}${WHI}THANK YOU FOR USING PISTAR-LASTQSO v${VERSION}${SGR0}${DEF}"
 
   if [[ -f "${QSO_COUNT_FILE}" ]]
   then
@@ -2177,8 +2200,17 @@ fi
 # (There's one entry in user.csv that is over 170 characters long!)
 echo -en "${WRAP_OFF}"
 
-fnLOGO
-tput cup 22 2
+if [[ ${LOGO} -eq 1 ]]
+then
+  fnLOGO
+  tput cup 22 2
+else
+  fnNO_LOGO
+  tput cup 4 0
+fi
+
+#DMR_ENABLED=0
+#YSF_ENABLED=0
 fnCHECK_MODES_ENABLED
 echo -en "${WHI}Initializing... "
 
@@ -2263,9 +2295,9 @@ sleep 45
 fnRESET_SCROLLING
 
 # Restart, with the same options as originally passed
-echo -e "${BOLD}${GRE}RE-LAUNCHING AS \"${SCRIPT} ${MY_CMDLINE}\"...${WHI}${SGR0}"
+echo -e "${BOLD}${GRE}RE-LAUNCHING AS \"${SCRIPT} ${MY_CMDLINE} -l\"...${WHI}${SGR0}"
 echo "${GRE}${DBL_LINE}${WHI}${SGR0}${CLR_EL}"
 sleep 2
 clear
-exec /bin/bash -c "${SCRIPT} ${MY_CMDLINE}"
+exec /bin/bash -c "${SCRIPT} ${MY_CMDLINE} -l"
 
