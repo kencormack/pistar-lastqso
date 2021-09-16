@@ -12,6 +12,7 @@
 - **[Updating](https://github.com/kencormack/pistar-lastqso#updating)**
 - **[Large Font Display of the Callsign and Talkgroup or DG-ID](https://github.com/kencormack/pistar-lastqso#large-font-display-of-the-callsign-and-talkgroup-or-dg-id)**
 - **[City, State, Country Lookups for Callsigns (DMR only)](https://github.com/kencormack/pistar-lastqso#city-state-country-lookups-for-callsigns-dmr-only)**
+- **[Country Lookups for Callsigns (YSF only)](https://github.com/kencormack/pistar-lastqso#country-lookups-for-callsigns-ysf-only)**
 - **[Commandline Options](https://github.com/kencormack/pistar-lastqso#commandline-options)**
 - **[Daily Log Rotation](https://github.com/kencormack/pistar-lastqso#daily-log-rotation)**
 - **[User-Custom Talkgroup List (DMR only)](https://github.com/kencormack/pistar-lastqso#user-custom-talkgroup-list-dmr-only)**
