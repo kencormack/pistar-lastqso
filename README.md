@@ -136,6 +136,17 @@ If the user.csv file is already present on your hotspot, but is older than 7 day
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
+## Country Lookups for Callsigns (YSF only)
+
+Upon first run, **pistar-lastqso** will download the latest version of the cty.dat file from https://www.country-files.com/category/big-cty/
+
+If the cty.dat file is already present on your hotspot, but is older than 30 days, **pistar-lastqso** will update the file to it's latest version automatically.  You can also force an update to the latest version at any time, using the "-d | --dat" commandline option.
+
+**pistar-lastqso** calls the dxcc.pl perl script, which uses the cty.dat file to display the "Country" data related to the callsign, in a field labeled "DXCC".
+
+- **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
+-------------------------------------------------------------------
 ## Commandline Options
 
 **pistar-lastqso** supports a number of commandline options, as shown in the Usage and Help screens, below.  Multiple options can be specified at the same time.  For example, specifying "-c -n -t" (or "--csv --nobig --top") will download the latest updated user.csv file, disable the large font
