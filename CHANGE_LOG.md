@@ -1,4 +1,26 @@
 ```
+CHANGES: V2.05
+ 1. Show DMR server descriptive name, rather than
+    FQDN, in "-t|--top" section of the display.
+ 2. Expand the "To" and "From" fields to 10 chars
+    each, in the "-t|--top" section of the screen,
+    for longer YSF identities. (Ex: "AMERICALNK").
+ 3. Added percentage of QSOs that were Kerchunks,
+    to the exit screen.
+ 4. Corrections to help & usage regarding behavior
+    when invalid -f|--font # is given on cmdline.
+ 5. Add the additional perl script "dscc.pl" by
+    Fabian Kurz, DJ1YFK.  http://fkurz.net/ham/dxcc/
+    to support lookup of Country based on callsign,
+    since YSF lacks the equivalent of DMR's user.csv
+    file.  Updated the install to include dxcc.pl.
+ 6. Add new cmdline option "-d|--dat" to force the
+    update of the "cty.dat" file used by dxcc.pl.
+    If the option is NOT used, the file is updated
+    automatically when the presently installed copy
+    has aged 30 days.
+ 7. Updated the install script to accomodate dxcc.pl
+
 CHANGES: V2.04
  1. Added option "-l|--logo" to disable the logo
     screen at startup.  This option is now invoked

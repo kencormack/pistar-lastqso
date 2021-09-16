@@ -6,11 +6,11 @@
 
 set -o allexport
 
-VERSION=2.04
+VERSION=2.05
 
 umask 0077
 
-# If user presses Ctrl-C, stop the background job
+# If user presses Ctrl-C, stop the program
 trap fnEXIT SIGINT SIGTERM
 
 # This trap has been problematic - it isn't inherited.
@@ -65,6 +65,10 @@ SCRIPT="$(readlink -f "${0}")"
 # Don't force immediate download of user.csv file.
 # Can be overriden with "-c|--csv" cmdline option
 GET_CSV_NOW=0
+#
+# Don't force immediate download of cty.dat file.
+# Can be overriden with "-d|--dat" cmdline option
+GET_DAT_NOW=0
 #
 # Show errors as they appear in the MMDVM log.
 # Can be overriden with "-e|--errors" cmdline option
@@ -192,6 +196,10 @@ MY_LIST=/usr/local/etc/MY_LIST.txt
 # This is the master DMR user.csv file from radioid.net.
 # We download this, and update it if older than 7 days.
 USERCSV=/usr/local/etc/user.csv
+
+# This is the cty.dat file from www.country-files.com
+# We download this, and update it if older than 30 days.
+CTYDAT=/usr/local/etc/cty.dat
 
 # Find the latest log
 LOGDIR="$(grep -A 4 "^\[Log\]" /etc/mmdvmhost | grep "^FilePath=" | cut -f2 -d"=")"
@@ -463,7 +471,7 @@ fnDRAW_BOX()
   fi
 }
 
-#KPC
+ #KPC
 #----------
 # Reserved for possible future use.
 # This allows centering a string of text without overwriting
@@ -574,6 +582,7 @@ fnTOP_DATA()
   if [[ "${DMR_ENABLED}" = "1" ]]
   then
     DMR_MASTER="$(grep -A 10 "\[DMR Network\]" /etc/mmdvmhost | grep "^Address" | cut -f2 -d"=")"
+    DMR_MASTER_NAME="$(grep "${GTAB}${DMR_MASTER}${GTAB}" /usr/local/etc/DMR_Hosts.txt | awk '{ print $1 }' | sed 's/_/ /g')"
   else
     # shellcheck disable=SC2143
     if [[ -n "$(systemctl status ysf2dmr | grep "active (running)")" ]]
@@ -640,13 +649,13 @@ fnNOSCROLL_ZONE()
   # Print line 2
   echo -en "${CYA}YSF MASTER:${SGR0} ${WHI}${BOLD}${YSF_MASTER}${SGR0}\r"
   tput cuf 32
-  echo -e "${CYA}DMR MASTER:${SGR0} ${WHI}${BOLD}${DMR_MASTER}${SGR0}${CLR_EL}"
+  echo -e "${CYA}DMR MASTER:${SGR0} ${WHI}${BOLD}${DMR_MASTER_NAME}${SGR0}${CLR_EL}"
 
   # Print red line and clear the remainder of the line
   echo -e "${STATIC_LINE}${CLR_EL}"
 
   # Print the QSO history lines... newest through oldest
-  echo -e "${CLR_EL}${REV}${CYA}Previous    ${SBOX_VL} From     ${SBOX_VL} To        ${SBOX_VL}  Secs ${SBOX_VL}  BER% ${SBOX_VL} Src ${SBOX_VL} Loss% or S-Meter ${SGR0}${WHI}"
+  echo -e "${CLR_EL}${REV}${CYA}Previous ${SBOX_VL} From       ${SBOX_VL} To         ${SBOX_VL}  Secs ${SBOX_VL}  BER% ${SBOX_VL} Src ${SBOX_VL} Loss% or S-Meter ${SGR0}${WHI}"
   echo -e "${SGR0}${HISTORY1}${CLR_EL}"
   echo -e "${SGR0}${HISTORY2}${CLR_EL}"
   echo -e "${SGR0}${HISTORY3}${CLR_EL}"
@@ -687,10 +696,10 @@ fnUSAGE()
 USAGE - valid options and parameters include:
 
   Short Form:
-    [-c] [-e] [-f <1-4>] [-h] [-l] [-m] [-n] [-t] [-v]
+    [-c] [-d] [-e] [-f <1-4>] [-h] [-l] [-m] [-n] [-t] [-v]
 
   Long Form:
-    [--csv] [--errors] [--font <1-4>] [--help]
+    [--csv] [--dat] [--errors] [--font <1-4>] [--help]
     [--logo] [--mono] [--nobig] [--top] [--version]
 " >&2
 }
@@ -715,6 +724,9 @@ fnPARSE_CMDLINE()
       -c|--csv)
         GET_CSV_NOW=1
         ;;
+      -d|--dat)
+        GET_DAT_NOW=1
+        ;;
       -e|--errors)
         SHOW_LOG_ERRORS=0
         ;;
@@ -737,8 +749,7 @@ fnPARSE_CMDLINE()
         3 = "big"
         4 = "ansi_shadow"
 
-      If this option is NOT used, or you specify an invalid number as
-      the parameter for this option, the script will auto-select an
+      If this option is omitted, the script will auto-select an
       appropriately sized font based on the following screen-width
       thresholds:
 
@@ -752,7 +763,7 @@ EOF
           exit
         fi
         ;;
-      1|2|3|4)
+      1|2|3|4|5)
         ;;
       -h|--help)
         fnGET_HELP
@@ -811,6 +822,12 @@ EOF
     GET_CSV_NOW=0
   fi
 
+  if [[ "${GET_DAT_NOW}" -eq 1 ]]
+  then
+    fnYSF_DOWNLOAD_CTYDAT
+    GET_DAT_NOW=0
+  fi
+
   # In normal operation, this script restarts itself any time the
   # MMDVMHost service is interupted (eg: during pi-star's nightly
   # update), or when the service rotates to a new day's log file.
@@ -840,6 +857,11 @@ PISTAR-LASTQSO - HELP
       waiting for the presently installed copy to age 7 days before it
       updates automatically.
 
+  -d|--dat
+      Download an updated cty.dat from country-files.com, rather than
+      waiting for the presently installed copy to age 30 days before it
+      updates automatically.
+
   -e|--errors
       By default, pistar-lastqso will display any error messages found
       in the MMDVM log, as they occur.  It ia NOT unusual to see an
@@ -864,8 +886,7 @@ PISTAR-LASTQSO - HELP
         3 = "big"
         4 = "ansi_shadow"
 
-      If this option is NOT used, or you specify an invalid number as
-      the parameter for this option, the script will auto-select an
+      If this option is omitted, the script will auto-select an
       appropriately sized font based on the following screen-width
       thresholds:
 
@@ -1080,8 +1101,15 @@ fnGOODBYE_BOX()
   if [[ -f "${KERCHUNK_FILE}" ]]
   then
     KERCHUNK_COUNT=$(< "${KERCHUNK_FILE}")
-    tput cup 12 27
-    echo -n "${DIM}${WHI}(Includes ${SGR0}${YEL}$(printf %05d "${KERCHUNK_COUNT}")${DIM}${WHI} Kerchunks)${SGR0}"
+    tput cup 12 23
+    if [[ ${QSO_COUNT} -gt 0 ]]
+    then
+      PERCENTAGE="$(awk -v KERCHUNK_COUNT=$KERCHUNK_COUNT -v QSO_COUNT=$QSO_COUNT 'BEGIN {print (KERCHUNK_COUNT / QSO_COUNT * 100)}')"
+      SHOW_PERCENTAGE="$(printf %.2f "${PERCENTAGE}")"
+    else
+      SHOW_PERCENTAGE="0.00"
+    fi
+    echo -n "${DIM}${WHI}Includes ${SGR0}${YEL}$(printf %05d "${KERCHUNK_COUNT}")${DIM}${WHI} Kerchunks (${SGR0}${YEL}$(printf %.2f "${PERCENTAGE}")%${DIM}${WHI})${SGR0}"
   fi
 
   if [[ -f "${ERROR_FILE}" ]]
@@ -1473,6 +1501,13 @@ fnYSF_SHOW_CURRENT_CALL()
   tput cuf 32
   echo -e "${DIM}Src.:${SGR0} ${BOLD}${CYA}${SOURCE}${SGR0}${WHI}"
 
+#KPC
+  if [[ -n "$(echo "${FROM}" | cut -f1 -d"-" | grep "[0-9]")" ]]
+  then
+    COUNTRY="$(dxcc.pl "${FROM}" | grep "^Country Name:" | awk '{ print substr($0, index($0,$3)) }')"
+    echo -e "${DIM}DXCC:${SGR0} ${MAG}${BOLD}${COUNTRY}${SGR0}${WHI}"
+  fi
+
   fnQSO_IN_PROGRESS
 }
 
@@ -1743,6 +1778,49 @@ fnDMR_DOWNLOAD_USERCSV()
 }
 
 #----------
+fnYSF_DOWNLOAD_CTYDAT()
+{
+  # If the cty.dat file is missing, or is older than 30 days,
+  # then download a new one from the web.
+  if [[ ! -f "${CTYDAT}" ]] || [[ -n "$(find "${CTYDAT}" -mtime +30)" ]] || [[ ${GET_DAT_NOW} -eq 1 ]]
+  then
+    echo "Downloading latest DXCC cty.dat file..."
+    sudo mount -o remount,rw / 2> /dev/null
+
+    BIGCTYZIP="$(curl -s "https://www.country-files.com/category/big-cty/" | grep "\[download\]" | sort -nr | head -1 | cut -f2 -d"\"")"
+    if [[ -n "${BIGCTYZIP}" ]]
+    then
+
+      mkdir /tmp/bigctydir 2>/dev/null
+      if sudo wget -q --show-progress --progress=bar:force:noscroll "${BIGCTYZIP}" -O "/tmp/bigctydir/bigcty.zip"
+      then
+        echo "Applying the updated file..."
+        sudo unzip /tmp/bigctydir/bigcty.zip -d /tmp/bigctydir >/dev/null 2>&1
+        if sudo cp /tmp/bigctydir/cty.dat "${CTYDAT}" && sudo chown pi-star.pi-star "${CTYDAT}"
+        then
+          sudo rm -r /tmp/bigctydir 2> /dev/null
+          echo "Update complete."
+          echo
+        else
+          echo "There was a problem applying the update.  Will continue without it."
+          sleep 2
+        fi
+      else
+        echo "Unable to retrieve latest cty.dat.  Will continue without it."
+        sleep 2
+      fi
+      sync
+      sync
+      sync
+      sudo mount -o remount,ro / 2> /dev/null
+    else
+      echo "Unable to determine latest available cty.dat.  Will continue without it."
+      sleep 2
+    fi
+  fi
+}
+
+#----------
 fnBUILD_HISTORY()
 {
   trap fnWINCH WINCH
@@ -1751,8 +1829,8 @@ fnBUILD_HISTORY()
   then
     if [[ -n "${LOSS}" ]] || [[ -n "${BER}" ]] || [[ ${DATA} -eq 1 ]]
     then
-      FROM="$(echo "${FROM}" | cut -f1 -d"/" | cut -f1 -d"-" | cut -c1-8)"
-      if [[ ${#FROM} -gt 8 ]]
+      FROM="$(echo "${FROM}" | cut -f1 -d"/" | cut -f1 -d"-" | cut -c1-10)"
+      if [[ ${#FROM} -gt 10 ]]
       then
         FROM="${FROM}*"
       fi
@@ -1761,9 +1839,9 @@ fnBUILD_HISTORY()
       HISTORY3="${HISTORY2}"
       HISTORY2="${HISTORY1}"
 
-      HIST_TIME="$(printf %-11s "$(echo "${QSO_START_TIME}" | awk '{ print $1" "$2 }')")"
-      HIST_FROM="$(printf %-8s "${FROM}")"
-      HIST_TO="$(printf %-9s "${TO}")"
+      HIST_TIME="$(printf %-8s "$(echo "${QSO_START_TIME}" | awk '{ print $1 }')")"
+      HIST_FROM="$(printf %-10s "${FROM}")"
+      HIST_TO="$(printf %-10s "${TO}")"
       HIST_SECS="$(printf %5s "${SECS}")"
       HIST_BER="$(printf %4s "${BER}")%"
       HIST_LOSS="$(printf %4s "${LOSS}")%"
@@ -2180,7 +2258,7 @@ DBL_LINE="$(printf "${DBOX_HL}%.0s" {1..76})"
 # no-scroll region is called upon.  We define them here,
 # because the function fnDEFINE_BOXCHARS needs to run
 # first, so that SBOX_VL is defined.
-HISTORY1="            ${SBOX_VL}          ${SBOX_VL}           ${SBOX_VL}       ${SBOX_VL}       ${SBOX_VL}     ${SBOX_VL}${SGR0}${WHI}"
+HISTORY1="         ${SBOX_VL}            ${SBOX_VL}            ${SBOX_VL}       ${SBOX_VL}       ${SBOX_VL}     ${SBOX_VL}${SGR0}${WHI}"
 HISTORY2="${HISTORY1}"
 HISTORY3="${HISTORY1}"
 HISTORY4="${HISTORY1}"
@@ -2209,8 +2287,6 @@ else
   tput cup 4 0
 fi
 
-#DMR_ENABLED=0
-#YSF_ENABLED=0
 fnCHECK_MODES_ENABLED
 echo -en "${WHI}Initializing... "
 
@@ -2226,6 +2302,9 @@ echo -n "${CUR_HOME}"
 
 # Make sure we have an updated user.csv file
 fnDMR_DOWNLOAD_USERCSV
+
+# Make sure we have an updated cty.dat file
+fnYSF_DOWNLOAD_CTYDAT
 
 if [[ ${TOP} -eq 1 ]]
 then
