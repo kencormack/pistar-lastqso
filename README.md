@@ -16,7 +16,7 @@
 - **[Commandline Options](https://github.com/kencormack/pistar-lastqso#commandline-options)**
 - **[Daily Log Rotation](https://github.com/kencormack/pistar-lastqso#daily-log-rotation)**
 - **[User-Custom Talkgroup List (DMR only)](https://github.com/kencormack/pistar-lastqso#user-custom-talkgroup-list-dmr-only)**
-- **[QSO, Kerchunk, and MMDVM Error Counts](https://github.com/kencormack/pistar-lastqso#qso-kerchunk-and-mmdvm-error-counts)**
+- **[QSO, Kerchunk, and MMDVM Error Counts](https://github.com/kencormack/pistar-lastqso#qso-kerchunk-and-mmdvm-error-and-warning-counts)**
 - **[More About the Large Font Support](https://github.com/kencormack/pistar-lastqso#more-about-the-large-font-support)**
 - **[One More Thing About Large Fonts](https://github.com/kencormack/pistar-lastqso#one-more-thing-about-large-fonts)**
 - **[Other Notes](https://github.com/kencormack/pistar-lastqso#other-notes)**
@@ -36,7 +36,7 @@
 - The BER, and Loss (Net), or Signal Strength (RF)
 
 **In Addition:**
-- Any MMDVM errors appearing in the log while the tool is monitoring
+- Any MMDVM errors or warnings appearing in the log while the tool is monitoring
 
 **For each DMR (Only) QSO, the program displays the following data beyond what the PI-STAR dashboard can show:**
 - The contact's Name (from PI-STAR's DMRIds.dat file)
@@ -44,6 +44,9 @@
 - The contact's Talker Alias (Note #1, below)
 - The talkgroup's Name (Note #2, below)
 - The contact's DMR ID# (Note #3, below)
+
+**For each YSF QSO, the program displays the following data beyond what the PI-STAR dashboard can show:**
+- The callsign's country (from dxcc.pl and the cty.dat file)
 
 **Note #1:**
 *Talker Alias data is shown, only if present and complete.  Kerchunkers don't stick around long enough for TA data to be gathered.  Partial TA data (or that which is received as empty/null) is not shown.*
@@ -205,19 +208,21 @@ You can also add certain 'private contact' IDs here that may not be listed.  Not
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
-## QSO, Kerchunk, and MMDVM Error Counts
+## QSO, Kerchunk, and MMDVM Error and Warning Counts
 
 **pistar-lastqso** counts the number of QSOs it has watched since last launched by the user.  With each QSO the running count is displayed.  Connections lasting less than 2 seconds are considered "kerchunks", which are also counted.  These are noted on the screen as kerchunks, but the running count is not displayed.  When the user quits the program using Ctrl-C, the closing screen shows the number of QSOs the program watched, and how many of these were considered kerchunks.
 
-The program also watches the MMDVM log for any errors reported by the MMDVMhost daemon that is the real "engine" behind PI-STAR.  Any errors noted in the MMDVM log are reported by **pistar-lastqso** as they occur, and are tallied.  The total number of errors counted (if any) since **pistar-lastqso** was launched by the user, are reported on the exit screen, in a red pop-up box.  If no errors were tallied, the red pop-up box does not appear.
+The program also watches the MMDVM log for any errors, or more severe warnings, reported by the MMDVMhost daemon that is the real "engine" behind PI-STAR.  Any such errors or warnings noted in the MMDVM log are reported by **pistar-lastqso** as they occur, and are tallied.  The total number of errors and warnings counted (if any) since **pistar-lastqso** was launched by the user, are reported on the exit screen, in a red pop-up box.  If no errors or warnings were tallied, the red pop-up box does not appear.
 
-**It is the user's responsibility to judge the severity, and find the fix, for any MMDVM log errors reported by pistar-lastqso.  These MMDVM log errors are not caused, controlled, or solveable, by pistar-lastqso.  The script only reports what gets logged by the MMDVMhost daemon.  pistar-lastqso does not create, diagnose, or eliminate the logged errors.**
+**It is the user's responsibility to judge the severity, and find the fix, for any MMDVM log errors or warnings reported by pistar-lastqso.  These MMDVM log errors and warnings are not caused, controlled, or solveable, by pistar-lastqso.  The script only reports what gets logged by the MMDVMhost daemon.  pistar-lastqso does not create, diagnose, or eliminate the logged errors or warnings.**
 
-Don't panic if you see a single transient occurrance of something like a "queue overflow".  Things like that may show up occasionally.  But if you see dozens of them, you will want to look into it.  Other types of errors may require more research on your part.  If you need to investigate any errors, search your /var/log/pi-star/MMDVM-YYYY-MM-DD.log for any lines beginning with "E:".
+Don't panic if you see a single transient occurrance of something like a "queue overflow" error.  Things like that may show up occasionally.  But if you see dozens of them, you will want to look into it.  Other types of errors may require more research on your part.  If you need to investigate any errors, search your /var/log/pi-star/MMDVM-YYYY-MM-DD.log for any lines beginning with "E:".  Warnings are more severe.  Those can be found in the log, on lines beginning with "W:".
 
 **[Please visit the PI-STAR forums](https://forum.pistar.uk/)**, if you need help diagnosing any errors found in the MMDVM log.
 
-Finally, all three of the counters (QSO, Kerchunks, and Errors) are reset each time the user exits **pistar-lastqso** using Ctrl-C.  However, when the script auto-restarts itself, either at log rotation or when PI-STAR's services get cycled during the nightly PI-STAR update, the running counts for each counter are carried forward to the restarted session.
+Finally, all four of the counters (QSO, Kerchunks, Errors, and Warnings) are reset each time the user exits **pistar-lastqso** using Ctrl-C.  However, when the script auto-restarts itself, either at log rotation or when PI-STAR's services get cycled during the nightly PI-STAR update, the running counts for each counter are carried forward to the restarted session.
+
+The commandline option "-e|--errors" will supress onscreen notification of errors during QSOs, but will NOT supress the more severe "warnings".  With or without that option, the total numbers of any errors or warnings detected, will be displayed at program exit.
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
