@@ -1,4 +1,31 @@
 ```
+CHANGES: V2.06
+ 1. Added display and tally of log WARNINGS, in
+    the same fashion as errors.  Like the errors,
+    warning tallies are reset when the script is
+    exited with ^C, but are carried forward when
+    the script restarts itself when the log rolls
+    at midnight UTC, or when pistar-update cycles
+    the services.  However, unlike errors, WARNINGS
+    are NOT supressed with the -e|--errors option.
+ 2. Updated the help screen to describe the above.
+ 3. Made all tally-tracking tmpfiles unique to each
+    instance of the script, in the event multiple
+    instances are running concurrently.  An example
+    would be if an instance were left running on
+    the console in your radio room, and you then
+    checked in via SSH from your laptop in the
+    kitchen.  Each will have their own tally counts,
+    independent of the other running session.
+ 4. Strip "-d|--dat" from any cmdline options
+    before auto-relaunching, so that the script
+    doesn't re-download the cty.dat file each time
+    the log rotates, or when pistar-update runs.
+    (Same behavior as with the "-c|--csv" option.)
+ 5. Improved the handling of Wires-X related RF and
+    NET response, in the QSO details and "-t|--top"
+    history.
+
 CHANGES: V2.05
  1. Show DMR server descriptive name, rather than
     FQDN, in "-t|--top" section of the display.

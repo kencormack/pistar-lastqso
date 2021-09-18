@@ -6,7 +6,7 @@
 
 set -o allexport
 
-VERSION=2.05
+VERSION=2.06
 
 umask 0077
 
@@ -238,9 +238,12 @@ HOTSPOT_ID="$(grep -A 13 "\[DMR\]" /etc/mmdvmhost | grep "^Id=" | cut -f2 -d"=")
 # elements in the array used in fnPARSE_CMDLINE.
 MY_CMDLINE="${*//=/ }"
 
-QSO_COUNT_FILE="/tmp/pistar-lastqso-qso-count"
-KERCHUNK_FILE="/tmp/pistar-lastqso-kerchunk-count"
-ERROR_FILE="/tmp/pistar-lastqso-error-count"
+QSO_COUNT_FILE="/tmp/pistar-lastqso-qso-count.$$"
+KERCHUNK_FILE="/tmp/pistar-lastqso-kerchunk-count.$$"
+ERROR_FILE="/tmp/pistar-lastqso-error-count.$$"
+WARNING_FILE="/tmp/pistar-lastqso-warning-count.$$"
+
+sleep 5
 
 ###########################################################
 # FUNCTIONS
@@ -834,10 +837,10 @@ EOF
   # When it re-launches itself, it passes the same parameters to the
   # new instance that were given to the initial instance (eg: "-t").
   # To prevent the script from repeatedly downloading the user.csv
-  # file each time it restarts, we'll remove any "-c" or "--csv"
-  # that was passed to the initial commandline, so that it does not
-  # get passed to subsequent restarts.
-  MY_CMDLINE="$(echo "${MY_CMDLINE}" | sed 's/--csv// ; s/-c// ; s/--logo// ; s/-l//')"
+  # file each time it restarts, we'll remove any "-c", "--csv", "-d",
+  # or "--dat" that was passed to the initial commandline, so that 
+  # it does not get passed to subsequent restarts.
+  MY_CMDLINE="$(echo "${MY_CMDLINE}" | sed 's/--csv// ; s/-c// ; s/--dat// ; s/-d// ; s/--logo// ; s/-l//')"
 }
 
 #----------
@@ -875,6 +878,10 @@ PISTAR-LASTQSO - HELP
 
       Use of this option DOES NOT FIX THE ERRORS coming from pi-star.
       It only stops telling you that they are happening.
+
+      NOTE: The script also displays and tallies any WARNINGS that may
+      show up in the log.  Although the -e|--error option will supress
+      display of ERRORS, it will NOT supress display of WARNINGS.
 
   -f|--font <1-4>
       The [-f|--font] option forces use of the selected font, regardless of
@@ -1104,6 +1111,10 @@ fnGOODBYE_BOX()
     tput cup 12 23
     if [[ ${QSO_COUNT} -gt 0 ]]
     then
+      if [[ ${KERCHUNK_COUNT} -gt ${QSO_COUNT} ]]
+      then
+        KERCHUNK_COUNT="${QSO_COUNT}"
+      fi
       PERCENTAGE="$(awk -v KERCHUNK_COUNT=$KERCHUNK_COUNT -v QSO_COUNT=$QSO_COUNT 'BEGIN {print (KERCHUNK_COUNT / QSO_COUNT * 100)}')"
       SHOW_PERCENTAGE="$(printf %.2f "${PERCENTAGE}")"
     else
@@ -1112,15 +1123,19 @@ fnGOODBYE_BOX()
     echo -n "${DIM}${WHI}Includes ${SGR0}${YEL}$(printf %05d "${KERCHUNK_COUNT}")${DIM}${WHI} Kerchunks (${SGR0}${YEL}$(printf %.2f "${PERCENTAGE}")%${DIM}${WHI})${SGR0}"
   fi
 
-  if [[ -f "${ERROR_FILE}" ]]
+  if [[ -f "${ERROR_FILE}" ]] || [[ -f "${WARNING_FILE}" ]]
   then
     ERROR_COUNT=$(< "${ERROR_FILE}")
-    if [[ ${ERROR_COUNT} -gt 0 ]]
+    WARNING_COUNT=$(< "${WARNING_FILE}")
+
+    if [[ ${ERROR_COUNT} -gt 0 ]] || [[ ${WARNING_COUNT} -gt 0 ]]
     then
       echo -en "${SGR0}${RED}"
-      fnDRAW_BOX 13 24 2 30 2 1 1
-      tput cup 14 26
-      echo -n "${WHI}MMDVM Log Errors Seen: ${SGR0}${YEL}$(printf %04d "${ERROR_COUNT}")"
+      fnDRAW_BOX 13 24 3 30 2 1 1
+      tput cup 14 27
+      echo -n "${WHI}MMDVM Log ${YEL}ERR MSGS${WHI}: ${SGR0}${YEL}$(printf %04d "${ERROR_COUNT}")"
+      tput cup 15 27
+      echo -n "${WHI}MMDVM Log ${RED}WARNINGS${WHI}: ${SGR0}${RED}$(printf %04d "${WARNING_COUNT}")"
     fi
   fi
   tput cup 22 0
@@ -1481,6 +1496,43 @@ fnDMR_GET_VOICE_OR_DATA()
 }
 
 #----------
+fnYSF_END_NETWORK_TRAFFIC()
+{
+  trap fnWINCH WINCH
+
+  # Fields to pass to the history...
+  SECS="${LOGREC_SECS}"
+  BER="$(echo "${LOGREC_BER}" | cut -f1 -d"%")"
+  LOSS="$(echo "${LOGREC_LOSS}" | cut -f1 -d"%")"
+
+  fnCOLORIZE_BER
+  fnCOLORIZE_LOSS
+
+  fnCLEAR_CURRENT_LINE
+  echo -en "\r${DIM}Dur.:${SGR0} ${BLU}${BOLD}${LOGREC_SECS}${SGR0}${WHI}${DIM}sec\r"
+  tput cuf 18
+  echo -en "${DIM}BER:${SGR0} ${BER_COLOR}${BOLD}${BER}%${SGR0}${WHI}\r"
+  tput cuf 32
+  echo -en "${DIM}Loss:${SGR0} ${LOSS_COLOR}${BOLD}${LOSS}%${SGR0}${WHI}\r"
+
+  if [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
+  then
+    KERCHUNK_COUNT=$((KERCHUNK_COUNT + 1))
+    echo "${KERCHUNK_COUNT}" > "${KERCHUNK_FILE}"
+    tput cuf 57
+    echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
+  else
+    echo
+  fi
+
+  fnBUILD_HISTORY
+  fnNOSCROLL_ZONE
+  echo -en "${MAG}"
+  fnSEPARATOR
+  fnLISTENING
+}
+
+#----------
 fnYSF_SHOW_CURRENT_CALL()
 {
   trap fnWINCH WINCH
@@ -1501,10 +1553,10 @@ fnYSF_SHOW_CURRENT_CALL()
   tput cuf 32
   echo -e "${DIM}Src.:${SGR0} ${BOLD}${CYA}${SOURCE}${SGR0}${WHI}"
 
-#KPC
   if [[ -n "$(echo "${FROM}" | cut -f1 -d"-" | grep "[0-9]")" ]]
   then
-    COUNTRY="$(dxcc.pl "${FROM}" | grep "^Country Name:" | awk '{ print substr($0, index($0,$3)) }')"
+    DXCC_FROM="$(echo "${LOGREC_CALLSIGN}" | cut -f1 -d"/" | cut -f1 -d"-")"
+    COUNTRY="$(dxcc.pl "${DXCC_FROM}" | grep "^Country Name:" | awk '{ print substr($0, index($0,$3)) }')"
     echo -e "${DIM}DXCC:${SGR0} ${MAG}${BOLD}${COUNTRY}${SGR0}${WHI}"
   fi
 
@@ -1829,7 +1881,7 @@ fnBUILD_HISTORY()
   then
     if [[ -n "${LOSS}" ]] || [[ -n "${BER}" ]] || [[ ${DATA} -eq 1 ]]
     then
-      FROM="$(echo "${FROM}" | cut -f1 -d"/" | cut -f1 -d"-" | cut -c1-10)"
+      FROM="$(echo "${FROM}" | cut -c1-10)"
       if [[ ${#FROM} -gt 10 ]]
       then
         FROM="${FROM}*"
@@ -1918,9 +1970,13 @@ fnMAIN_LOOP()
       return
     fi
 
-    # The MMDVMHost daemon logs any errors it encounters.
+    # The MMDVMHost daemon logs any errors or warnings it encounters.
     # Errors are logged in records beginning with "E:".
-    if [[ "$(echo "${RECORD}" | grep "^E: ")" != "" ]]
+    # Warnings are logged in records beginning with "W:".
+    # FYI: Debug messages are logged in records beginning with "D:".
+    #
+    # First, the errors...
+    if [[ "$(echo "${RECORD}" | grep "^E:")" != "" ]]
     then
       ERROR_MSG="$(echo "${RECORD}" | cut -f4- -d" ")"
 
@@ -1942,6 +1998,29 @@ fnMAIN_LOOP()
         echo -en "${YEL}"
         fnSEPARATOR
       fi
+      continue
+    fi
+    #
+    # Now, the warnings...
+    if [[ "$(echo "${RECORD}" | grep "^W:")" != "" ]]
+    then
+      WARNING_MSG="$(echo "${RECORD}" | cut -f4- -d" ")"
+
+      WARNING_COUNT=$((WARNING_COUNT + 1))
+      echo "${WARNING_COUNT}" > "${WARNING_FILE}"
+
+      # Unlike errors, warnings will not be masked by
+      # the "-e|--error" commandline option.  They will
+      # always be displayed (as well as tallied.)
+      echo -en "${SGR0}${RED}"
+      fnSEPARATOR
+
+      echo -en "${BOLD}${RED}WARNING: ${WHI}${WARNING_MSG}\r"
+      tput cuf 64
+      echo -e "${BOLD}${RED} Count: $(printf %04d "${WARNING_COUNT}")"
+
+      echo -en "${SGR0}${RED}"
+      fnSEPARATOR
       continue
     fi
 
@@ -1972,7 +2051,7 @@ fnMAIN_LOOP()
             <<<"$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $6 " " $9 " " $10 " " $12 }')"
         fi
 
-        FROM="$(echo "${LOGREC_CALLSIGN}" | cut -f1 -d"/" | cut -f1 -d"-")"
+        FROM="${LOGREC_CALLSIGN}"
         TO="${LOGREC_DG_ID} ${LOGREC_DG_ID_NUM}"
         fnCLEAR_CURRENT_LINE
         fnFIGLET
@@ -2003,7 +2082,7 @@ fnMAIN_LOOP()
               <<<"$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $6 " " $8 " " $10 }')"
         fi
 
-        FROM="$(echo "${LOGREC_CALLSIGN}" | cut -f1 -d"/" | cut -f1 -d"-")"
+        FROM="${LOGREC_CALLSIGN}"
         TO="${LOGREC_DG_ID} ${LOGREC_DG_ID_NUM}"
         fnCLEAR_CURRENT_LINE
         fnFIGLET
@@ -2016,51 +2095,36 @@ fnMAIN_LOOP()
 
         continue
       fi
-
-      # End of YSF network traffic
+#KPC
+      # End of YSF network traffic (Wires-X)
+      if echo "${LOGREC_REMAINING_DATA}" | grep -q "received network end of transmission from"
+      then
+        read -r LOGREC_SECS  LOGREC_LOSS  LOGREC_BER \
+          <<<"$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $12 " " $14 " " $18 }')"
+        fnYSF_END_NETWORK_TRAFFIC
+        continue
+      fi
+      # End of YSF network traffic (Normal traffic)
       if echo "${LOGREC_REMAINING_DATA}" | grep -q "network watchdog has expired"
       then
         read -r LOGREC_SECS  LOGREC_LOSS  LOGREC_BER \
           <<<"$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $6 " " $8 " " $12 }')"
-
-        # Fields to pass to the history...
-        SECS="${LOGREC_SECS}"
-        BER="$(echo "${LOGREC_BER}" | cut -f1 -d"%")"
-        LOSS="$(echo "${LOGREC_LOSS}" | cut -f1 -d"%")"
-
-        fnCOLORIZE_BER
-        fnCOLORIZE_LOSS
-
-        fnCLEAR_CURRENT_LINE
-        echo -en "\r${DIM}Dur.:${SGR0} ${BLU}${BOLD}${LOGREC_SECS}${SGR0}${WHI}${DIM}sec\r"
-        tput cuf 18
-        echo -en "${DIM}BER:${SGR0} ${BER_COLOR}${BOLD}${BER}%${SGR0}${WHI}\r"
-        tput cuf 32
-        echo -en "${DIM}Loss:${SGR0} ${LOSS_COLOR}${BOLD}${LOSS}%${SGR0}${WHI}\r"
-
-        if [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
-        then
-          KERCHUNK_COUNT=$((KERCHUNK_COUNT + 1))
-          echo "${KERCHUNK_COUNT}" > "${KERCHUNK_FILE}"
-          tput cuf 57
-          echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
-        else
-          echo
-        fi
-
-        fnBUILD_HISTORY
-        fnNOSCROLL_ZONE
-        echo -en "${MAG}"
-        fnSEPARATOR
-        fnLISTENING
+        fnYSF_END_NETWORK_TRAFFIC
         continue
       fi
 
       # End of YSF RF traffic
       if echo "${LOGREC_REMAINING_DATA}" | grep -q "received RF end of transmission from"
       then
+#KPC
         read -r LOGREC_SECS  LOGREC_BER  LOGREC_RSSI \
           <<<"$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $12 " " $15 " " $17 }')"
+        if [[ "${LOGREC_RSSI}" = "" ]]
+        then
+          LOGREC_RSSI="${LOGREC_BER}"
+          LOGREC_BER="0.0%"
+        fi
+
         LOGREC_DG_ID_NUM="$(echo "${LOGREC_DG_ID_NUM}" | cut -f1 -d",")"
         LOGREC_BER="$(echo "${LOGREC_BER}" | cut -f1 -d",")"
 
@@ -2234,6 +2298,7 @@ fnEXIT()
   rm "${QSO_COUNT_FILE}" 2> /dev/null
   rm "${KERCHUNK_FILE}" 2> /dev/null
   rm "${ERROR_FILE}" 2> /dev/null
+  rm "${WARNING_FILE}" 2> /dev/null
   exit
 }
 
@@ -2350,6 +2415,14 @@ then
 else
   ERROR_COUNT=0
   echo "${ERROR_COUNT}" > "${ERROR_FILE}"
+fi
+
+if [[ -f "${WARNING_FILE}" ]]
+then
+  ERROR_COUNT=$(< "${WARNING_FILE}")
+else
+  ERROR_COUNT=0
+  echo "${ERROR_COUNT}" > "${WARNING_FILE}"
 fi
 
 fnLISTENING

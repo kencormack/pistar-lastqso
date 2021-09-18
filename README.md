@@ -156,7 +156,7 @@ If the cty.dat file is already present on your hotspot, but is older than 30 day
 **pistar-lastqso** supports a number of commandline options, as shown in the Usage and Help screens, below.  Multiple options can be specified at the same time.  For example, specifying "-c -n -t" (or "--csv --nobig --top") will download the latest updated user.csv file, disable the large font
 display of the callsigns, and activate the non-scrolling information section at the top of the screen.
 
-The program remembers which options (if any) you specified at launch, so that it can re-apply those same options when it re-launches itself, either when PI-STAR's nightly update momentarily cycles the services, or when log rotation to a new day's log is detected.  However, if the "-c" (or "--csv") option is specified, the program will update the user.csv file only upon initial invocation.  It will then strip that option from any chain of options supplied at inital launch, so that it is not re-downloading the file each time the program re-starts itself.
+The program remembers which options (if any) you specified at launch, so that it can re-apply those same options when it re-launches itself, either when PI-STAR's nightly update momentarily cycles the services, or when log rotation to a new day's log is detected.  However, if the "-c" (or "--csv") option is specified, the program will update the user.csv file only upon initial invocation.  Likewise, if the "-d" (or "--dat") option is specified, that option too, will be stripped from the chain of options supplied at initial launch.  This prevents re-downloading these files each time the program re-starts itself.
 
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/usage.jpg)
 
