@@ -6,7 +6,7 @@
 
 set -o allexport
 
-VERSION=2.06
+VERSION=2.07
 
 umask 0077
 
@@ -840,7 +840,7 @@ EOF
   # file each time it restarts, we'll remove any "-c", "--csv", "-d",
   # or "--dat" that was passed to the initial commandline, so that 
   # it does not get passed to subsequent restarts.
-  MY_CMDLINE="$(echo "${MY_CMDLINE}" | sed 's/--csv// ; s/-c// ; s/--dat// ; s/-d// ; s/--logo// ; s/-l//')"
+  MY_CMDLINE="$(echo "${MY_CMDLINE}" | sed 's/ --csv// ; s/ -c// ; s/ --dat// ; s/ -d// ; s/ --logo// ; s/ -l//')"
 }
 
 #----------
@@ -1988,14 +1988,14 @@ fnMAIN_LOOP()
       # skip displaying the error, but still tally it.
       if [[ "${SHOW_LOG_ERRORS}" = "1" ]]
       then
-        echo -en "${YEL}"
+        echo -en "${SGR0}${YEL}"
         fnSEPARATOR
 
         echo -en "${BOLD}${RED}ERROR: ${WHI}${ERROR_MSG}\r"
         tput cuf 64
         echo -e "${BOLD}${RED} Count: $(printf %04d "${ERROR_COUNT}")"
 
-        echo -en "${YEL}"
+        echo -en "${SGR0}${YEL}"
         fnSEPARATOR
       fi
       continue
@@ -2419,10 +2419,10 @@ fi
 
 if [[ -f "${WARNING_FILE}" ]]
 then
-  ERROR_COUNT=$(< "${WARNING_FILE}")
+  WARNING_COUNT=$(< "${WARNING_FILE}")
 else
-  ERROR_COUNT=0
-  echo "${ERROR_COUNT}" > "${WARNING_FILE}"
+  WARNING_COUNT=0
+  echo "${WARNING_COUNT}" > "${WARNING_FILE}"
 fi
 
 fnLISTENING
@@ -2441,8 +2441,9 @@ then
 fi
 
 # Sleep to let things settle, then restart the script.
-echo -e "${BOLD}${YEL}SLEEPING 45 SECS BEFORE WATCHING FOR NEW LOG ACTIVITY...${WHI}${SGR0}"
+echo -en "${BOLD}${YEL}SLEEPING 45 SECS BEFORE WATCHING FOR NEW LOG ACTIVITY...${WHI}${SGR0} "
 sleep 45
+echo
 
 fnRESET_SCROLLING
 

@@ -1,4 +1,8 @@
 ```
+CHANGES: V2.07
+ 1. Fixed warning tallies (was writing error #'s,
+    not warnings, to the warning-tally file.)
+
 CHANGES: V2.06
  1. Added display and tally of log WARNINGS, in
     the same fashion as errors.  Like the errors,
