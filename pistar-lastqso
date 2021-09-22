@@ -6,9 +6,18 @@
 
 set -o allexport
 
-VERSION=2.07
+VERSION=2.08
 
 umask 0077
+
+# Any equal signs passed on the commandline are replaced w/ spaces,
+# so that an option, and it's parameter (if any), are two separate
+# elements in the array used in fnPARSE_CMDLINE.
+MY_CMDLINE="${*}"
+MY_CMDLINE="${*//=/ }"
+
+ARG_LIST=( "$@" )
+ARG_LIST_LENGTH=${#ARG_LIST[@]}
 
 # If user presses Ctrl-C, stop the program
 trap fnEXIT SIGINT SIGTERM
@@ -85,6 +94,12 @@ TOP=0
 # By default, display logo screen.
 # Can be disabled with "-l|--logo" cmdline option
 LOGO=1
+#
+# By default, the -t|--top history is 5 lines deep.
+# Can be overridden with optional [<1-30>] parameter passed to
+# the "-t|--top" cmdline option
+HIST_MAX=5
+BELOW_NOSCROLL=$((HIST_MAX + 6))
 
 # Define some ways to make things bold, use different colors, control
 # scrolling and cursor positioning, and so on.
@@ -233,17 +248,10 @@ EOF
 # APIKEY="$(grep "^apikey=" /etc/bmapi.key 2> /dev/null | cut -f2 -d"=")"
 HOTSPOT_ID="$(grep -A 13 "\[DMR\]" /etc/mmdvmhost | grep "^Id=" | cut -f2 -d"=")"
 
-# Any equal signs passed on the commandline are replaced w/ spaces,
-# so that an option, and it's parameter (if any), are two separate
-# elements in the array used in fnPARSE_CMDLINE.
-MY_CMDLINE="${*//=/ }"
-
 QSO_COUNT_FILE="/tmp/pistar-lastqso-qso-count.$$"
 KERCHUNK_FILE="/tmp/pistar-lastqso-kerchunk-count.$$"
 ERROR_FILE="/tmp/pistar-lastqso-error-count.$$"
 WARNING_FILE="/tmp/pistar-lastqso-warning-count.$$"
-
-sleep 5
 
 ###########################################################
 # FUNCTIONS
@@ -474,7 +482,6 @@ fnDRAW_BOX()
   fi
 }
 
- #KPC
 #----------
 # Reserved for possible future use.
 # This allows centering a string of text without overwriting
@@ -626,7 +633,7 @@ fnNOSCROLL_ZONE()
   # Define the scrolling region of the screen to be from line 11 to
   # the bottom of screen.  (Lines 0-10 will be the no-scroll zone.)
   # (Screen lines are numbered beginning with line 0.)
-  tput csr 11 $((LINES - 1))
+  tput csr ${BELOW_NOSCROLL} $((LINES - 1))
 
   # Go to line 0, the top of the no-scroll region
   echo -n "${CUR_HOME}"
@@ -654,16 +661,21 @@ fnNOSCROLL_ZONE()
   tput cuf 32
   echo -e "${CYA}DMR MASTER:${SGR0} ${WHI}${BOLD}${DMR_MASTER_NAME}${SGR0}${CLR_EL}"
 
-  # Print red line and clear the remainder of the line
-  echo -e "${STATIC_LINE}${CLR_EL}"
+  if [[ ${HIST_MAX} -gt 0 ]]
+  then
+    # Print the QSO history lines... newest through oldest
+    echo -e "${CLR_EL}${REV}${CYA}Previous ${SBOX_VL} From       ${SBOX_VL} To         ${SBOX_VL}  Secs ${SBOX_VL}  BER% ${SBOX_VL} Src ${SBOX_VL} Loss% or S-Meter ${SGR0}${WHI}"
+  else
+    echo -e "${CLR_EL}${REV}${CYA}          History not enabled - 0 lines specified on the commandline        ${SGR0}${WHI}"
+  fi
 
-  # Print the QSO history lines... newest through oldest
-  echo -e "${CLR_EL}${REV}${CYA}Previous ${SBOX_VL} From       ${SBOX_VL} To         ${SBOX_VL}  Secs ${SBOX_VL}  BER% ${SBOX_VL} Src ${SBOX_VL} Loss% or S-Meter ${SGR0}${WHI}"
-  echo -e "${SGR0}${HISTORY1}${CLR_EL}"
-  echo -e "${SGR0}${HISTORY2}${CLR_EL}"
-  echo -e "${SGR0}${HISTORY3}${CLR_EL}"
-  echo -e "${SGR0}${HISTORY4}${CLR_EL}"
-  echo -e "${SGR0}${HISTORY5}${CLR_EL}"
+  HIST_COUNT=1
+  until [[ ${HIST_COUNT} -gt ${HIST_MAX} ]]
+  do
+    echo -e "${SGR0}${HISTORY[HIST_COUNT]}${CLR_EL}"
+    HIST_COUNT="$((HIST_COUNT + 1))"
+  done
+
   # Print red line and clear the remainder of the line
   echo -e "${RED}${DBL_LINE}${WHI}${SGR0}${CLR_EL}"
 
@@ -699,11 +711,11 @@ fnUSAGE()
 USAGE - valid options and parameters include:
 
   Short Form:
-    [-c] [-d] [-e] [-f <1-4>] [-h] [-l] [-m] [-n] [-t] [-v]
+    [-c] [-d] [-e] [-f <1-4>] [-h] [-l] [-m] [-n] [-t [integer]] [-v] [-x]
 
   Long Form:
     [--csv] [--dat] [--errors] [--font <1-4>] [--help]
-    [--logo] [--mono] [--nobig] [--top] [--version]
+    [--logo] [--mono] [--nobig] [--top [<integer>]] [--version]
 " >&2
 }
 
@@ -713,108 +725,123 @@ fnPARSE_CMDLINE()
   # Loop through all the commandline arguments.
   # In the loop, current value would be the option,
   # and the next one would be the parameter.
-  # An example would be the option, and it's
-  # parameter, for font selection.
+  # An example would be the -f|--font option, and
+  # it's parameter, for font selection.
 
-  # shellcheck disable=SC2206
-  ARG_LIST=(${MY_CMDLINE})
-
-  INDEX=0
-  for ARGUMENT in ${MY_CMDLINE}
+  for (( INDEX=0; INDEX<${ARG_LIST_LENGTH}; INDEX++ ))
   do
-    INDEX=$((INDEX + 1))
-    case "${ARGUMENT}" in
-      -c|--csv)
-        GET_CSV_NOW=1
-        ;;
-      -d|--dat)
-        GET_DAT_NOW=1
-        ;;
-      -e|--errors)
-        SHOW_LOG_ERRORS=0
-        ;;
-      -f|--font)
-        if [[ ${ARG_LIST[INDEX]} =~ ^-?[1-4]+$ ]]
-        then
-          MY_FONT="${ARG_LIST[INDEX]}"
-          INDEX=$((INDEX + 1))
-        else
-          echo -en "${BELL}"
-          cat <<'EOF' | more
+    OPTION="${ARG_LIST[${INDEX}]}"
 
-  -f|--font <1-4>
-      The [-f|--font] option forces use of the selected font, regardless of
-      screen-width.
+    if [[ "${OPTION}" = "-f" ]] || [[ "${OPTION}" = "--font" ]]
+    then
+      NEXT=$((INDEX + 1))
+      PARAM="${ARG_LIST[${NEXT}]}"
+      if [[ ${PARAM} == ?(-)+([1-4]) ]]
+      then
+        MY_FONT=${PARAM}
+      fi
+      INDEX=$((INDEX + 1))
+      continue
+    fi
 
-      Valid options are 1, 2, 3, or 4
-        1 = "small"
-        2 = "standard"
-        3 = "big"
-        4 = "ansi_shadow"
+    if [[ "${OPTION}" = "-t" ]] || [[ "${OPTION}" = "--top" ]]
+    then
+      TOP=1
+      NEXT=$((INDEX + 1))
+      PARAM="${ARG_LIST[${NEXT}]}"
+      if [[ ${PARAM} =~ ^-?[0-9]|[1-2][0-9]+$ ]]
+      then
+        HIST_MAX="${PARAM}"
+      else
+        HIST_MAX=5
+      fi
+      BELOW_NOSCROLL=$((HIST_MAX + 6))
+      continue
+    fi
 
-      If this option is omitted, the script will auto-select an
-      appropriately sized font based on the following screen-width
-      thresholds:
+    if [[ "${OPTION}" = "-c" ]] || [[ "${OPTION}" = "--csv" ]]
+    then
+      GET_CSV_NOW=1
+      continue
+    fi
 
-        < 80 chars wide:  "small" font
-      80-120 chars wide:  "standard" font
-        >120 chars wide:  "big" font
+    if [[ "${OPTION}" = "-d" ]] || [[ "${OPTION}" = "--dat" ]]
+    then
+      GET_DAT_NOW=1
+      continue
+    fi
 
-      The "ansi_shadow" font is never auto-selected.
+    if [[ "${OPTION}" = "-e" ]] || [[ "${OPTION}" = "--errors" ]]
+    then
+      SHOW_LOG_ERRORS=0
+      continue
+    fi
 
-EOF
-          exit
-        fi
-        ;;
-      1|2|3|4|5)
-        ;;
-      -h|--help)
-        fnGET_HELP
-        exit
-        ;;
-      -l|--logo)
-        LOGO=0
-        ;;
-      -m|--mono)
-        # Forground colors
-        # shellcheck disable=SC2034
-        BLA=""
-        RED=""
-        GRE=""
-        YEL=""
-        BLU=""
-        MAG=""
-        CYA=""
-        WHI=""
-        DEF=""
+    if [[ "${OPTION}" = "-h" ]] || [[ "${OPTION}" = "--help" ]]
+    then
+      fnGET_HELP
+      exit
+    fi
 
-        # Background colors
-        # Reserved for possible future use
-        # BG_BLA=""
-        # BG_RED=""
-        # BG_GRE=""
-        # BG_YEL=""
-        # BG_BLU=""
-        # BG_MAG=""
-        # BG_CYA=""
-        # BG_WHI=""
-        # BG_DEF=""
+    if [[ "${OPTION}" = "-l" ]] || [[ "${OPTION}" = "--logo" ]]
+    then
+      LOGO=0
+      continue
+    fi
+
+    if [[ "${OPTION}" = "-m" ]] || [[ "${OPTION}" = "--mono" ]]
+    then
+      # Forground colors
+      # shellcheck disable=SC2034
+      BLA=""
+      RED=""
+      GRE=""
+      YEL=""
+      BLU=""
+      MAG=""
+      CYA=""
+      WHI=""
+      DEF=""
+
+      # Background colors
+      # Reserved for possible future use
+      # BG_BLA=""
+      # BG_RED=""
+      # BG_GRE=""
+      # BG_YEL=""
+      # BG_BLU=""
+      # BG_MAG=""
+      # BG_CYA=""
+      # BG_WHI=""
+      # BG_DEF=""
+      continue
+    fi
+
+    if [[ "${OPTION}" = "-n" ]] || [[ "${OPTION}" = "--nobig" ]]
+    then
+      USE_FIGLET=0
+      continue
+    fi
+
+    if [[ "${OPTION}" = "-v" ]] || [[ "${OPTION}" = "--version" ]]
+    then
+      fnVERSION
+      exit
+    fi
+
+    case ${OPTION} in
+      -c|-d|-e|-f|-h|-l|-m|-n|-t|-v)
         ;;
-      -n|--nobig)
-        USE_FIGLET=0
-        ;;
-      -t|--top)
-        TOP=1
-        ;;
-      -v|--version)
-        fnVERSION
-        exit
+      --csv|--dat|--errors|--font|--help|--logo|--mono|--nobig|--top|--version)
         ;;
       *)
-        tput flash
-        fnUSAGE
-        echo -en "${BELL}"
-        exit 1
+        if [[ ! ${OPTION} =~ ^-?[0-9]|[1-3][0-9]+$ ]]
+        then
+          tput flash
+          fnUSAGE
+          echo -en "${BELL}"
+          exit 1
+        fi
         ;;
     esac
   done
@@ -838,7 +865,7 @@ EOF
   # new instance that were given to the initial instance (eg: "-t").
   # To prevent the script from repeatedly downloading the user.csv
   # file each time it restarts, we'll remove any "-c", "--csv", "-d",
-  # or "--dat" that was passed to the initial commandline, so that 
+  # or "--dat" that was passed to the initial commandline, so that
   # it does not get passed to subsequent restarts.
   MY_CMDLINE="$(echo "${MY_CMDLINE}" | sed 's/ --csv// ; s/ -c// ; s/ --dat// ; s/ -d// ; s/ --logo// ; s/ -l//')"
 }
@@ -918,13 +945,40 @@ PISTAR-LASTQSO - HELP
       Disable the large font display of callsigns and ID #s, on systems
       with figlet installed.  This conserves screen-space.
 
-  -t|--top
+  -t|--top [integer]
       Adds an information zone to the top of the screen that shows
       the version numbers of this script and pi-star, date of the
       user.csv file, name of the active log file, TX and RX freqs,
       the hotspot's TCXO frequency and firmware version, the DMR
       and/or YSF Master servers, first 5 statically defined BM TGs,
       and a history of the last 5 QSOs.
+
+      By default, the use of "-t|--top" also provides a history of
+      the last 5 QSOs observed.  However, by specifying an integer
+      parameter, the number of QSOs displayed in the history can be
+      changed.  A value of 0 (zero) disables the history (but retains
+      all the other information in the "-t|--top" section of the
+      screen.  Other values determine the number of lines of history
+      that will be displayed.
+
+      Examples:
+        -t       defaults to 5 lines of history
+        -t 0     disables the history
+        -t 7     displays a history 7 lines deep
+        -t 23    displays a history 23 lines deep
+
+      CAUTION: Specifying too many lines for your actual screen-size
+      will yield unpredictable (and certainly unsatisfactory) results.
+      I do NOT limit-check this parameter, because SSH sessions in
+      dynamically resizable windows could have a different number of
+      lines each time the screen is re-sized, rendering useless any
+      limit-check performed at startup.
+
+      As a point of reference, "--t 10 -nobig" will maximize the size
+      of the history, while still allowing full details for the QSO
+      in progress (without large fonts), on a typical 80x24 display.
+      Larger screens will support other combinations.  Feel free to
+      experiment - YMMV.
 
   -v|--version
       Display this script's version number, then exit.
@@ -1886,10 +1940,13 @@ fnBUILD_HISTORY()
       then
         FROM="${FROM}*"
       fi
-      HISTORY5="${HISTORY4}"
-      HISTORY4="${HISTORY3}"
-      HISTORY3="${HISTORY2}"
-      HISTORY2="${HISTORY1}"
+
+      HIST_COUNT=${HIST_MAX}
+      until [[ ${HIST_COUNT} -eq 0 ]]
+      do
+        HISTORY[HIST_COUNT]="${HISTORY[$((HIST_COUNT - 1))]}"
+        HIST_COUNT="$((HIST_COUNT - 1))"
+      done
 
       HIST_TIME="$(printf %-8s "$(echo "${QSO_START_TIME}" | awk '{ print $1 }')")"
       HIST_FROM="$(printf %-10s "${FROM}")"
@@ -1919,17 +1976,17 @@ fnBUILD_HISTORY()
         HIST_COLOR="${WHI}"
       fi
 
-      HISTORY1="${BOLD}${BLU}${HIST_TIME}${WHI}${SGR0} ${SBOX_VL} ${BOLD}${HIST_COLOR}${HIST_FROM}${SGR0} ${SBOX_VL} ${BOLD}${HIST_COLOR}${HIST_TO}${SGR0} ${SBOX_VL} ${BOLD}${BLU}${HIST_SECS}${WHI}${SGR0} ${SBOX_VL} ${BOLD}${BER_COLOR}${HIST_BER}${WHI}${SGR0} ${SBOX_VL} ${BOLD}${CYA}${HIST_SRC}${WHI}"
+      HISTORY[1]="${BOLD}${BLU}${HIST_TIME}${WHI}${SGR0} ${SBOX_VL} ${BOLD}${HIST_COLOR}${HIST_FROM}${SGR0} ${SBOX_VL} ${BOLD}${HIST_COLOR}${HIST_TO}${SGR0} ${SBOX_VL} ${BOLD}${BLU}${HIST_SECS}${WHI}${SGR0} ${SBOX_VL} ${BOLD}${BER_COLOR}${HIST_BER}${WHI}${SGR0} ${SBOX_VL} ${BOLD}${CYA}${HIST_SRC}${WHI}"
 
       if [[ ${DATA} -eq 1 ]]
       then
-        HISTORY1="${HISTORY1} ${SBOX_VL} ${BOLD}${YEL}Data Blocks: ${BLOCKS}${WHI}${SGR0}"
+        HISTORY[1]="${HISTORY[1]} ${SBOX_VL} ${BOLD}${YEL}Data Blocks: ${BLOCKS}${WHI}${SGR0}"
       else
         if [[ -n "${RSSI}" ]]
         then
-          HISTORY1="${HISTORY1} ${SBOX_VL} ${BOLD}${SMETER_COLOR}${HIST_SMETER}${WHI}${SGR0}"
+          HISTORY[1]="${HISTORY[1]} ${SBOX_VL} ${BOLD}${SMETER_COLOR}${HIST_SMETER}${WHI}${SGR0}"
         else
-          HISTORY1="${HISTORY1} ${SBOX_VL} ${BOLD}${LOSS_COLOR}${HIST_LOSS}${WHI}${SGR0}"
+          HISTORY[1]="${HISTORY[1]} ${SBOX_VL} ${BOLD}${LOSS_COLOR}${HIST_LOSS}${WHI}${SGR0}"
         fi
       fi
     fi
@@ -1944,6 +2001,57 @@ fnBUILD_HISTORY()
   DBM="" 
   RSSI=""
   DATA=""
+}
+
+#----------
+fnTALLY_ERRORS()
+{
+  trap fnWINCH WINCH
+
+  ERROR_MSG="$(echo "${RECORD}" | cut -f4- -d" ")"
+
+  ERROR_COUNT=$((ERROR_COUNT + 1))
+  echo "${ERROR_COUNT}" > "${ERROR_FILE}"
+
+  # If we've masked the reporting of logged errors by
+  # using the "-e|--error" commandline option, then
+  # skip displaying the error, but still tally it.
+  if [[ "${SHOW_LOG_ERRORS}" = "1" ]]
+  then
+    echo -en "${SGR0}${YEL}"
+    fnSEPARATOR
+
+    echo -en "${BOLD}${RED}ERROR: ${WHI}${ERROR_MSG}\r"
+    tput cuf 64
+    echo -e "${BOLD}${RED} Count: $(printf %04d "${ERROR_COUNT}")"
+
+    echo -en "${SGR0}${YEL}"
+    fnSEPARATOR
+  fi
+}
+
+#----------
+fnTALLY_WARNINGS()
+{
+  trap fnWINCH WINCH
+
+  WARNING_MSG="$(echo "${RECORD}" | cut -f4- -d" ")"
+
+  WARNING_COUNT=$((WARNING_COUNT + 1))
+  echo "${WARNING_COUNT}" > "${WARNING_FILE}"
+
+  # Unlike errors, warnings will not be masked by
+  # the "-e|--error" commandline option.  They will
+  # always be displayed (as well as tallied.)
+  echo -en "${SGR0}${RED}"
+  fnSEPARATOR
+
+  echo -en "${BOLD}${RED}WARNING: ${WHI}${WARNING_MSG}\r"
+  tput cuf 64
+  echo -e "${BOLD}${RED} Count: $(printf %04d "${WARNING_COUNT}")"
+
+  echo -en "${SGR0}${RED}"
+  fnSEPARATOR
 }
 
 #----------
@@ -1978,49 +2086,14 @@ fnMAIN_LOOP()
     # First, the errors...
     if [[ "$(echo "${RECORD}" | grep "^E:")" != "" ]]
     then
-      ERROR_MSG="$(echo "${RECORD}" | cut -f4- -d" ")"
-
-      ERROR_COUNT=$((ERROR_COUNT + 1))
-      echo "${ERROR_COUNT}" > "${ERROR_FILE}"
-
-      # If we've masked the reporting of logged errors by
-      # using the "-e|--error" commandline option, then
-      # skip displaying the error, but still tally it.
-      if [[ "${SHOW_LOG_ERRORS}" = "1" ]]
-      then
-        echo -en "${SGR0}${YEL}"
-        fnSEPARATOR
-
-        echo -en "${BOLD}${RED}ERROR: ${WHI}${ERROR_MSG}\r"
-        tput cuf 64
-        echo -e "${BOLD}${RED} Count: $(printf %04d "${ERROR_COUNT}")"
-
-        echo -en "${SGR0}${YEL}"
-        fnSEPARATOR
-      fi
+      fnTALLY_ERRORS
       continue
     fi
     #
     # Now, the warnings...
     if [[ "$(echo "${RECORD}" | grep "^W:")" != "" ]]
     then
-      WARNING_MSG="$(echo "${RECORD}" | cut -f4- -d" ")"
-
-      WARNING_COUNT=$((WARNING_COUNT + 1))
-      echo "${WARNING_COUNT}" > "${WARNING_FILE}"
-
-      # Unlike errors, warnings will not be masked by
-      # the "-e|--error" commandline option.  They will
-      # always be displayed (as well as tallied.)
-      echo -en "${SGR0}${RED}"
-      fnSEPARATOR
-
-      echo -en "${BOLD}${RED}WARNING: ${WHI}${WARNING_MSG}\r"
-      tput cuf 64
-      echo -e "${BOLD}${RED} Count: $(printf %04d "${WARNING_COUNT}")"
-
-      echo -en "${SGR0}${RED}"
-      fnSEPARATOR
+      fnTALLY_WARNINGS
       continue
     fi
 
@@ -2061,7 +2134,6 @@ fnMAIN_LOOP()
         QSO_COUNT=$((QSO_COUNT + 1))
         echo "${QSO_COUNT}" > "${QSO_COUNT_FILE}"
         fnYSF_SHOW_CURRENT_CALL
-
         continue
       fi
 
@@ -2092,10 +2164,9 @@ fnMAIN_LOOP()
         QSO_COUNT=$((QSO_COUNT + 1))
         echo "${QSO_COUNT}" > "${QSO_COUNT_FILE}"
         fnYSF_SHOW_CURRENT_CALL
-
         continue
       fi
-#KPC
+
       # End of YSF network traffic (Wires-X)
       if echo "${LOGREC_REMAINING_DATA}" | grep -q "received network end of transmission from"
       then
@@ -2116,7 +2187,6 @@ fnMAIN_LOOP()
       # End of YSF RF traffic
       if echo "${LOGREC_REMAINING_DATA}" | grep -q "received RF end of transmission from"
       then
-#KPC
         read -r LOGREC_SECS  LOGREC_BER  LOGREC_RSSI \
           <<<"$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $12 " " $15 " " $17 }')"
         if [[ "${LOGREC_RSSI}" = "" ]]
@@ -2280,7 +2350,7 @@ fnEXIT()
   fnRESET_SCROLLING
 
   # Clear the bottom line of the screen
-  tput cup "${LINES}" 0
+  tput cup ${LINES} 0
   fnCLEAR_CURRENT_LINE
 
   # Re-Enable line-wrap, turn the cursor on, reset the terminal,
@@ -2309,7 +2379,7 @@ fnWINCH()
   then
     clear
     fnNOSCROLL_ZONE
-    tput cup 11 0
+    tput cup "${BELOW_NOSCROLL}" 0
   fi
 }
 
@@ -2319,24 +2389,26 @@ fnWINCH()
 fnDEFINE_BOXCHARS
 DBL_LINE="$(printf "${DBOX_HL}%.0s" {1..76})"
 
+# Check for any options passed to the script.
+if [[ -n "${ARG_LIST}" ]]
+then
+  fnPARSE_CMDLINE
+fi
+
 # These will store the history to be displayed, if the
 # no-scroll region is called upon.  We define them here,
 # because the function fnDEFINE_BOXCHARS needs to run
 # first, so that SBOX_VL is defined.
-HISTORY1="         ${SBOX_VL}            ${SBOX_VL}            ${SBOX_VL}       ${SBOX_VL}       ${SBOX_VL}     ${SBOX_VL}${SGR0}${WHI}"
-HISTORY2="${HISTORY1}"
-HISTORY3="${HISTORY1}"
-HISTORY4="${HISTORY1}"
-HISTORY5="${HISTORY1}"
+
+HIST_COUNT=1
+until [[ ${HIST_COUNT} -gt ${HIST_MAX} ]]
+do
+  HISTORY[HIST_COUNT]="         ${SBOX_VL}            ${SBOX_VL}            ${SBOX_VL}       ${SBOX_VL}       ${SBOX_VL}     ${SBOX_VL}${SGR0}${WHI}"
+  HIST_COUNT="$((HIST_COUNT + 1))"
+done
 
 ###########################################################
 # Now for the meat and potatoes...
-
-# Check for any options passed to the script.
-if [[ -n "${MY_CMDLINE}" ]]
-then
-  fnPARSE_CMDLINE
-fi
 
 # Disable line-wrap
 # Keeps unexpectedly long fields from busting up the screen.
@@ -2374,7 +2446,7 @@ fnYSF_DOWNLOAD_CTYDAT
 if [[ ${TOP} -eq 1 ]]
 then
   fnNOSCROLL_ZONE
-  tput cup 11 0	
+  tput cup "${BELOW_NOSCROLL}" 0	
   echo -en "${CLR_ED}"
 fi
 

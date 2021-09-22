@@ -1,4 +1,36 @@
 ```
+CHANGES: V2.08
+ !. The depth of the history displayed as part of the "-t|--top"
+    now supports a runtime option to change the number of lines
+    of history displayed.
+
+    By default, the use of "-t|--top" provides a history of the
+    last five QSOs observed.  However, by specifying an integer
+    parameter, the number of QSOs displayed in the history can be
+    changed.  A value of 0 (zero) disables the history (but retains
+    all the other information in the "-t|--top" section of the
+    screen.  Other values determine the number of lines of history
+    that will be displayed.
+
+    Examples:
+      -t       defaults to 5 lines of history
+      -t 0     disables the history
+      -t 7     displays a history 7 lines deep
+      -t 23    displays a history 23 lines deep
+
+    CAUTION: Specifying too many lines for your actual screen-size
+    will yield unpredictable (and certainly unsatisfactory) results.
+    I do NOT limit-check this parameter, because SSH sessions in
+    dynamically resizable windows could have a different number of
+    lines each time the screen is re-sized, rendering useless any
+    limit-check performed at startup.
+
+    As a point of reference, "--t 10 -nobig" will maximize the size
+    of the history, while still allowing full details for the QSO
+    in progress (without large fonts), on a typical 80x24 display.
+    Larger screens will support other combinations.  Feel free to
+    experiment - YMMV.
+
 CHANGES: V2.07
  1. Fixed warning tallies (was writing error #'s,
     not warnings, to the warning-tally file.)
