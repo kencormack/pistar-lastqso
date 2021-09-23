@@ -1,4 +1,10 @@
 ```
+CHANGES: V2.09
+ 1. The changes to v2.08 inadvertently removed the display of
+    statically linked Brandmeister DMR TalkGroups, in the
+    information shown when "-t|--top" is used, for DMR.  This
+    been corrected.
+
 CHANGES: V2.08
  !. The depth of the history displayed as part of the "-t|--top"
     now supports a runtime option to change the number of lines

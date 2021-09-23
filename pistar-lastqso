@@ -6,7 +6,7 @@
 
 set -o allexport
 
-VERSION=2.08
+VERSION=2.09
 
 umask 0077
 
@@ -185,6 +185,7 @@ DEF="$(tput setaf 9)"		# Default
 # For grepping stuff that includes tabs
 GTAB=$'\t'
 
+# shellcheck disable=SC2034
 MY_CALLSIGN="$(grep -A 8 "^\[General\]" /etc/mmdvmhost | grep "^Enable" | cut -f2 -d"=")"
 
 DMR_ENABLED="$(grep -A 2 "^\[DMR\]" /etc/mmdvmhost | grep "^Enable" | cut -f2 -d"=")"
@@ -612,6 +613,7 @@ fnTOP_DATA()
     STATIC_COUNT="$(grep -c . "${STATIC_TG_FILE}")"
     STATIC_LINE="${CYA}STATIC TGs (${WHI}${BOLD}${STATIC_COUNT}${SGR0} ${CYA}Found, ${WHI}${BOLD}5${SGR0} ${CYA}Max Shown): ${SGR0}${WHI}${BOLD}${STATIC_LIST}${SGR0}${CLR_EL}"
   else
+    # shellcheck disable=SC2034
     STATIC_LINE="${CYA}Network is not BrandMeister - No API available to retrieve any Static TGs${SGR0}${CLR_EL}"
   fi
 }
@@ -633,7 +635,7 @@ fnNOSCROLL_ZONE()
   # Define the scrolling region of the screen to be from line 11 to
   # the bottom of screen.  (Lines 0-10 will be the no-scroll zone.)
   # (Screen lines are numbered beginning with line 0.)
-  tput csr ${BELOW_NOSCROLL} $((LINES - 1))
+  tput csr "${BELOW_NOSCROLL}" $((LINES - 1))
 
   # Go to line 0, the top of the no-scroll region
   echo -n "${CUR_HOME}"
@@ -660,6 +662,9 @@ fnNOSCROLL_ZONE()
   echo -en "${CYA}YSF MASTER:${SGR0} ${WHI}${BOLD}${YSF_MASTER}${SGR0}\r"
   tput cuf 32
   echo -e "${CYA}DMR MASTER:${SGR0} ${WHI}${BOLD}${DMR_MASTER_NAME}${SGR0}${CLR_EL}"
+
+  # Print red line and clear the remainder of the line
+  echo -e "${STATIC_LINE}${CLR_EL}"
 
   if [[ ${HIST_MAX} -gt 0 ]]
   then
@@ -728,7 +733,7 @@ fnPARSE_CMDLINE()
   # An example would be the -f|--font option, and
   # it's parameter, for font selection.
 
-  for (( INDEX=0; INDEX<${ARG_LIST_LENGTH}; INDEX++ ))
+  for (( INDEX=0; INDEX<ARG_LIST_LENGTH; INDEX++ ))
   do
     OPTION="${ARG_LIST[${INDEX}]}"
 
@@ -1169,10 +1174,7 @@ fnGOODBYE_BOX()
       then
         KERCHUNK_COUNT="${QSO_COUNT}"
       fi
-      PERCENTAGE="$(awk -v KERCHUNK_COUNT=$KERCHUNK_COUNT -v QSO_COUNT=$QSO_COUNT 'BEGIN {print (KERCHUNK_COUNT / QSO_COUNT * 100)}')"
-      SHOW_PERCENTAGE="$(printf %.2f "${PERCENTAGE}")"
-    else
-      SHOW_PERCENTAGE="0.00"
+      PERCENTAGE="$(awk -v KERCHUNK_COUNT="${KERCHUNK_COUNT}" -v QSO_COUNT="${QSO_COUNT}" 'BEGIN {print (KERCHUNK_COUNT / QSO_COUNT * 100)}')"
     fi
     echo -n "${DIM}${WHI}Includes ${SGR0}${YEL}$(printf %05d "${KERCHUNK_COUNT}")${DIM}${WHI} Kerchunks (${SGR0}${YEL}$(printf %.2f "${PERCENTAGE}")%${DIM}${WHI})${SGR0}"
   fi
@@ -1369,7 +1371,6 @@ fnDMR_GET_FROM()
   # two evils" approach will serve well enough.
   #
   # See if the sender is a callsign...
-  SENDER_IS_CALLSIGN=0
   read -r FROM_ID FROM_NAME <<<"$(grep "${GTAB}${FROM}${GTAB}" "${DMRIDS}" | awk '{ print $1 " " $NF }' | head -1)"
   if [[ "${FROM_NAME}" = "" ]]
   then
@@ -1381,7 +1382,6 @@ fnDMR_GET_FROM()
       FROM_NAME="$(grep "^${FROM};" "${MY_LIST}" | cut -f3 -d";")"
     fi
   else
-    SENDER_IS_CALLSIGN=1
     if [[ -f "${USERCSV}" ]]
     then
       # If the recipient is a callsign, not a talkgroup, lookup
@@ -1607,6 +1607,7 @@ fnYSF_SHOW_CURRENT_CALL()
   tput cuf 32
   echo -e "${DIM}Src.:${SGR0} ${BOLD}${CYA}${SOURCE}${SGR0}${WHI}"
 
+  # shellcheck disable=SC2143
   if [[ -n "$(echo "${FROM}" | cut -f1 -d"-" | grep "[0-9]")" ]]
   then
     DXCC_FROM="$(echo "${LOGREC_CALLSIGN}" | cut -f1 -d"/" | cut -f1 -d"-")"
@@ -2350,7 +2351,7 @@ fnEXIT()
   fnRESET_SCROLLING
 
   # Clear the bottom line of the screen
-  tput cup ${LINES} 0
+  tput cup "${LINES}" 0
   fnCLEAR_CURRENT_LINE
 
   # Re-Enable line-wrap, turn the cursor on, reset the terminal,
@@ -2390,6 +2391,7 @@ fnDEFINE_BOXCHARS
 DBL_LINE="$(printf "${DBOX_HL}%.0s" {1..76})"
 
 # Check for any options passed to the script.
+# shellcheck disable=SC2128
 if [[ -n "${ARG_LIST}" ]]
 then
   fnPARSE_CMDLINE
