@@ -1,4 +1,13 @@
 ```
+CHANGES: V2.10
+ 1. Commandline parsing has been reworked and improved.
+ 2. Using "-f|--font" without also passing a number 1-4 was
+    not generating an error during commandline parsing.  This
+    has been fixed.  If "-f|--font" is used, a valid font
+    number MUST be specified.
+ 3. Replaced PI-STAR version with cty.dat file date info, at
+    the top of screen, when "-t|--top" is used.
+
 CHANGES: V2.09
  1. The changes to v2.08 inadvertently removed the display of
     statically linked Brandmeister DMR TalkGroups, in the
@@ -6,7 +15,7 @@ CHANGES: V2.09
     been corrected.
 
 CHANGES: V2.08
- !. The depth of the history displayed as part of the "-t|--top"
+ 1. The depth of the history displayed as part of the "-t|--top"
     now supports a runtime option to change the number of lines
     of history displayed.
 
