@@ -6,7 +6,7 @@
 
 set -o allexport
 
-VERSION=2.09
+VERSION=2.10
 
 umask 0077
 
@@ -545,12 +545,16 @@ fnTOP_DATA()
   MY_VER="$(echo "${VERSION}${TOP_PAD}" | cut -c1-7)"
 
   # Pi-star version
-  PS_VER="$(grep "^Version" /etc/pistar-release | awk '{ print $NF }')"
-  PS_VER="$(echo "${PS_VER}${TOP_PAD}" | cut -c1-8)"
+  # PS_VER="$(grep "^Version" /etc/pistar-release | awk '{ print $NF }')"
+  # PS_VER="$(echo "${PS_VER}${TOP_PAD}" | cut -c1-8)"
 
   # Datestamp of the user.csv file
   CSV_DATE="$(stat /usr/local/etc/user.csv 2> /dev/null | grep "^Modify" | awk '{ print $2 }')"
   CSV_DATE="$(echo "${CSV_DATE}${TOP_PAD}" | cut -c1-11)"
+
+  # Datestamp of the cty.dat file
+  DAT_DATE="$(stat /usr/local/etc/cty.dat 2> /dev/null | grep "^Modify" | awk '{ print $2 }')"
+  DAT_DATE="$(echo "${DAT_DATE}${TOP_PAD}" | cut -c1-11)"
 
   # GATHER LINE 1 DATA...
   # Hotspot TX & RX frequencies
@@ -643,7 +647,8 @@ fnNOSCROLL_ZONE()
   # Print line 0
   echo -en "${CYA}LASTQSO:${SGR0} ${WHI}${BOLD}${MY_VER}${SGR0}\r"
   tput cuf 16
-  echo -en "${CYA}PISTAR:${SGR0} ${WHI}${BOLD}${PS_VER}${SGR0}\r"
+# echo -en "${CYA}PISTAR:${SGR0} ${WHI}${BOLD}${PS_VER}${SGR0}\r"
+  echo -en "${CYA}DAT:${SGR0} ${WHI}${BOLD}${DAT_DATE}${SGR0}\r"
   tput cuf 32
   echo -en "${CYA}CSV:${SGR0} ${WHI}${BOLD}${CSV_DATE}${SGR0}\r"
   tput cuf 48
@@ -663,7 +668,7 @@ fnNOSCROLL_ZONE()
   tput cuf 32
   echo -e "${CYA}DMR MASTER:${SGR0} ${WHI}${BOLD}${DMR_MASTER_NAME}${SGR0}${CLR_EL}"
 
-  # Print red line and clear the remainder of the line
+  # Print static talkgroups and clear the remainder of the line
   echo -e "${STATIC_LINE}${CLR_EL}"
 
   if [[ ${HIST_MAX} -gt 0 ]]
@@ -737,108 +742,105 @@ fnPARSE_CMDLINE()
   do
     OPTION="${ARG_LIST[${INDEX}]}"
 
-    if [[ "${OPTION}" = "-f" ]] || [[ "${OPTION}" = "--font" ]]
-    then
-      NEXT=$((INDEX + 1))
-      PARAM="${ARG_LIST[${NEXT}]}"
-      if [[ ${PARAM} == ?(-)+([1-4]) ]]
-      then
-        MY_FONT=${PARAM}
-      fi
-      INDEX=$((INDEX + 1))
-      continue
-    fi
-
-    if [[ "${OPTION}" = "-t" ]] || [[ "${OPTION}" = "--top" ]]
-    then
-      TOP=1
-      NEXT=$((INDEX + 1))
-      PARAM="${ARG_LIST[${NEXT}]}"
-      if [[ ${PARAM} =~ ^-?[0-9]|[1-2][0-9]+$ ]]
-      then
-        HIST_MAX="${PARAM}"
-      else
-        HIST_MAX=5
-      fi
-      BELOW_NOSCROLL=$((HIST_MAX + 6))
-      continue
-    fi
-
-    if [[ "${OPTION}" = "-c" ]] || [[ "${OPTION}" = "--csv" ]]
-    then
-      GET_CSV_NOW=1
-      continue
-    fi
-
-    if [[ "${OPTION}" = "-d" ]] || [[ "${OPTION}" = "--dat" ]]
-    then
-      GET_DAT_NOW=1
-      continue
-    fi
-
-    if [[ "${OPTION}" = "-e" ]] || [[ "${OPTION}" = "--errors" ]]
-    then
-      SHOW_LOG_ERRORS=0
-      continue
-    fi
-
-    if [[ "${OPTION}" = "-h" ]] || [[ "${OPTION}" = "--help" ]]
-    then
-      fnGET_HELP
-      exit
-    fi
-
-    if [[ "${OPTION}" = "-l" ]] || [[ "${OPTION}" = "--logo" ]]
-    then
-      LOGO=0
-      continue
-    fi
-
-    if [[ "${OPTION}" = "-m" ]] || [[ "${OPTION}" = "--mono" ]]
-    then
-      # Forground colors
-      # shellcheck disable=SC2034
-      BLA=""
-      RED=""
-      GRE=""
-      YEL=""
-      BLU=""
-      MAG=""
-      CYA=""
-      WHI=""
-      DEF=""
-
-      # Background colors
-      # Reserved for possible future use
-      # BG_BLA=""
-      # BG_RED=""
-      # BG_GRE=""
-      # BG_YEL=""
-      # BG_BLU=""
-      # BG_MAG=""
-      # BG_CYA=""
-      # BG_WHI=""
-      # BG_DEF=""
-      continue
-    fi
-
-    if [[ "${OPTION}" = "-n" ]] || [[ "${OPTION}" = "--nobig" ]]
-    then
-      USE_FIGLET=0
-      continue
-    fi
-
-    if [[ "${OPTION}" = "-v" ]] || [[ "${OPTION}" = "--version" ]]
-    then
-      fnVERSION
-      exit
-    fi
-
     case ${OPTION} in
+      -f|--font)
+        NEXT=$((INDEX + 1))
+        PARAM="${ARG_LIST[${NEXT}]}"
+        if [[ ${PARAM} == ?(-)+([1-4]) ]]
+        then
+          MY_FONT=${PARAM}
+        else
+          tput flash
+          fnUSAGE
+          echo -en "${BELL}"
+          exit 1
+        fi
+        INDEX=$((INDEX + 1))
+        continue
+        ;;
+
+      -t|--top)
+        TOP=1
+        NEXT=$((INDEX + 1))
+        PARAM="${ARG_LIST[${NEXT}]}"
+        if [[ ${PARAM} =~ ^-?[0-9]|[1-2][0-9]+$ ]]
+        then
+          HIST_MAX="${PARAM}"
+        else
+          HIST_MAX=5
+        fi
+        BELOW_NOSCROLL=$((HIST_MAX + 6))
+        continue
+        ;;
+
+      -c|--csv)
+        GET_CSV_NOW=1
+        continue
+        ;;
+
+      -d|--dat)
+        GET_DAT_NOW=1
+        continue
+        ;;
+
+      -e|--errors)
+        SHOW_LOG_ERRORS=0
+        continue
+        ;;
+
+      -h|--help)
+        fnGET_HELP
+        exit
+        ;;
+
+      -l|--logo)
+        LOGO=0
+        continue
+        ;;
+
+      -m|--mono)
+        # Forground colors
+        # shellcheck disable=SC2034
+        BLA=""
+        RED=""
+        GRE=""
+        YEL=""
+        BLU=""
+        MAG=""
+        CYA=""
+        WHI=""
+        DEF=""
+
+        # Background colors
+        # Reserved for possible future use
+        # BG_BLA=""
+        # BG_RED=""
+        # BG_GRE=""
+        # BG_YEL=""
+        # BG_BLU=""
+        # BG_MAG=""
+        # BG_CYA=""
+        # BG_WHI=""
+        # BG_DEF=""
+        continue
+        ;;
+
+      -n|--nobig)
+        USE_FIGLET=0
+        continue
+        ;;
+
+      -v|--version)
+        fnVERSION
+        exit
+        ;;
+
       -c|-d|-e|-f|-h|-l|-m|-n|-t|-v)
         ;;
+
       --csv|--dat|--errors|--font|--help|--logo|--mono|--nobig|--top|--version)
         ;;
+
       *)
         if [[ ! ${OPTION} =~ ^-?[0-9]|[1-3][0-9]+$ ]]
         then
@@ -869,9 +871,9 @@ fnPARSE_CMDLINE()
   # When it re-launches itself, it passes the same parameters to the
   # new instance that were given to the initial instance (eg: "-t").
   # To prevent the script from repeatedly downloading the user.csv
-  # file each time it restarts, we'll remove any "-c", "--csv", "-d",
-  # or "--dat" that was passed to the initial commandline, so that
-  # it does not get passed to subsequent restarts.
+  # and/or cty.dat each time it restarts, we'll remove any "-c",
+  # "--csv", "-d", or "--dat" that was passed initially, so that
+  # they don't get passed to subsequent restarts.
   MY_CMDLINE="$(echo "${MY_CMDLINE}" | sed 's/ --csv// ; s/ -c// ; s/ --dat// ; s/ -d// ; s/ --logo// ; s/ -l//')"
 }
 
@@ -1056,9 +1058,7 @@ EOF
 
   for I in 1 2
   do
-    sleep .05
     echo -n "${CUR_HOME}"
-
     echo -en "${INS_LINE}"
   done
 
@@ -1075,7 +1075,6 @@ EOF
          ███████╗██║  ██║███████║   ██║    ╚██████╔╝███████║╚██████╔╝
          ╚══════╝╚═╝  ╚═╝╚══════╝   ╚═╝     ╚══▀▀═╝ ╚══════╝ ╚═════╝
 EOF
-    sleep .2
   done
 
   echo -en "${SGR0}${GRE}"
@@ -1184,14 +1183,25 @@ fnGOODBYE_BOX()
     ERROR_COUNT=$(< "${ERROR_FILE}")
     WARNING_COUNT=$(< "${WARNING_FILE}")
 
+    ERROR_COUNT_COLOR=""
+    WARNING_COUNT_COLOR=""
+    if [[ ${ERROR_COUNT} -gt 0 ]]
+    then
+      ERROR_COUNT_COLOR="${YEL}"
+    fi
+    if [[ ${WARNING_COUNT} -gt 0 ]]
+    then
+      WARNING_COUNT_COLOR="${RED}"
+    fi
+
     if [[ ${ERROR_COUNT} -gt 0 ]] || [[ ${WARNING_COUNT} -gt 0 ]]
     then
       echo -en "${SGR0}${RED}"
       fnDRAW_BOX 13 24 3 30 2 1 1
       tput cup 14 27
-      echo -n "${WHI}MMDVM Log ${YEL}ERR MSGS${WHI}: ${SGR0}${YEL}$(printf %04d "${ERROR_COUNT}")"
+      echo -n "${SGR0}${WHI}${ERROR_COUNT_COLOR}MMDVM Log ERR MSGS${WHI}: ${SGR0}${ERROR_COUNT_COLOR}$(printf %04d "${ERROR_COUNT}")"
       tput cup 15 27
-      echo -n "${WHI}MMDVM Log ${RED}WARNINGS${WHI}: ${SGR0}${RED}$(printf %04d "${WARNING_COUNT}")"
+      echo -n "${SGR0}${WHI}${WARNING_COUNT_COLOR}MMDVM Log WARNINGS${WHI}: ${SGR0}${WARNING_COUNT_COLOR}$(printf %04d "${WARNING_COUNT}")"
     fi
   fi
   tput cup 22 0
