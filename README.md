@@ -279,6 +279,12 @@ With "-t | --top" option, when the "-n | --nobig" option is also used...
 
 **Sample Screenshot:**
 
+With "-t 24 -f 1" (or "--top 24 --font 1") showing a 24-line history...
+
+![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/long-history.jpg)
+
+**Sample Screenshot:**
+
 These are the 3 basic fonts supplied with the basic "figlet" package, along with the supplemental "ansi_shadow" font.
 
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/font-samples.jpg)
