@@ -142,11 +142,11 @@ If the user.csv file is already present on your hotspot, but is older than 7 day
 -------------------------------------------------------------------
 ## Country Lookups for Callsigns (YSF only)
 
+**pistar-lastqso** calls the dxcc.pl perl script (added by the install), which uses the cty.dat file to display the "Country" data related to the callsign's prefix, in a field labeled "DXCC".
+
 Upon first run, **pistar-lastqso** will download the latest version of the cty.dat file from https://www.country-files.com/category/big-cty/
 
 If the cty.dat file is already present on your hotspot, but is older than 30 days, **pistar-lastqso** will update the file to it's latest version automatically.  You can also force an update to the latest version at any time, using the "-d | --dat" commandline option.
-
-**pistar-lastqso** calls the dxcc.pl perl script (added by the install), which uses the cty.dat file to display the "Country" data related to the callsign's prefix, in a field labeled "DXCC".
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
