@@ -6,7 +6,7 @@
 
 set -o allexport
 
-VERSION=2.10
+VERSION=2.11
 
 umask 0077
 
@@ -212,6 +212,10 @@ MY_LIST=/usr/local/etc/MY_LIST.txt
 # This is the master DMR user.csv file from radioid.net.
 # We download this, and update it if older than 7 days.
 USERCSV=/usr/local/etc/user.csv
+
+# This is the NXDN.csv file supplied with, and updated by pi-star.
+# It is identical in structure to the DMR user.csv file
+NXDNCSV=/usr/local/etc/NXDN.csv
 
 # This is the cty.dat file from www.country-files.com
 # We download this, and update it if older than 30 days.
@@ -954,11 +958,11 @@ PISTAR-LASTQSO - HELP
 
   -t|--top [integer]
       Adds an information zone to the top of the screen that shows
-      the version numbers of this script and pi-star, date of the
-      user.csv file, name of the active log file, TX and RX freqs,
+      the version numbers of this script, date of the cty.dat and
+      user.csv files, name of the active log file, TX and RX freqs,
       the hotspot's TCXO frequency and firmware version, the DMR
-      and/or YSF Master servers, first 5 statically defined BM TGs,
-      and a history of the last 5 QSOs.
+      and/or YSF Master servers, and the first 5 statically defined
+      BrandMeister TalkGroups.
 
       By default, the use of "-t|--top" also provides a history of
       the last 5 QSOs observed.  However, by specifying an integer
@@ -1187,11 +1191,11 @@ fnGOODBYE_BOX()
     WARNING_COUNT_COLOR=""
     if [[ ${ERROR_COUNT} -gt 0 ]]
     then
-      ERROR_COUNT_COLOR="${YEL}"
+      ERROR_COUNT_COLOR="${SGR0}${YEL}"
     fi
     if [[ ${WARNING_COUNT} -gt 0 ]]
     then
-      WARNING_COUNT_COLOR="${RED}"
+      WARNING_COUNT_COLOR="${SGR0}${RED}"
     fi
 
     if [[ ${ERROR_COUNT} -gt 0 ]] || [[ ${WARNING_COUNT} -gt 0 ]]
@@ -1199,9 +1203,9 @@ fnGOODBYE_BOX()
       echo -en "${SGR0}${RED}"
       fnDRAW_BOX 13 24 3 30 2 1 1
       tput cup 14 27
-      echo -n "${SGR0}${WHI}${ERROR_COUNT_COLOR}MMDVM Log ERR MSGS${WHI}: ${SGR0}${ERROR_COUNT_COLOR}$(printf %04d "${ERROR_COUNT}")"
+      echo -n "${SGR0}${DIM}${WHI}${ERROR_COUNT_COLOR}MMDVM Log ERR MSGS: $(printf %04d "${ERROR_COUNT}")${SGR0}"
       tput cup 15 27
-      echo -n "${SGR0}${WHI}${WARNING_COUNT_COLOR}MMDVM Log WARNINGS${WHI}: ${SGR0}${WARNING_COUNT_COLOR}$(printf %04d "${WARNING_COUNT}")"
+      echo -n "${SGR0}${DIM}${WHI}${WARNING_COUNT_COLOR}MMDVM Log WARNINGS: $(printf %04d "${WARNING_COUNT}")${SGR0}"
     fi
   fi
   tput cup 22 0
@@ -1303,6 +1307,34 @@ fnDMR_CSV_SEARCH()
   then
     CSV_RECORD="$(grep "^${CSV_CALLSIGN}," "${USERCSV}" | cut -f5-7 -d"," | sort -u)"
   fi
+
+  if [[ "${CSV_RECORD}" != "" ]]
+  then
+    CITY="$(echo "${CSV_RECORD}" | cut -f1 -d",")"
+    STATE="$(echo "${CSV_RECORD}" | cut -f2 -d",")"
+    COUNTRY="$(echo "${CSV_RECORD}" | cut -f3 -d",")"
+  else
+    CITY=""
+    STATE=""
+    COUNTRY=""
+  fi
+  # If any fields came back empty, set a default of "n/a" (not available)
+  CITY=${CITY:-'n/a'}
+  STATE=${STATE:-'n/a'}
+  COUNTRY=${COUNTRY:-'n/a'}
+}
+
+#----------
+# This takes the NXDN user's callsign and looks up the
+# city, state, and country fields
+fnNXDN_CSV_SEARCH()
+{
+  trap fnWINCH WINCH
+
+  # Fields in the file:
+  # RADIO_ID,CALLSIGN,FIRST_NAME,LAST_NAME,CITY,STATE,COUNTRY
+  # We want the last three.
+  CSV_RECORD="$(grep ",${CSV_CALLSIGN}," "${NXDNCSV}" | cut -f5-7 -d"," | sort -u)"
 
   if [[ "${CSV_RECORD}" != "" ]]
   then
@@ -1617,12 +1649,50 @@ fnYSF_SHOW_CURRENT_CALL()
   tput cuf 32
   echo -e "${DIM}Src.:${SGR0} ${BOLD}${CYA}${SOURCE}${SGR0}${WHI}"
 
-  # shellcheck disable=SC2143
-  if [[ -n "$(echo "${FROM}" | cut -f1 -d"-" | grep "[0-9]")" ]]
+  CSV_CALLSIGN="${FROM}"
+  # Maybe the callsign is also a DMR user...
+  QTH_SRC="user.csv"
+  CSV_RECORD="$(grep ",${CSV_CALLSIGN}," "${USERCSV}" | cut -f5-7 -d"," | sort -u)"
+  if [[ "${CSV_RECORD}" = "" ]]
   then
-    DXCC_FROM="$(echo "${LOGREC_CALLSIGN}" | cut -f1 -d"/" | cut -f1 -d"-")"
-    COUNTRY="$(dxcc.pl "${DXCC_FROM}" | grep "^Country Name:" | awk '{ print substr($0, index($0,$3)) }')"
-    echo -e "${DIM}DXCC:${SGR0} ${MAG}${BOLD}${COUNTRY}${SGR0}${WHI}"
+    # Maybe the callsign is also a NXDN user...
+    QTH_SRC="NXDN.csv"
+    CSV_RECORD="$(grep ",${CSV_CALLSIGN}," "${NXDNCSV}" | cut -f5-7 -d"," | sort -u)"
+  fi
+  if [[ "${CSV_RECORD}" != "" ]]
+  then
+    # Callsign was found in one or the other csv file
+    CITY="$(echo "${CSV_RECORD}" | cut -f1 -d",")"
+    STATE="$(echo "${CSV_RECORD}" | cut -f2 -d",")"
+    COUNTRY="$(echo "${CSV_RECORD}" | cut -f3 -d",")"
+  else
+    # Callsign was not found in either csv file
+    CITY=""
+    STATE=""
+    COUNTRY=""
+
+    # Last resort: Look up country based on callsign prefix
+    if [[ -n "$(echo "${FROM}" | cut -f1 -d"-" | grep "[0-9]")" ]]
+    then
+      QTH_SRC="cty.dat"
+      DXCC_FROM="$(echo "${LOGREC_CALLSIGN}" | cut -f1 -d"/" | cut -f1 -d"-")"
+      COUNTRY="$(dxcc.pl "${DXCC_FROM}" | grep "^Country Name:" | awk '{ print substr($0, index($0,$3)) }')"
+    fi
+  fi
+
+  # If any fields came back empty, set a default of "n/a" (not available)
+  CITY=${CITY:-'n/a'}
+  STATE=${STATE:-'n/a'}
+  COUNTRY=${COUNTRY:-'n/a'}
+
+  # Show location details
+  if [[ "${CITY}" = "n/a" ]] && [[ "${STATE}" = "n/a" ]] && [[ "${COUNTRY}" = "n/a" ]]
+  then
+    echo "${MAG}${BOLD}No Location Data Found${SGR0}${WHI}"
+  else
+    echo -en "${DIM}FILE:${SGR0} ${MAG}${BOLD}${QTH_SRC}${SGR0}${WHI}\r"
+    tput cuf 18
+    echo -e "${DIM}QTH:${SGR0} ${MAG}${BOLD}${CITY}, ${STATE}, ${COUNTRY}${SGR0}${WHI}"
   fi
 
   fnQSO_IN_PROGRESS
@@ -2221,7 +2291,7 @@ fnMAIN_LOOP()
         fnCLEAR_CURRENT_LINE
         echo -en "\r${DIM}Dur.:${SGR0} ${BLU}${BOLD}${LOGREC_SECS}${SGR0}${WHI} sec\r"
         tput cuf 18
-        echo -en "${DIM}BER:${SGR0} ${BER_COLOR}${BOLD}${LOGREC_BER}%${SGR0}${WHI}\r"
+        echo -en "${DIM}BER:${SGR0} ${BER_COLOR}${BOLD}${LOGREC_BER}${SGR0}${WHI}\r"
         tput cuf 32
         echo -en "${DIM}RSSI:${SGR0} ${SMETER_COLOR}${BOLD}${SMETER} (-${DBM} dBm)${SGR0}${WHI}\r"
 

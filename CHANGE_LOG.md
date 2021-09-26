@@ -1,4 +1,17 @@
 ```
+CHANGES: V2.11
+ 1. Removed redundent BER "%" symbol on YSF RF traffic.
+ 2. To improve QTH info for YSF callsigns, first check
+    the DMR user.csv file and/or pi-star's NXDN.csv
+    file.  (Users of YSF may also have DMR or NXDN
+    radios, and would be listed there.)  Only if not
+    found in those files, would we launch the dxcc.pl
+    perl script, which determines only country, based
+    on the callsign's prefix.  Along with the QTH data,
+    the source of that data is also displayed, be it
+    the user.csv or NXDN.csv files, or the cty.dat
+    used by dxcc.pl.
+
 CHANGES: V2.10
  1. Commandline parsing has been reworked and improved.
  2. Using "-f|--font" without also passing a number 1-4 was
