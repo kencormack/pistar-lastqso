@@ -320,7 +320,7 @@ The rest of the program is mainly parsing the log entries, and presenting the da
 
 **pistar-lastqso's operation is dependent upon a fully operational PI-STAR configuration.  If your PI-STAR setup has problems, those problems cannot be solved here.  [Please visit the PI-STAR forums](https://forum.pistar.uk/) instead.  This program only reads the PI-STAR MMDVM log... What goes into that log is PI-STAR's doing.**
 
-**Likewise, please don't expect the PI-STAR forums to offer any assistance with pistar-lastqso.**
+**Likewise, please don't expect the PI-STAR forums to offer any assistance with pistar-lastqso.  They did not write this script, and cannot be expected to know anything about it.**
 
 Every effort has been made to anticipate and address any questions users may have about **pistar-lastqso**, in this README.  Please read through the above carefully.  That having been said, should you have questions, or encounter a problem that is not addressed above, please use the "Issues" tab at the top of this page, to report it.  Others will then be able to look to see if a problem they are having has already been resolved.
 
