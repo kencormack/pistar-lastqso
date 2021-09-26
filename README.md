@@ -239,7 +239,7 @@ By default, **pistar-lastqso** will use one of three basic large fonts to displa
   > 120 chars... "big" font
 ```
 
-**pistar-lastqso** supports a "-f | --font <number>" commandline option to override auto-selection, and force a given font regardless of screen-width.  If the -f option is omitted, or is passed an invalid value, **pistar-lastqso** will auto-select an appropriately sized font as just described above.
+**pistar-lastqso** supports a "-f | --font <number>" commandline option to override auto-selection, and force a given font regardless of screen-width.  If the -f option is omitted, **pistar-lastqso** will auto-select an appropriately sized font as just described above.  If passed an invalid parameter, the usage screen will be displayed.
 
 The "-f | --font" commandline option requires a numeric parameter to select between the fonts:
 
