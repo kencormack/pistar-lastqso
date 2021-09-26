@@ -47,7 +47,7 @@
 - The contact's DMR ID# (Note #3, below)
 
 **For each YSF QSO, the program displays the following data beyond what the PI-STAR dashboard can show:**
-- The contact's QTH
+- The contact's QTH (Determined with best effort, from several sources.)
 
 As YSF does not require that users be registered, there is no single source for QTH data for YSF users.  The script therefore assumes that the callsign owner may also have either a registered DMR ID or NXDN ID number.  On the chance that they do, pistar-lastqso first attempts to find QTH info in the DMR user.csv file, then pi-star's NXDN.csv file.  If the callsign is not found in either of those files, as a last resort, it then calls upon the perl script dxcc.pl and it's cty.dat file.  As the first two data sources generally contain City, State, and Country info, they are tried first.  The dxcc.pl script, and it's cty.dat file, can only determine country, based on the callsign's prefix.
 
