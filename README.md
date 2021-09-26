@@ -12,7 +12,7 @@
 - **[Updating](https://github.com/kencormack/pistar-lastqso#updating)**
 - **[Large Font Display of the Callsign and Talkgroup or DG-ID](https://github.com/kencormack/pistar-lastqso#large-font-display-of-the-callsign-and-talkgroup-or-dg-id)**
 - **[City, State, Country Lookups for Callsigns (DMR only)](https://github.com/kencormack/pistar-lastqso#city-state-country-lookups-for-callsigns-dmr-only)**
-- **[Country Lookups for Callsigns (YSF only)](https://github.com/kencormack/pistar-lastqso#country-lookups-for-callsigns-ysf-only)**
+- **[City, State, Country Lookups for Callsigns (YSF only)](https://github.com/kencormack/pistar-lastqso#city-state-country-lookups-for-callsigns-ysf-only)**
 - **[Commandline Options](https://github.com/kencormack/pistar-lastqso#commandline-options)**
 - **[Daily Log Rotation](https://github.com/kencormack/pistar-lastqso#daily-log-rotation)**
 - **[User-Custom Talkgroup List (DMR only)](https://github.com/kencormack/pistar-lastqso#user-custom-talkgroup-list-dmr-only)**
@@ -143,7 +143,7 @@ If the user.csv file is already present on your hotspot, but is older than 7 day
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
-## Country Lookups for Callsigns (YSF only)
+## City, State, Country Lookups for Callsigns (YSF only)
 
 YSF lacks a global resource listing a user's home location.  To detemine at least some location info, **pistar-lastqso** calls the dxcc.pl perl script (added by the install), which uses the cty.dat file to determine the "Country" related to the callsign's prefix.  This is then displayed in a field labeled "DXCC".
 
