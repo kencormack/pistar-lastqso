@@ -19,6 +19,7 @@
 - **[QSO, Kerchunk, and MMDVM Error Counts](https://github.com/kencormack/pistar-lastqso#qso-kerchunk-and-mmdvm-error-and-warning-counts)**
 - **[More About the Large Font Support](https://github.com/kencormack/pistar-lastqso#more-about-the-large-font-support)**
 - **[One More Thing About Large Fonts](https://github.com/kencormack/pistar-lastqso#one-more-thing-about-large-fonts)**
+- **[Sample Screenshots](https://github.com/kencormack/pistar-lastqso#sample-screenshots)**
 - **[Other Notes](https://github.com/kencormack/pistar-lastqso#other-notes)**
 - **[Getting Help](https://github.com/kencormack/pistar-lastqso#getting-help)**
 - **[Special Thanks](https://github.com/kencormack/pistar-lastqso#special-thanks)**
@@ -215,7 +216,7 @@ You can also add certain 'private contact' IDs here that may not be listed.  Not
 
 The program also watches the MMDVM log for any errors, or more severe warnings, reported by the MMDVMhost daemon that is the real "engine" behind PI-STAR.  Any such errors or warnings noted in the MMDVM log are reported by **pistar-lastqso** as they occur, and are tallied.  The total number of errors and warnings counted (if any) since **pistar-lastqso** was launched by the user, are reported on the exit screen, in a red pop-up box.  If no errors or warnings were tallied, the red pop-up box does not appear.
 
-**It is the user's responsibility to judge the severity, and find the fix, for any MMDVM log errors or warnings reported by pistar-lastqso.  These MMDVM log errors and warnings are not caused, controlled, or solveable, by pistar-lastqso.  The script only reports what gets logged by the MMDVMhost daemon.  pistar-lastqso does not create, diagnose, or eliminate the logged errors or warnings.**
+**It is the user's responsibility to judge the severity, and find the fix, for any MMDVM log errors or warnings reported by pistar-lastqso.  These MMDVM log errors and warnings are not caused, controlled, or solveable, by pistar-lastqso.  The script only reports what gets logged by the MMDVMhost daemon.  Pistar-lastqso does not create, diagnose, or eliminate the logged errors or warnings.**
 
 Don't panic if you see a single transient occurrance of something like a "queue overflow" error.  Things like that may show up occasionally.  But if you see dozens of them, you will want to look into it.  Other types of errors may require more research on your part.  If you need to investigate any errors, search your /var/log/pi-star/MMDVM-YYYY-MM-DD.log for any lines beginning with "E:".  Warnings are more severe.  Those can be found in the log, on lines beginning with "W:".
 
@@ -261,10 +262,14 @@ The "ansi_shadow" font can be utilized by specifying "-f | --font 4" on the **pi
   "-f 4" or "--font 4" will force the "ansi_shadow" font.
 ```
 
-If you specify an invalid numeric parameter for the "-f | --font" option, **pistar-lastqso** will behave just as if the -f parameter was never given on the commandline, and will select the appropriate basic font dynamically.
+If you specify an invalid numeric parameter for the "-f | --font" option, **pistar-lastqso** will display a usage screen showing valid options and parameters, and then exit.
 
 Note that for any given font you specify with the "-f | --font" option, figlet may decide it needs to line-wrap the output.  This can waste a lot of screen space if you force a too-large font on a too-small screen.  If that happens, try a lower-numbered parameter for the "-f | --font" option, to select a smaller font.
 
+- **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
+-------------------------------------------------------------------
+## Sample Screenshots
 **Sample Screenshot:**
 
 With "-t | --top" option, for the large font display of the callsign...
