@@ -162,6 +162,7 @@ display of the callsigns, and activate the non-scrolling information section at 
 
 The program remembers which options (if any) you specified at launch, so that it can re-apply those same options when it re-launches itself, either when PI-STAR's nightly update momentarily cycles the services, or when log rotation to a new day's log is detected.  However, if the "-c" (or "--csv") option is specified, the program will update the user.csv file only upon initial invocation.  Likewise, if the "-d" (or "--dat") option is specified, that option too, will be stripped from the chain of options supplied at initial launch.  This prevents re-downloading these files each time the program re-starts itself.
 
+**Valid Options and Parameters...**
 ```
 USAGE - valid options and parameters include:
 
@@ -173,6 +174,7 @@ USAGE - valid options and parameters include:
     [--logo] [--mono] [--nobig] [--top [<integer>]] [--version] [--wrap]
 ```
 
+**The Help Text...**
 ```
 PISTAR-LASTQSO - HELP
 
