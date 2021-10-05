@@ -1,4 +1,31 @@
 ```
+CHANGES: V2.12
+ 1. There is no source for YSF callsign "first name" data.
+    However, as a YSF user may also have a registered DMR
+    or NXDN id, check the user.csv and NXDN.csv files to
+    see if we can find the callsign's first name.  If so,
+    display it in the QSO details for a YSF QSO, in the
+    same manner as with DMR QSOs.
+ 2. Added handling of YSF "received late" entries.
+ 3. Add handling of YSF RF dropped transmissions.
+ 4. Added a new "-w|--wrap" cmdline option.  Ordinarily,
+    figlet will wrap the text that it displays, based on
+    the size of the font selected, and the width of the
+    screen (in columns).  However, setting this option
+    tells figlet to ignore the screen width, and just
+    keep printing on the same line, even if that means
+    the text will disappear off the right edge of the
+    screen.  You sacrifice whatever information was off
+    the edge of the screen, but without wasting so much
+    vertical screen space to line-wrap.  This can be
+    helpful with smaller 80x24 displays, for example.
+ 5. Updated help and usage screens.
+ 6. Do a better job skipping dxcc lookups for senders
+    sending things like "openSPOT2" as a YSF "callsign".
+ 7. Added an additional line at top of the screen when
+    "-t|--top" is used, showing CPU temp, modem port,
+    and platform type.
+
 CHANGES: V2.11
  1. Removed redundent BER "%" symbol on YSF RF traffic.
  2. To improve QTH info for YSF callsigns, first check

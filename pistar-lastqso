@@ -6,7 +6,7 @@
 
 set -o allexport
 
-VERSION=2.11
+VERSION=2.12
 
 umask 0077
 
@@ -21,9 +21,6 @@ ARG_LIST_LENGTH=${#ARG_LIST[@]}
 
 # If user presses Ctrl-C, stop the program
 trap fnEXIT SIGINT SIGTERM
-
-# This trap has been problematic - it isn't inherited.
-# trap fnWINCH WINCH	# This trap is now set inside most functions
 
 # NOTE #1: Originally written for pi-star >= 4.1.4, for DMR mode ONLY.
 # Support for YSF (plus DMR2YSF and YSF2DMR) was added later.  If the
@@ -87,6 +84,10 @@ SHOW_LOG_ERRORS=1
 # Can be overriden with "-n|--nobig" cmdline option
 USE_FIGLET=1
 #
+# A calue of 0  allows figlet to auto-wrap as needed.
+# Can be overridden with "-w|--wrap" cmdline option
+NO_WRAP=0
+#
 # Don't display the config and history section at top of screen.
 # Can be overridden with "-t|--top" cmdline option
 TOP=0
@@ -99,7 +100,9 @@ LOGO=1
 # Can be overridden with optional [<1-30>] parameter passed to
 # the "-t|--top" cmdline option
 HIST_MAX=5
-BELOW_NOSCROLL=$((HIST_MAX + 6))
+#KPC
+#BELOW_NOSCROLL=$((HIST_MAX + 6))
+BELOW_NOSCROLL=$((HIST_MAX + 7))
 
 # Define some ways to make things bold, use different colors, control
 # scrolling and cursor positioning, and so on.
@@ -188,8 +191,13 @@ GTAB=$'\t'
 # shellcheck disable=SC2034
 MY_CALLSIGN="$(grep -A 8 "^\[General\]" /etc/mmdvmhost | grep "^Enable" | cut -f2 -d"=")"
 
+#KPC
+MODEM_PORT="$(grep -A 25 "^\[Modem\]" /etc/mmdvmhost | grep "^Port" | cut -f3 -d"/")"
+
 DMR_ENABLED="$(grep -A 2 "^\[DMR\]" /etc/mmdvmhost | grep "^Enable" | cut -f2 -d"=")"
 YSF_ENABLED="$(grep -A 2 "^\[System Fusion\]" /etc/mmdvmhost | grep "^Enable" | cut -f2 -d"=")"
+#DMR2YSF_ENABLED="$(grep -A 1 "^\[Enabled\]" /etc/dmr2ysf | grep "^Enable" | cut -f2 -d"=")"
+#YSF2DMR_ENABLED="$(grep -A 1 "^\[Enabled\]" /etc/ysf2dmr | grep "^Enable" | cut -f2 -d"=")"
 #DSTAR_ENABLED="$(grep -A 2 "^\[D-Star\]" /etc/mmdvmhost | grep "^Enable" | cut -f2 -d"=")"
 #P25_ENABLED="$(grep -A 2 "^\[P25\]" /etc/mmdvmhost | grep "^Enable" | cut -f2 -d"=")"
 #NXDN_ENABLED="$(grep -A 2 "^\[NXDN\]" /etc/mmdvmhost | grep "^Enable" | cut -f2 -d"=")"
@@ -548,10 +556,6 @@ fnTOP_DATA()
   # This script's version
   MY_VER="$(echo "${VERSION}${TOP_PAD}" | cut -c1-7)"
 
-  # Pi-star version
-  # PS_VER="$(grep "^Version" /etc/pistar-release | awk '{ print $NF }')"
-  # PS_VER="$(echo "${PS_VER}${TOP_PAD}" | cut -c1-8)"
-
   # Datestamp of the user.csv file
   CSV_DATE="$(stat /usr/local/etc/user.csv 2> /dev/null | grep "^Modify" | awk '{ print $2 }')"
   CSV_DATE="$(echo "${CSV_DATE}${TOP_PAD}" | cut -c1-11)"
@@ -614,6 +618,10 @@ fnTOP_DATA()
   DMR_MASTER="$(echo "${DMR_MASTER}${TOP_PAD}" | cut -c1-32)"
 
   # GATHER LINE 3 DATA...
+#KPC
+  PLATFORM="$(platformDetect.sh)"
+
+  # GATHER LINE 4 DATA...
   # shellcheck disable=SC2143
   if [[ -n "$(grep "${GTAB}${DMR_MASTER}${GTAB}" "${DMRHOSTS}" | grep "^BM_")" ]]
   then
@@ -651,7 +659,6 @@ fnNOSCROLL_ZONE()
   # Print line 0
   echo -en "${CYA}LASTQSO:${SGR0} ${WHI}${BOLD}${MY_VER}${SGR0}\r"
   tput cuf 16
-# echo -en "${CYA}PISTAR:${SGR0} ${WHI}${BOLD}${PS_VER}${SGR0}\r"
   echo -en "${CYA}DAT:${SGR0} ${WHI}${BOLD}${DAT_DATE}${SGR0}\r"
   tput cuf 32
   echo -en "${CYA}CSV:${SGR0} ${WHI}${BOLD}${CSV_DATE}${SGR0}\r"
@@ -667,7 +674,16 @@ fnNOSCROLL_ZONE()
   tput cuf 48
   echo -e "${CYA}FW:${SGR0} ${WHI}${BOLD}${FW}${SGR0}${CLR_EL}"
 
+#KPC
   # Print line 2
+  CPU_TEMP="$(vcgencmd measure_temp | cut -f2 -d"=")"
+  echo -en "${CYA}Temp:${SGR0} ${WHI}${BOLD}${CPU_TEMP}${SGR0}\r"
+  tput cuf 16
+  echo -en "${CYA}Port:${SGR0} ${WHI}${BOLD}${MODEM_PORT}${SGR0}\r"
+  tput cuf 32
+  echo -e "${CYA}Platform:${SGR0} ${WHI}${BOLD}${PLATFORM}${SGR0}"
+
+  # Print line 3
   echo -en "${CYA}YSF MASTER:${SGR0} ${WHI}${BOLD}${YSF_MASTER}${SGR0}\r"
   tput cuf 32
   echo -e "${CYA}DMR MASTER:${SGR0} ${WHI}${BOLD}${DMR_MASTER_NAME}${SGR0}${CLR_EL}"
@@ -725,11 +741,11 @@ fnUSAGE()
 USAGE - valid options and parameters include:
 
   Short Form:
-    [-c] [-d] [-e] [-f <1-4>] [-h] [-l] [-m] [-n] [-t [integer]] [-v] [-x]
+    [-c] [-d] [-e] [-f <1-4>] [-h] [-l] [-m] [-n] [-t [integer]] [-v] [-w]
 
   Long Form:
     [--csv] [--dat] [--errors] [--font <1-4>] [--help]
-    [--logo] [--mono] [--nobig] [--top [<integer>]] [--version]
+    [--logo] [--mono] [--nobig] [--top [<integer>]] [--version] [--wrap]
 " >&2
 }
 
@@ -773,7 +789,9 @@ fnPARSE_CMDLINE()
         else
           HIST_MAX=5
         fi
-        BELOW_NOSCROLL=$((HIST_MAX + 6))
+#KPC
+        #BELOW_NOSCROLL=$((HIST_MAX + 6))
+        BELOW_NOSCROLL=$((HIST_MAX + 7))
         continue
         ;;
 
@@ -839,10 +857,14 @@ fnPARSE_CMDLINE()
         exit
         ;;
 
-      -c|-d|-e|-f|-h|-l|-m|-n|-t|-v)
+      -w|--wrap)
+        NO_WRAP=1
         ;;
 
-      --csv|--dat|--errors|--font|--help|--logo|--mono|--nobig|--top|--version)
+      -c|-d|-e|-f|-h|-l|-m|-n|-t|-v|-w)
+        ;;
+
+      --csv|--dat|--errors|--font|--help|--logo|--mono|--nobig|--top|--version|--wrap)
         ;;
 
       *)
@@ -958,7 +980,7 @@ PISTAR-LASTQSO - HELP
 
   -t|--top [integer]
       Adds an information zone to the top of the screen that shows
-      the version numbers of this script, date of the cty.dat and
+      the version number of this script, date of the cty.dat and
       user.csv files, name of the active log file, TX and RX freqs,
       the hotspot's TCXO frequency and firmware version, the DMR
       and/or YSF Master servers, and the first 5 statically defined
@@ -993,6 +1015,16 @@ PISTAR-LASTQSO - HELP
 
   -v|--version
       Display this script's version number, then exit.
+
+  -w|--wrap
+      Ordinarily, if figlet decides it needs to wrap the text that it
+      displays, based on the size of the font selected, and the width
+      of the screen (in columns), it will do so.  However, setting
+      this option tells figlet to ignore the screen width, and just
+      keep printing on the same line, even if that means the text will
+      disappear off the right edge of the screen.  You sacrifice what-
+      ever information was off the edge of the screen, but without
+      wasting so much vertical screen space to line-wrap.
 
 EOF
 }
@@ -1552,7 +1584,15 @@ fnFIGLET()
         ;;
     esac
 
-    BANNER="$(figlet -t -w "${COLUMNS}" -f "${FONT}" "${FROM} ... ${TO}")"
+    # This flag is set with the "-w|--wrap" cmdline option.
+    if [[ "${NO_WRAP}" = "1" ]]
+    then
+      OUTPUT_WIDTH=1000
+    else
+      OUTPUT_WIDTH="${COLUMNS}"
+    fi
+
+    BANNER="$(figlet -t -w "${OUTPUT_WIDTH}" -f "${FONT}" "${FROM} ... ${TO}")"
     if [[ "${LOGREC_MODE}" = "YSF" ]]
     then
       BANNER_COLOR="${YEL}"
@@ -1642,9 +1682,21 @@ fnYSF_SHOW_CURRENT_CALL()
   printf %05d "${QSO_COUNT}"
   echo "${SGR0}${WHI}"
 
-  echo -en "${DIM}From:${SGR0} ${BOLD}${FROM}${SGR0}\r"
+  FROM_NAME="$(grep ",${FROM}," "${USERCSV}" "${NXDNCSV}" | tail -1 | cut -f3 -d",")"
+  if [[ -n "${FROM_NAME}" ]]
+  then
+    P_FROM_NAME="$(printf "%-15s" "(${FROM_NAME})")"
+    echo -en "${DIM}From:${SGR0} ${BOLD}${FROM} ${P_FROM_NAME}${SGR0}\r"
+  else
+    echo -en "${DIM}From:${SGR0} ${BOLD}${FROM}${SGR0}\r"
+  fi
   tput cuf 31
-  echo "${DIM} To..:${SGR0} ${BOLD}${LOGREC_DG_ID} ${LOGREC_DG_ID_NUM} ${DIM}at${SGR0} ${BOLD}${LOGREC_MASTER}${SGR0}${WHI}"
+  if [[ -n "${LOGREC_MASTER}" ]]
+  then
+    echo "${DIM} To..:${SGR0} ${BOLD}${LOGREC_DG_ID} ${LOGREC_DG_ID_NUM} ${DIM}at${SGR0} ${BOLD}${LOGREC_MASTER}${SGR0}${WHI}"
+  else
+    echo "${DIM} To..:${SGR0} ${BOLD}${LOGREC_DG_ID} ${LOGREC_DG_ID_NUM}${SGR0}${WHI}"
+  fi
   echo -en "${DIM}Mode:${SGR0} ${BOLD}${CYA}System Fusion${SGR0}${WHI}\r"
   tput cuf 32
   echo -e "${DIM}Src.:${SGR0} ${BOLD}${CYA}${SOURCE}${SGR0}${WHI}"
@@ -1672,7 +1724,7 @@ fnYSF_SHOW_CURRENT_CALL()
     COUNTRY=""
 
     # Last resort: Look up country based on callsign prefix
-    if [[ -n "$(echo "${FROM}" | cut -f1 -d"-" | grep "[0-9]")" ]]
+    if [[ -n "$(echo "${FROM}" | cut -f1 -d"-" | cut -c1-3 | grep "[0-9]")" ]]
     then
       QTH_SRC="cty.dat"
       DXCC_FROM="$(echo "${LOGREC_CALLSIGN}" | cut -f1 -d"/" | cut -f1 -d"-")"
@@ -1688,9 +1740,9 @@ fnYSF_SHOW_CURRENT_CALL()
   # Show location details
   if [[ "${CITY}" = "n/a" ]] && [[ "${STATE}" = "n/a" ]] && [[ "${COUNTRY}" = "n/a" ]]
   then
-    echo "${MAG}${BOLD}No Location Data Found${SGR0}${WHI}"
+    echo "${MAG}${BOLD}No Location Data Available${SGR0}${WHI}"
   else
-    echo -en "${DIM}FILE:${SGR0} ${MAG}${BOLD}${QTH_SRC}${SGR0}${WHI}\r"
+    echo -en "${DIM}File:${SGR0} ${MAG}${BOLD}${QTH_SRC}${SGR0}${WHI}\r"
     tput cuf 18
     echo -e "${DIM}QTH:${SGR0} ${MAG}${BOLD}${CITY}, ${STATE}, ${COUNTRY}${SGR0}${WHI}"
   fi
@@ -2219,20 +2271,35 @@ fnMAIN_LOOP()
       fi
 
       # Start of YSF RF traffic
-      if echo "${LOGREC_REMAINING_DATA}" | grep -q -E "received RF header from"
+      if echo "${LOGREC_REMAINING_DATA}" | grep -q -E "received RF header from|received RF late entry from"
       then
         read -r LOGREC_DATE LOGREC_TIME <<<"$(echo "${RECORD}" | awk '{ print $2 " " $3 }')"
         fnCONVERT_DATE_TIME
         QSO_START_TIME="${TIME}"
 
-        if [[ "$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $7 }')" = "to" ]]
+        if echo "${LOGREC_REMAINING_DATA}" | grep -q "received RF header from"
         then
-          read -r LOGREC_CALLSIGN  LOGREC_DG_ID  LOGREC_DG_ID_NUM \
-              <<<"$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $6 " " $8 " " $9 }')"
+          # Parse Recvd RF header...
+          if [[ "$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $7 }')" = "to" ]]
+          then
+            read -r LOGREC_CALLSIGN  LOGREC_DG_ID  LOGREC_DG_ID_NUM \
+                <<<"$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $6 " " $8 " " $9 }')"
+          else
+            # This drops space-separated values from the transmitted callsigns.
+            read -r LOGREC_CALLSIGN  LOGREC_DG_ID  LOGREC_DG_ID_NUM \
+                <<<"$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $6 " " $8 " " $10 }')"
+          fi
         else
-          # This drops space-separated values from the transmitted callsigns.
-          read -r LOGREC_CALLSIGN  LOGREC_DG_ID  LOGREC_DG_ID_NUM \
-              <<<"$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $6 " " $8 " " $10 }')"
+          # Parse RF late entries...
+          if [[ "$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $8 }')" = "to" ]]
+          then
+            read -r LOGREC_CALLSIGN  LOGREC_DG_ID  LOGREC_DG_ID_NUM \
+                <<<"$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $7 " " $9 " " $10 }')"
+          else
+            # This drops space-separated values from the transmitted callsigns.
+            read -r LOGREC_CALLSIGN  LOGREC_DG_ID  LOGREC_DG_ID_NUM \
+                <<<"$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $7 " " $9 " " $11 }')"
+          fi
         fi
 
         FROM="${LOGREC_CALLSIGN}"
@@ -2245,6 +2312,57 @@ fnMAIN_LOOP()
         QSO_COUNT=$((QSO_COUNT + 1))
         echo "${QSO_COUNT}" > "${QSO_COUNT_FILE}"
         fnYSF_SHOW_CURRENT_CALL
+        continue
+      fi
+
+      # YSF RF traffic dropped
+      # transmission lost from KE8DPF     to ALL       , 1.6 seconds, BER: 0.8%, RSSI: -58/-47/-47 dBm
+      # similar to: "received RF end of transmission from KE8DPF     to DG-ID 0, 1.0 seconds, BER: 0.8%, RSSI: -55/-51/-52 dBm"
+      if echo "${LOGREC_REMAINING_DATA}" | grep -q -E "transmission lost from"
+      then
+        read -r LOGREC_SECS  LOGREC_BER  LOGREC_RSSI \
+          <<<"$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $9 " " $12 " " $14 }')"
+        if [[ "${LOGREC_RSSI}" = "" ]]
+        then
+          LOGREC_RSSI="${LOGREC_BER}"
+          LOGREC_BER="0.0%"
+        fi
+
+        LOGREC_DG_ID_NUM="$(echo "${LOGREC_DG_ID_NUM}" | cut -f1 -d",")"
+        LOGREC_BER="$(echo "${LOGREC_BER}" | cut -f1 -d",")"
+
+        # Fields to pass to the history...
+        SECS="${LOGREC_SECS}"
+        BER="$(echo "${LOGREC_BER}" | cut -f1 -d"%")"
+        RSSI="${LOGREC_RSSI}"
+        DBM="$(echo "${LOGREC_RSSI}" | cut -f1 -d"/" | cut -f2 -d"-")"
+
+        fnCOLORIZE_BER
+        fnCOLORIZE_RSSI
+
+        fnCLEAR_CURRENT_LINE
+        echo "\r${BOLD}${YEL}TRANSMISSION LOST${SGR0}${WHI}"
+        echo -en "\r${DIM}Dur.:${SGR0} ${BLU}${BOLD}${LOGREC_SECS}${SGR0}${WHI} sec\r"
+        tput cuf 18
+        echo -en "${DIM}BER:${SGR0} ${BER_COLOR}${BOLD}${LOGREC_BER}${SGR0}${WHI}\r"
+        tput cuf 32
+        echo -en "${DIM}RSSI:${SGR0} ${SMETER_COLOR}${BOLD}${SMETER} (-${DBM} dBm)${SGR0}${WHI}\r"
+
+        if [[ -n "${FROM}" ]] && [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
+        then
+          KERCHUNK_COUNT=$((KERCHUNK_COUNT + 1))
+          echo "${KERCHUNK_COUNT}" > "${KERCHUNK_FILE}"
+          tput cuf 57
+          echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
+        else
+          echo
+        fi
+
+        fnBUILD_HISTORY
+        fnNOSCROLL_ZONE
+        echo -en "${MAG}"
+        fnSEPARATOR
+        fnLISTENING
         continue
       fi
 
@@ -2481,7 +2599,6 @@ fi
 # no-scroll region is called upon.  We define them here,
 # because the function fnDEFINE_BOXCHARS needs to run
 # first, so that SBOX_VL is defined.
-
 HIST_COUNT=1
 until [[ ${HIST_COUNT} -gt ${HIST_MAX} ]]
 do
@@ -2587,12 +2704,6 @@ fnMAIN_LOOP
 # If we've exited the loop, it's because MMDVMHost is no longer writing
 # to the log that we've been watching.  Either the service was stopped
 # during pi-star's nightly update, or it has rolled to a new day's log.
-
-# We don't need this anymore.
-if [[ -n "${STATIC_TG_FILE}" ]]
-then
-  rm "${STATIC_TG_FILE}" 2> /dev/null
-fi
 
 # Sleep to let things settle, then restart the script.
 echo -en "${BOLD}${YEL}SLEEPING 45 SECS BEFORE WATCHING FOR NEW LOG ACTIVITY...${WHI}${SGR0} "
