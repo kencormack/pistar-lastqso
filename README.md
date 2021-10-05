@@ -171,6 +171,127 @@ The program remembers which options (if any) you specified at launch, so that it
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/help-screen5.jpg)
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/help-screen6.jpg)
 
+```
+PISTAR-LASTQSO - HELP
+
+(Cursor Up/Down keys to scroll, Page Up/Dn to page, Q to quit help.)
+
+  With no options, the script watches for DMR and YSF traffic.
+  Log entries are parsed and presented as each log line is read.
+  Use Ctrl-C to exit.
+
+  -c|--csv
+      Download an updated user.csv from radioid.net now, rather than
+      waiting for the presently installed copy to age 7 days before it
+      updates automatically.
+
+  -d|--dat
+      Download an updated cty.dat from country-files.com, rather than
+      waiting for the presently installed copy to age 30 days before it
+      updates automatically.
+
+  -e|--errors
+      By default, pistar-lastqso will display any error messages found
+      in the MMDVM log, as they occur.  It ia NOT unusual to see an
+      occasional, or sporadic message, such as a queue overflow.  But
+      if these or other errors are frequent or persist, you may need
+      to get help from the pi-star forums.  In the meantime, you can use
+      the "-e" or "--error" option to suppress the onscreen reporting
+      of these errors.  The errors will however still be counted for
+      the current session, and the count will still be reported on the
+      exit screen.  It is your responsibility to investigate any cause.
+
+      Use of this option DOES NOT FIX THE ERRORS coming from pi-star.
+      It only stops telling you that they are happening.
+
+      NOTE: The script also displays and tallies any WARNINGS that may
+      show up in the log.  Although the -e|--error option will supress
+      display of ERRORS, it will NOT supress display of WARNINGS.
+
+  -f|--font <1-4>
+      The [-f|--font] option forces use of the selected font, regardless of
+      screen-width.
+
+      Valid options are 1, 2, 3, or 4
+        1 = "small"
+        2 = "standard"
+        3 = "big"
+        4 = "ansi_shadow"
+
+      If this option is omitted, the script will auto-select an
+      appropriately sized font based on the following screen-width
+      thresholds:
+
+        < 80 chars wide:  "small" font
+      80-120 chars wide:  "standard" font
+        >120 chars wide:  "big" font
+
+      The "ansi_shadow" font is never auto-selected.
+
+  -h|--help
+      Display this help screen, then exit.
+
+  -l|--logo
+      Disables the animated logo at startup.  Automatically applied
+      when the program restarts at service bounce, or when the log
+      is rotated.  Optional, when launching from the cmdline.
+
+  -m|--mono
+      For monochrome displays, this option suppresses all color codes.
+
+  -n|--nobig
+      Disable the large font display of callsigns and ID #s, on systems
+      with figlet installed.  This conserves screen-space.
+
+  -t|--top [integer]
+      Adds an information zone to the top of the screen that shows
+      the version number of this script, date of the cty.dat and
+      user.csv files, name of the active log file, TX and RX freqs,
+      the hotspot's TCXO frequency and firmware version, the DMR
+      and/or YSF Master servers, and the first 5 statically defined
+      BrandMeister TalkGroups.
+
+      By default, the use of "-t|--top" also provides a history of
+      the last 5 QSOs observed.  However, by specifying an integer
+      parameter, the number of QSOs displayed in the history can be
+      changed.  A value of 0 (zero) disables the history (but retains
+      all the other information in the "-t|--top" section of the
+      screen.  Other values determine the number of lines of history
+      that will be displayed.
+
+      Examples:
+        -t       defaults to 5 lines of history
+        -t 0     disables the history
+        -t 7     displays a history 7 lines deep
+        -t 23    displays a history 23 lines deep
+
+      CAUTION: Specifying too many lines for your actual screen-size
+      will yield unpredictable (and certainly unsatisfactory) results.
+      I do NOT limit-check this parameter, because SSH sessions in
+      dynamically resizable windows could have a different number of
+      lines each time the screen is re-sized, rendering useless any
+      limit-check performed at startup.
+
+      As a point of reference, "--t 10 -nobig" will maximize the size
+      of the history, while still allowing full details for the QSO
+      in progress (without large fonts), on a typical 80x24 display.
+      Larger screens will support other combinations.  Feel free to
+      experiment - YMMV.
+
+  -v|--version
+      Display this script's version number, then exit.
+
+  -w|--wrap
+      Ordinarily, if figlet decides it needs to wrap the text that it
+      displays, based on the size of the font selected, and the width
+      of the screen (in columns), it will do so.  However, setting
+      this option tells figlet to ignore the screen width, and just
+      keep printing on the same line, even if that means the text will
+      disappear off the right edge of the screen.  You sacrifice what-
+      ever information was off the edge of the screen, but without
+      wasting so much vertical screen space to line-wrap.
+```
+
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
