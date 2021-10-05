@@ -165,6 +165,17 @@ The program remembers which options (if any) you specified at launch, so that it
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/usage.jpg)
 
 ```
+USAGE - valid options and parameters include:
+
+  Short Form:
+    [-c] [-d] [-e] [-f <1-4>] [-h] [-l] [-m] [-n] [-t [integer]] [-v] [-w]
+
+  Long Form:
+    [--csv] [--dat] [--errors] [--font <1-4>] [--help]
+    [--logo] [--mono] [--nobig] [--top [<integer>]] [--version] [--wrap]
+```
+
+```
 PISTAR-LASTQSO - HELP
 
 (Cursor Up/Down keys to scroll, Page Up/Dn to page, Q to quit help.)
