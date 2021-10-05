@@ -168,6 +168,7 @@ The program remembers which options (if any) you specified at launch, so that it
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/help-screen3.jpg)
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/help-screen4.jpg)
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/help-screen5.jpg)
+![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/help-screen6.jpg)
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
