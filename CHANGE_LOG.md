@@ -1,4 +1,18 @@
 ```
+CHANGES: V2.13
+ 1. Preserve and carry forward any history, during auto-
+    restarts, at log rotation or service bounce.
+ 2. Colorize CPU Temp in the "-t|--top" section of screen.
+    < 50°C is green, >= 50°C is yellow, >= 69°C is red.
+ 3. Fixed a missing check for /usr/local/etc/MY_LIST.txt
+    before attempting to search it.
+ 4. If the traffic is YSF, and only the country is resolved
+    (based on the callsign's prefix), then don't bother
+    showing "n/a" for either the city or state fields.
+ 5. A few cleanups suggested by shellcheck.
+ 6. Removed redundant parsing of date/timestamps.
+ 7. Other small cleanups.
+
 CHANGES: V2.12
  1. There is no source for YSF callsign "first name" data.
     However, as a YSF user may also have a registered DMR

@@ -6,7 +6,7 @@
 
 set -o allexport
 
-VERSION=2.12
+VERSION=2.13
 
 umask 0077
 
@@ -100,8 +100,6 @@ LOGO=1
 # Can be overridden with optional [<1-30>] parameter passed to
 # the "-t|--top" cmdline option
 HIST_MAX=5
-#KPC
-#BELOW_NOSCROLL=$((HIST_MAX + 6))
 BELOW_NOSCROLL=$((HIST_MAX + 7))
 
 # Define some ways to make things bold, use different colors, control
@@ -113,8 +111,7 @@ BELL="$(tput bel)"		# Sound a bell
 
 # Not all term types (including the pi console's "TERM=linux") support
 # tput's alternate screen buffers.  If not, just clear the screen.
-# shellcheck disable=SC2143
-if [[ -n "$(infocmp -1 | grep "smcup=")" ]] && [[ -n "$(infocmp -1 | grep "rmcup=")" ]]
+if infocmp -1 | grep -q "smcup=" && infocmp -1 | grep -q "rmcup="
 then
   SMCUP="$(tput smcup)"		# Set alternate screen buffer
   RMCUP="$(tput rmcup)"		# Restore primary screen buffer
@@ -137,20 +134,17 @@ CLR_EL="$(tput el)"		# Clear to end of line
 CLR_ED="$(tput ed)"		# Clear to end of display
 
 INS_LINE="$(tput il1)"		# Insert a line above current row (pushes everything down)
-# shellcheck disable=SC2034
-DEL_LINE="$(tput dl1)"		# Delete a line below current row (pulls everything up)
+#DEL_LINE="$(tput dl1)"		# Delete a line below current row (pulls everything up)
 
 SGR0="$(tput sgr0)"		# Undo text attributes (bold, etc.)
 BOLD="$(tput bold)"		# Make text bold
 DIM="$(tput dim)"		# Half-intensity
 REV="$(tput rev)"		# Reverse text fg/bg colors
 SMUL="$(tput smul)"		# Underline text
-# shellcheck disable=SC2034
-BLINK="$(tput blink)"		# Blink text
+#BLINK="$(tput blink)"		# Blink text
 
 CUR_UP="$(tput cuu1)"		# Cursor up, one line
-# shellcheck disable=SC2034
-CUR_DN="$(tput cud1)"		# Cursor down, one line
+#CUR_DN="$(tput cud1)"		# Cursor down, one line
 
 WRAP_OFF="$(tput rmam)"		# Disable line-wrap
 WRAP_ON="$(tput smam)"		# Enable line-wrap
@@ -162,8 +156,7 @@ WRAP_ON="$(tput smam)"		# Enable line-wrap
 # TERM_RESET="$(echo -ne "\E[0m")"
 
 # Forground colors
-# shellcheck disable=SC2034
-BLA="$(tput setaf 0)"		# Black
+#BLA="$(tput setaf 0)"		# Black
 RED="$(tput setaf 1)"		# Red
 GRE="$(tput setaf 2)"		# Green
 YEL="$(tput setaf 3)"		# Yellow
@@ -188,10 +181,8 @@ DEF="$(tput setaf 9)"		# Default
 # For grepping stuff that includes tabs
 GTAB=$'\t'
 
-# shellcheck disable=SC2034
-MY_CALLSIGN="$(grep -A 8 "^\[General\]" /etc/mmdvmhost | grep "^Enable" | cut -f2 -d"=")"
+#MY_CALLSIGN="$(grep -A 8 "^\[General\]" /etc/mmdvmhost | grep "^Enable" | cut -f2 -d"=")"
 
-#KPC
 MODEM_PORT="$(grep -A 25 "^\[Modem\]" /etc/mmdvmhost | grep "^Port" | cut -f3 -d"/")"
 
 DMR_ENABLED="$(grep -A 2 "^\[DMR\]" /etc/mmdvmhost | grep "^Enable" | cut -f2 -d"=")"
@@ -265,6 +256,7 @@ QSO_COUNT_FILE="/tmp/pistar-lastqso-qso-count.$$"
 KERCHUNK_FILE="/tmp/pistar-lastqso-kerchunk-count.$$"
 ERROR_FILE="/tmp/pistar-lastqso-error-count.$$"
 WARNING_FILE="/tmp/pistar-lastqso-warning-count.$$"
+HISTORY_FILE="/tmp/pistar-lastqso-history.$$"
 
 ###########################################################
 # FUNCTIONS
@@ -591,8 +583,7 @@ fnTOP_DATA()
   then
     YSF_MASTER="$(grep -A 5 "\[Network\]" /etc/ysfgateway | grep "^Startup" | cut -f2 -d"=")"
   else
-    # shellcheck disable=SC2143
-    if [[ -n "$(systemctl status dmr2ysf | grep "active (running)")" ]]
+    if systemctl status dmr2ysf | grep -q "active (running)"
     then
       YSF_MASTER="YSF2DMR ($(grep -A 5 "\[Network\]" /etc/ysfgateway | grep "^Startup" | cut -f2 -d"="))"
     else
@@ -607,8 +598,7 @@ fnTOP_DATA()
     DMR_MASTER="$(grep -A 10 "\[DMR Network\]" /etc/mmdvmhost | grep "^Address" | cut -f2 -d"=")"
     DMR_MASTER_NAME="$(grep "${GTAB}${DMR_MASTER}${GTAB}" /usr/local/etc/DMR_Hosts.txt | awk '{ print $1 }' | sed 's/_/ /g')"
   else
-    # shellcheck disable=SC2143
-    if [[ -n "$(systemctl status ysf2dmr | grep "active (running)")" ]]
+    if systemctl status ysf2dmr | grep -q "active (running)"
     then
       DMR_MASTER="DMR2YSF ($(grep -A 5 "\[DMR Network 3\]" /etc/dmrgateway | grep "^Name" | cut -f2 -d"="))"
     else
@@ -618,18 +608,15 @@ fnTOP_DATA()
   DMR_MASTER="$(echo "${DMR_MASTER}${TOP_PAD}" | cut -c1-32)"
 
   # GATHER LINE 3 DATA...
-#KPC
   PLATFORM="$(platformDetect.sh)"
 
   # GATHER LINE 4 DATA...
-  # shellcheck disable=SC2143
-  if [[ -n "$(grep "${GTAB}${DMR_MASTER}${GTAB}" "${DMRHOSTS}" | grep "^BM_")" ]]
+  if grep "${GTAB}${DMR_MASTER}${GTAB}" "${DMRHOSTS}" | grep -q "^BM_"
   then
     STATIC_LIST="$(fnDMR_BM_STATIC_TGS | tail -1 | awk '{ print $1" "$2" "$3" "$4" "$5}')"
     STATIC_COUNT="$(grep -c . "${STATIC_TG_FILE}")"
     STATIC_LINE="${CYA}STATIC TGs (${WHI}${BOLD}${STATIC_COUNT}${SGR0} ${CYA}Found, ${WHI}${BOLD}5${SGR0} ${CYA}Max Shown): ${SGR0}${WHI}${BOLD}${STATIC_LIST}${SGR0}${CLR_EL}"
   else
-    # shellcheck disable=SC2034
     STATIC_LINE="${CYA}Network is not BrandMeister - No API available to retrieve any Static TGs${SGR0}${CLR_EL}"
   fi
 }
@@ -674,10 +661,23 @@ fnNOSCROLL_ZONE()
   tput cuf 48
   echo -e "${CYA}FW:${SGR0} ${WHI}${BOLD}${FW}${SGR0}${CLR_EL}"
 
-#KPC
   # Print line 2
   CPU_TEMP="$(vcgencmd measure_temp | cut -f2 -d"=")"
-  echo -en "${CYA}Temp:${SGR0} ${WHI}${BOLD}${CPU_TEMP}${SGR0}\r"
+  CPU_TEMP_INT="$(echo "${CPU_TEMP}}" | cut -f1 -d".")"
+  if [[ "${CPU_TEMP_INT}" -lt 50 ]]
+  then
+    CPU_TEMP_COLOR="${GRE}"
+  fi
+  if [[ "${CPU_TEMP_INT}" -ge 50 ]]
+  then
+    CPU_TEMP_COLOR="${YEL}"
+  fi
+  if [[ "${CPU_TEMP_INT}" -ge 69 ]]
+  then
+    CPU_TEMP_COLOR="${RED}"
+  fi
+
+  echo -en "${CYA}Temp:${SGR0} ${CPU_TEMP_COLOR}${BOLD}${CPU_TEMP}${SGR0}\r"
   tput cuf 16
   echo -en "${CYA}Port:${SGR0} ${WHI}${BOLD}${MODEM_PORT}${SGR0}\r"
   tput cuf 32
@@ -693,16 +693,20 @@ fnNOSCROLL_ZONE()
 
   if [[ ${HIST_MAX} -gt 0 ]]
   then
-    # Print the QSO history lines... newest through oldest
     echo -e "${CLR_EL}${REV}${CYA}Previous ${SBOX_VL} From       ${SBOX_VL} To         ${SBOX_VL}  Secs ${SBOX_VL}  BER% ${SBOX_VL} Src ${SBOX_VL} Loss% or S-Meter ${SGR0}${WHI}"
   else
     echo -e "${CLR_EL}${REV}${CYA}          History not enabled - 0 lines specified on the commandline        ${SGR0}${WHI}"
   fi
 
+  #KPC
+  # Print the QSO history lines... newest through oldest
+  # Save the history to a file, as well, for auto-restarts.
+  > "${HISTORY_FILE}"
   HIST_COUNT=1
   until [[ ${HIST_COUNT} -gt ${HIST_MAX} ]]
   do
     echo -e "${SGR0}${HISTORY[HIST_COUNT]}${CLR_EL}"
+    echo -e "HISTORY[${HIST_COUNT}]=\"${HISTORY[HIST_COUNT]}\"" >> "${HISTORY_FILE}"
     HIST_COUNT="$((HIST_COUNT + 1))"
   done
 
@@ -789,8 +793,6 @@ fnPARSE_CMDLINE()
         else
           HIST_MAX=5
         fi
-#KPC
-        #BELOW_NOSCROLL=$((HIST_MAX + 6))
         BELOW_NOSCROLL=$((HIST_MAX + 7))
         continue
         ;;
@@ -822,8 +824,7 @@ fnPARSE_CMDLINE()
 
       -m|--mono)
         # Forground colors
-        # shellcheck disable=SC2034
-        BLA=""
+        #BLA=""
         RED=""
         GRE=""
         YEL=""
@@ -859,12 +860,6 @@ fnPARSE_CMDLINE()
 
       -w|--wrap)
         NO_WRAP=1
-        ;;
-
-      -c|-d|-e|-f|-h|-l|-m|-n|-t|-v|-w)
-        ;;
-
-      --csv|--dat|--errors|--font|--help|--logo|--mono|--nobig|--top|--version|--wrap)
         ;;
 
       *)
@@ -975,16 +970,17 @@ PISTAR-LASTQSO - HELP
       For monochrome displays, this option suppresses all color codes.
 
   -n|--nobig
-      Disable the large font display of callsigns and ID #s, on systems
-      with figlet installed.  This conserves screen-space.
+      Disable the large font display of callsigns and ID #s.  This
+      conserves vertical screen-space.
 
   -t|--top [integer]
       Adds an information zone to the top of the screen that shows
       the version number of this script, date of the cty.dat and
       user.csv files, name of the active log file, TX and RX freqs,
-      the hotspot's TCXO frequency and firmware version, the DMR
-      and/or YSF Master servers, and the first 5 statically defined
-      BrandMeister TalkGroups.
+      the hotspot's TCXO frequency and firmware version, CPU temp,
+      the Modem's device node (port), the computer platform/model,
+      the DMR and/or YSF Master servers, and the first 5 statically
+      defined BrandMeister TalkGroups.
 
       By default, the use of "-t|--top" also provides a history of
       the last 5 QSOs observed.  However, by specifying an integer
@@ -1007,9 +1003,9 @@ PISTAR-LASTQSO - HELP
       lines each time the screen is re-sized, rendering useless any
       limit-check performed at startup.
 
-      As a point of reference, "--t 10 -nobig" will maximize the size
-      of the history, while still allowing full details for the QSO
-      in progress (without large fonts), on a typical 80x24 display.
+      As a point of reference, "-t 9 --n" will maximize the size of
+      the history, while still allowing full details for the QSO in
+      progress (without large fonts), on a typical 80x24 display.
       Larger screens will support other combinations.  Feel free to
       experiment - YMMV.
 
@@ -1451,7 +1447,7 @@ fnDMR_GET_FROM()
     # If not, then see if it is a talkgroup
     FROM_NAME="$(grep "^${FROM};" "${TGLIST}" | cut -f3 -d";")"
     # If that came back empty, see if it's in MY_LIST.txt
-    if [[ "${FROM_NAME}" = "" ]]
+    if [[ "${FROM_NAME}" = "" ]] && [[ -f "${MY_LIST}" ]]
     then
       FROM_NAME="$(grep "^${FROM};" "${MY_LIST}" | cut -f3 -d";")"
     fi
@@ -1724,7 +1720,7 @@ fnYSF_SHOW_CURRENT_CALL()
     COUNTRY=""
 
     # Last resort: Look up country based on callsign prefix
-    if [[ -n "$(echo "${FROM}" | cut -f1 -d"-" | cut -c1-3 | grep "[0-9]")" ]]
+    if echo "${FROM}" | cut -f1 -d"-" | cut -c1-3 | grep -q "[0-9]"
     then
       QTH_SRC="cty.dat"
       DXCC_FROM="$(echo "${LOGREC_CALLSIGN}" | cut -f1 -d"/" | cut -f1 -d"-")"
@@ -1744,7 +1740,12 @@ fnYSF_SHOW_CURRENT_CALL()
   else
     echo -en "${DIM}File:${SGR0} ${MAG}${BOLD}${QTH_SRC}${SGR0}${WHI}\r"
     tput cuf 18
-    echo -e "${DIM}QTH:${SGR0} ${MAG}${BOLD}${CITY}, ${STATE}, ${COUNTRY}${SGR0}${WHI}"
+    if [[ "${QTH_SRC}" = "cty.dat" ]]
+    then
+      echo -e "${DIM}QTH:${SGR0} ${MAG}${BOLD}${COUNTRY}${SGR0}${WHI}"
+    else
+      echo -e "${DIM}QTH:${SGR0} ${MAG}${BOLD}${CITY}, ${STATE}, ${COUNTRY}${SGR0}${WHI}"
+    fi
   fi
 
   fnQSO_IN_PROGRESS
@@ -2230,20 +2231,25 @@ fnMAIN_LOOP()
       continue
     fi
 
-    # BEGIN YSF-SPECIFIC LOG RECORDS
-    # Grab the record type (^M:, ^E:, etc.), date and timestamps, and mode (DMR, YSF, etc.)
-    # shellcheck disable=SC2034
-    read -r LOGREC_TYPE LOGREC_DATE LOGREC_TIME LOGREC_MODE <<<"$(echo "${RECORD}" | awk '{ print $1 " " $2 " " $3 " " $4 }')"
-    # Grab everything that follows the mode...
-    read -r LOGREC_REMAINING_DATA <<<"$(echo "${RECORD}" | awk '{ print substr($0, index($0,$4)) }')"
+    # For any record beginning with "^M:", get the date and timestamps, and mode (DMR, YSF, etc.)
+    # For records other than the loop exit trigger, "^E:", "^W:", or "^M:", do nothing, and loop
+    # to watch for the next log entry.
+    if [[ "$(echo "${RECORD}" | grep "^M:")" != "" ]]
+    then
+      read -r LOGREC_DATE LOGREC_TIME LOGREC_MODE <<<"$(echo "${RECORD}" | awk '{ print $2 " " $3 " " $4 }')"
+      LOGREC_MODE="$(echo "${LOGREC_MODE}" | cut -f1 -d",")"
+      # Grab everything that follows the mode...
+      read -r LOGREC_REMAINING_DATA <<<"$(echo "${RECORD}" | awk '{ print substr($0, index($0,$4)) }')"
+    else
+      continue
+    fi
 
-    LOGREC_MODE="$(echo "${LOGREC_MODE}" | cut -f1 -d",")"
+    # BEGIN YSF-SPECIFIC LOG RECORDS
     if [[ "${LOGREC_MODE}" = "YSF" ]]
     then
       # Start of YSF network traffic
-      if echo "${LOGREC_REMAINING_DATA}" | grep -q -E "received network data from"
+      if echo "${LOGREC_REMAINING_DATA}" | grep -q "received network data from"
       then
-        read -r LOGREC_DATE LOGREC_TIME <<<"$(echo "${RECORD}" | awk '{ print $2 " " $3 }')"
         fnCONVERT_DATE_TIME
         QSO_START_TIME="${TIME}"
 
@@ -2273,7 +2279,6 @@ fnMAIN_LOOP()
       # Start of YSF RF traffic
       if echo "${LOGREC_REMAINING_DATA}" | grep -q -E "received RF header from|received RF late entry from"
       then
-        read -r LOGREC_DATE LOGREC_TIME <<<"$(echo "${RECORD}" | awk '{ print $2 " " $3 }')"
         fnCONVERT_DATE_TIME
         QSO_START_TIME="${TIME}"
 
@@ -2318,7 +2323,7 @@ fnMAIN_LOOP()
       # YSF RF traffic dropped
       # transmission lost from KE8DPF     to ALL       , 1.6 seconds, BER: 0.8%, RSSI: -58/-47/-47 dBm
       # similar to: "received RF end of transmission from KE8DPF     to DG-ID 0, 1.0 seconds, BER: 0.8%, RSSI: -55/-51/-52 dBm"
-      if echo "${LOGREC_REMAINING_DATA}" | grep -q -E "transmission lost from"
+      if echo "${LOGREC_REMAINING_DATA}" | grep -q "transmission lost from"
       then
         read -r LOGREC_SECS  LOGREC_BER  LOGREC_RSSI \
           <<<"$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $9 " " $12 " " $14 }')"
@@ -2341,7 +2346,7 @@ fnMAIN_LOOP()
         fnCOLORIZE_RSSI
 
         fnCLEAR_CURRENT_LINE
-        echo "\r${BOLD}${YEL}TRANSMISSION LOST${SGR0}${WHI}"
+        echo -e "\r${BOLD}${YEL}TRANSMISSION LOST${SGR0}${WHI}"
         echo -en "\r${DIM}Dur.:${SGR0} ${BLU}${BOLD}${LOGREC_SECS}${SGR0}${WHI} sec\r"
         tput cuf 18
         echo -en "${DIM}BER:${SGR0} ${BER_COLOR}${BOLD}${LOGREC_BER}${SGR0}${WHI}\r"
@@ -2430,20 +2435,14 @@ fnMAIN_LOOP()
         fnLISTENING
         continue
       fi
-
-      if echo "${LOGREC_REMAINING_DATA}" | grep -q "received RF late entry from"
-      then
-        continue
-      fi
     fi
     # END YSF-SPECIFIC LOG RECORDS
 
     # BEGIN DMR-SPECIFIC LOG RECORDS
-    if echo "${RECORD}" | grep -q "DMR Talker Alias"
+    if echo "${LOGREC_REMAINING_DATA}" | grep -q "DMR Talker Alias"
     then
       fnDMR_TALKER_ALIAS
     else
-      read -r LOGREC_DATE LOGREC_TIME <<<"$(echo "${RECORD}" | awk '{ print $2 " " $3 }')"
       fnCONVERT_DATE_TIME
 
       # Determine DMR Time Slot, and RF or Network traffic
@@ -2453,7 +2452,7 @@ fnMAIN_LOOP()
       # Compensate for shifting fields between "group" and "private" ID numbers
       fnDMR_PAD_ABSENT_TG
 
-      if echo "${RECORD}" | grep -q -E -i "voice header|data header"
+      if echo "${LOGREC_REMAINING_DATA}" | grep -q -E -i "voice header|data header"
       then
         QSO_COUNT=$((QSO_COUNT + 1))
         echo "${QSO_COUNT}" > "${QSO_COUNT_FILE}"
@@ -2469,7 +2468,7 @@ fnMAIN_LOOP()
       else
         # The QSO has ended.
         # If it was voice traffic...
-        if echo "${RECORD}" | grep -q "end of voice"
+        if echo "${LOGREC_REMAINING_DATA}" | grep -q "end of voice"
         then
           DATA=0
 
@@ -2477,7 +2476,7 @@ fnMAIN_LOOP()
           SECS="$(echo "${RECORD}" | awk '{ print $18 }')"
 
           # If it was network traffic...
-          if [[ "$(echo "${RECORD}" | grep "RSSI:")" = "" ]]
+          if [[ "$(echo "${LOGREC_REMAINING_DATA}" | grep "RSSI:")" = "" ]]
           then
             fnDMR_GET_NET_BER
             fnCOLORIZE_BER
@@ -2520,7 +2519,7 @@ fnMAIN_LOOP()
           # It was data traffic...
           DATA=1
 
-          if echo "${RECORD}" | grep -E -q "ended network data|ended RF data"
+          if echo "${LOGREC_REMAINING_DATA}" | grep -E -q "ended network data|ended RF data"
           then
             if [[ ${BLOCKS} -gt 1 ]]
             then
@@ -2568,6 +2567,7 @@ fnEXIT()
   rm "${KERCHUNK_FILE}" 2> /dev/null
   rm "${ERROR_FILE}" 2> /dev/null
   rm "${WARNING_FILE}" 2> /dev/null
+  rm "${HISTORY_FILE}" 2> /dev/null
   exit
 }
 
@@ -2589,8 +2589,7 @@ fnDEFINE_BOXCHARS
 DBL_LINE="$(printf "${DBOX_HL}%.0s" {1..76})"
 
 # Check for any options passed to the script.
-# shellcheck disable=SC2128
-if [[ -n "${ARG_LIST}" ]]
+if [[ -n "${ARG_LIST[0]}" ]]
 then
   fnPARSE_CMDLINE
 fi
@@ -2599,12 +2598,28 @@ fi
 # no-scroll region is called upon.  We define them here,
 # because the function fnDEFINE_BOXCHARS needs to run
 # first, so that SBOX_VL is defined.
-HIST_COUNT=1
-until [[ ${HIST_COUNT} -gt ${HIST_MAX} ]]
-do
-  HISTORY[HIST_COUNT]="         ${SBOX_VL}            ${SBOX_VL}            ${SBOX_VL}       ${SBOX_VL}       ${SBOX_VL}     ${SBOX_VL}${SGR0}${WHI}"
-  HIST_COUNT="$((HIST_COUNT + 1))"
-done
+#KPC
+if [[ -f "${HISTORY_FILE}" ]]
+then
+  # If we are auto-restarting, load previous history
+  . "${HISTORY_FILE}"
+
+  HIST_COUNT=${HIST_MAX}
+  until [[ ${HIST_COUNT} -eq 0 ]]
+  do
+    HISTORY[HIST_COUNT]="${HISTORY[$((HIST_COUNT - 1))]}"
+    HIST_COUNT="$((HIST_COUNT - 1))"
+  done
+  HISTORY[1]="-------- ${SBOX_VL} ---------- ${SBOX_VL} ---------- ${SBOX_VL} ----- ${SBOX_VL} ----- ${SBOX_VL} --- ${SBOX_VL}${CYA} - Auto-Restart - ${SGR0}${WHI}"
+else
+  # Otherwise, start with a fresh history
+  HIST_COUNT=1
+  until [[ ${HIST_COUNT} -gt ${HIST_MAX} ]]
+  do
+    HISTORY[HIST_COUNT]="         ${SBOX_VL}            ${SBOX_VL}            ${SBOX_VL}       ${SBOX_VL}       ${SBOX_VL}     ${SBOX_VL}${SGR0}${WHI}"
+    HIST_COUNT="$((HIST_COUNT + 1))"
+  done
+fi
 
 ###########################################################
 # Now for the meat and potatoes...
