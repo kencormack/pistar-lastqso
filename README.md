@@ -353,7 +353,7 @@ Don't panic if you see a single transient occurrance of something like a "queue 
 
 Finally, all four of the counters (QSO, Kerchunks, Errors, and Warnings) are reset each time the user exits **pistar-lastqso** using Ctrl-C.  However, when the script auto-restarts itself, either at log rotation or when PI-STAR's services get cycled during the nightly PI-STAR update, the running counts for each counter are carried forward to the restarted session.
 
-The commandline option "-e|--errors" will supress onscreen notification of errors during QSOs, but will NOT supress the more severe "warnings".  With or without that option, the total numbers of any errors or warnings detected, will be displayed at program exit.
+The commandline option "-e | --errors" will supress onscreen notification of errors during QSOs, but will NOT supress the more severe "warnings".  With or without that option, the total numbers of any errors or warnings detected, will be displayed at program exit.
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
@@ -393,7 +393,7 @@ The "ansi_shadow" font can be utilized by specifying "-f | --font 4" on the **pi
 
 If you specify an invalid numeric parameter for the "-f | --font" option, **pistar-lastqso** will display a usage screen showing valid options and parameters, and then exit.
 
-Note that for any given font you specify with the "-f | --font" option, figlet may decide it needs to line-wrap the output.  This can waste a lot of screen space if you force a too-large font on a too-small screen.  If that happens, try a lower-numbered parameter for the "-f | --font" option, to select a smaller font.
+Note that for any given font you specify with the "-f | --font" option, figlet may decide it needs to line-wrap the output.  This can waste a lot of screen space if you force a too-large font on a too-small screen.  If that happens, try a lower-numbered parameter for the "-f | --font" option, to select a smaller font, or add the "-w | --wrap" option, to disable figlet's automatic line-wrapping.
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
@@ -438,7 +438,7 @@ Key elements of the tool's operation include:
 - a trigger phrase written to the log by that fork, which signals the main loop to exit
 - skipping past the trigger phrase when the loop re-starts (to prevent subsequent false exits from the loop)
 - having the program re-launch itself when the current log has been closed/re-opened, or a new log started
-- passing any options supplied at runtime (other than "-c | --csv"), to subsequent automatic restarts
+- passing any options supplied at runtime (other than "-c | --csv" or "-d | --dat"), to subsequent automatic restarts
 
 The rest of the program is mainly parsing the log entries, and presenting the data on-screen.
 
