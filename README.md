@@ -469,6 +469,10 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 -------------------------------------------------------------------
 ## Acknowledgements
 
+**figlet** (http://www.figlet.org/) is the work of Frank Sheeran, Ian Chai, and Glenn Chappell.
+
+The **ansi_dhadow** font pre-dates figlet.  It appears to have been created using an old DOS ANSI art package called "thedraw", and converted for figlet.  It's original creator is unknown.  It can be found at https://github.com/xero/figlet-fonts and from numerous other font collections on the Internet.
+
 **dxcc** (https://fkurz.net/ham/dxcc.html) is a small command line utility, written in perl, which determines the ARRL DXCC entity of a ham radio callsign.  dxcc was written by Fabian Kurz, DJ1YFK.
 It uses the **cty.dat** country file by Jim Reisert, AD1C (http://www.country-files.com/).
 
