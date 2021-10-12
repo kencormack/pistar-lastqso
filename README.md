@@ -22,6 +22,7 @@
 - **[Sample Screenshots](https://github.com/kencormack/pistar-lastqso#sample-screenshots)**
 - **[Other Notes](https://github.com/kencormack/pistar-lastqso#other-notes)**
 - **[Getting Help](https://github.com/kencormack/pistar-lastqso#getting-help)**
+- **[Acknowledgements](https://github.com/kencormack/pistar-lastqso#acknowledgements)**
 - **[Special Thanks](https://github.com/kencormack/pistar-lastqso#special-thanks)**
 
 -------------------------------------------------------------------
@@ -465,6 +466,11 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
+-------------------------------------------------------------------
+## Acknowledgements
+
+- dxcc (https://fkurz.net/ham/dxcc.html) is a small command line utility, written in perl, which determines the ARRL DXCC entity of a ham radio callsign.  dxcc was written by Fabian Kurz, DJ1YFK.
+- It uses the cty.dat country file by Jim Reisert, AD1C (http://www.country-files.com/).
 -------------------------------------------------------------------
 ## Special Thanks
 
