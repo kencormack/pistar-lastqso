@@ -1,4 +1,18 @@
 ```
+CHANGES: V2.14
+ 1. Fixed broken parenthesis when fetching CPU temp.
+ 2. Made a pass with beautysh.
+ 3. Fixed cmdline parsing to accept an equals sign (=)
+    or a space, between an option and it's parameter.
+    The following are all now valid examples of the forms
+    an option and it's parameter can take.
+      $ pistar-lastqso -f 1 -t 24
+      $ pistar-lastqso -f=1 -t=24
+      $ pistar-lastqso --font 1 --top 24
+      $ pistar-lastqso --font=1 --top=24
+ 4. Added a timestamp to the "Auto-Restart" line in the
+    history, to indicate what time the restart occurred,
+
 CHANGES: V2.13
  1. Preserve and carry forward any history, during auto-
     restarts, at log rotation or service bounce.
