@@ -1,4 +1,18 @@
 ```
+CHANGES: V2.15
+ 1. Increased sleep time from 45 to 60 seconds, during
+    auto-restart at log rotation or nightly update.
+ 2. Added checks at the start of the script to ensure
+    that A.) MMDVMHost is running, and B.) that it is
+    writing to the log.  If it's not running, exit.
+    If it is running, but not (yet?) writing to the log,
+    sleep 10 seconds and check again.
+ 3. Strip any "/" or "-" suffix from YSF callsigns
+    before attempting to resolve names from the user.csv
+    or NXDN.csv files.
+ 4. Added a missing incrementation of the array index
+    in fnPARSE_CMDLINE, and cleaned up the default case.
+
 CHANGES: V2.14
  1. Fixed broken parenthesis when fetching CPU temp.
  2. Made a pass with beautysh.

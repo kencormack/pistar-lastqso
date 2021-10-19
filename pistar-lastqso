@@ -6,7 +6,7 @@
 
 set -o allexport
 
-VERSION=2.14
+VERSION=2.15
 
 umask 0077
 
@@ -22,9 +22,6 @@ MY_CMDLINE="${*//=/ }"
 # shellcheck disable=SC2206
 ARG_LIST=(${MY_CMDLINE})
 ARG_LIST_LENGTH=${#ARG_LIST[@]}
-
-# If user presses Ctrl-C, stop the program
-trap fnEXIT SIGINT SIGTERM
 
 # NOTE #1: Originally written for pi-star >= 4.1.4, for DMR mode ONLY.
 # Support for YSF (plus DMR2YSF and YSF2DMR) was added later.  If the
@@ -70,6 +67,7 @@ set -E -o functrace
 # Get the full path to this script
 SCRIPT="$(readlink -f "${0}")"
 
+#---------------
 # Defaults that can be overriden with cmdline options...
 #
 # Don't force immediate download of user.csv file.
@@ -105,13 +103,16 @@ LOGO=1
 # the "-t|--top" cmdline option.  Passing a zero disables the
 # history, but retains the display of all other -t|--top info.
 HIST_MAX=5
+# When "-t|--top" is used, with or without a history, this defines
+# the line number on which the scrolling region of the screen
+# (the part showing the QSO details) begins.
 BELOW_NOSCROLL=$((HIST_MAX + 7))
 
+#---------------
 # Define some ways to make things bold, use different colors, control
-# scrolling and cursor positioning, and so on.
-# See "man tput" for descriptions of each tput parameter used here.
-# (tput is much more predictable across terminal types than cryptic
-# ANSI escape sequences.)
+# scrolling and cursor positioning, and so on.  See "man tput" for
+# descriptions of each tput parameter used here.  (tput is much more
+# predictable across terminal types than cryptic ANSI escape sequences.)
 BELL="$(tput bel)"		# Sound a bell
 
 # Not all term types (including the pi console's "TERM=linux") support
@@ -183,6 +184,7 @@ DEF="$(tput setaf 9)"		# Default
 # BG_WHI="$(tput setab 7)"	# White
 # BG_DEF="$(tput setab 9)"	# Default
 
+#---------------
 # For grepping stuff that includes tabs
 GTAB=$'\t'
 
@@ -229,6 +231,17 @@ LOGROOT="$(grep -A 4 "^\[Log\]" /etc/mmdvmhost | grep "^FileRoot=" | cut -f2 -d"
 # shellcheck disable=SC2012
 WORKING_LOG="$(ls -1tr "${LOGDIR}/${LOGROOT}"*.log | tail -1)"
 
+#---------------
+# APIKEY="$(grep "^apikey=" /etc/bmapi.key 2> /dev/null | cut -f2 -d"=")"
+HOTSPOT_ID="$(grep -A 13 "^\[DMR\]" /etc/mmdvmhost | grep "^Id=" | cut -f2 -d"=")"
+
+QSO_COUNT_FILE="/tmp/pistar-lastqso-qso-count.$$"
+KERCHUNK_FILE="/tmp/pistar-lastqso-kerchunk-count.$$"
+ERROR_FILE="/tmp/pistar-lastqso-error-count.$$"
+WARNING_FILE="/tmp/pistar-lastqso-warning-count.$$"
+HISTORY_FILE="/tmp/pistar-lastqso-history.$$"
+
+#---------------
 # Finding a way to get the screen width of a window that can
 # be dynamically re-sized is funky, in bash.  Neither tput,
 # stty, bash's own $LINES and $COLUMNS, or other such tools
@@ -251,15 +264,6 @@ EOF
 )
 # The above is called like this, whenever needed...
 # read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
-
-# APIKEY="$(grep "^apikey=" /etc/bmapi.key 2> /dev/null | cut -f2 -d"=")"
-HOTSPOT_ID="$(grep -A 13 "\[DMR\]" /etc/mmdvmhost | grep "^Id=" | cut -f2 -d"=")"
-
-QSO_COUNT_FILE="/tmp/pistar-lastqso-qso-count.$$"
-KERCHUNK_FILE="/tmp/pistar-lastqso-kerchunk-count.$$"
-ERROR_FILE="/tmp/pistar-lastqso-error-count.$$"
-WARNING_FILE="/tmp/pistar-lastqso-warning-count.$$"
-HISTORY_FILE="/tmp/pistar-lastqso-history.$$"
 
 ###########################################################
 # FUNCTIONS
@@ -582,29 +586,27 @@ fnTOP_DATA()
   TCXO="$(echo "${TCXO}${TOP_PAD}" | cut -c1-10)"
 
   # GATHER LINE 2 DATA...
-  YSF_ENABLED="$(grep -A 6 "\[System Fusion\]" /etc/mmdvmhost | grep "^Enable" | cut -f2 -d"=")"
   if [[ "${YSF_ENABLED}" = "1" ]]
   then
-    YSF_MASTER="$(grep -A 5 "\[Network\]" /etc/ysfgateway | grep "^Startup" | cut -f2 -d"=")"
+    YSF_MASTER="$(grep -A 5 "^\[Network\]" /etc/ysfgateway | grep "^Startup" | cut -f2 -d"=")"
   else
     if systemctl status dmr2ysf | grep -q "active (running)"
     then
-      YSF_MASTER="YSF2DMR ($(grep -A 5 "\[Network\]" /etc/ysfgateway | grep "^Startup" | cut -f2 -d"="))"
+      YSF_MASTER="YSF2DMR ($(grep -A 5 "^\[Network\]" /etc/ysfgateway | grep "^Startup" | cut -f2 -d"="))"
     else
       YSF_MASTER="Not Enabled"
     fi
   fi
   YSF_MASTER="$(echo "${YSF_MASTER}${TOP_PAD}" | cut -c1-20)"
 
-  DMR_ENABLED="$(grep -A 6 "\[DMR\]" /etc/mmdvmhost | grep "^Enable" | cut -f2 -d"=")"
   if [[ "${DMR_ENABLED}" = "1" ]]
   then
-    DMR_MASTER="$(grep -A 10 "\[DMR Network\]" /etc/mmdvmhost | grep "^Address" | cut -f2 -d"=")"
+    DMR_MASTER="$(grep -A 10 "^\[DMR Network\]" /etc/mmdvmhost | grep "^Address" | cut -f2 -d"=")"
     DMR_MASTER_NAME="$(grep "${GTAB}${DMR_MASTER}${GTAB}" /usr/local/etc/DMR_Hosts.txt | awk '{ print $1 }' | sed 's/_/ /g')"
   else
     if systemctl status ysf2dmr | grep -q "active (running)"
     then
-      DMR_MASTER="DMR2YSF ($(grep -A 5 "\[DMR Network 3\]" /etc/dmrgateway | grep "^Name" | cut -f2 -d"="))"
+      DMR_MASTER="DMR2YSF ($(grep -A 5 "^\[DMR Network 3\]" /etc/dmrgateway | grep "^Name" | cut -f2 -d"="))"
     else
       DMR_MASTER="Not Enabled"
     fi
@@ -642,8 +644,8 @@ fnNOSCROLL_ZONE()
   # Get the screensize.  We'll be needing the number of lines.
   read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
 
-  # Define the scrolling region of the screen to be from line 11 to
-  # the bottom of screen.  (Lines 0-10 will be the no-scroll zone.)
+  # Define the scrolling region of the screen to be from the line just
+  # below the no-scroll region, to the bottom of screen.
   # (Screen lines are numbered beginning with line 0.)
   tput csr "${BELOW_NOSCROLL}" $((LINES - 1))
 
@@ -731,8 +733,8 @@ fnRESET_SCROLLING()
     return
   fi
 
-  # Save the current cursor position
-  echo -en "${CUR_SC}"
+  # Save the current cursor position, and turn the cursor off
+  echo -en "${CUR_SC}${CUR_OFF}"
 
   # Get the screensize.  We'll be needing the lines.
   read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
@@ -762,11 +764,22 @@ USAGE - valid options and parameters include:
 #----------
 fnPARSE_CMDLINE()
 {
-  # Loop through all the cmdline arguments.
-  # In the loop, current value would be the option,
-  # and the next one would be the parameter.
-  # An example would be the -f|--font option, and
-  # it's parameter, for font selection.
+  # Loop through all the cmdline arguments.  In the loop, current
+  # value would be the option, and the next would be the parameter.
+  # An example would be the -f|--font option, and it's parameter,
+  # for font selection.
+
+  # I use this method because both the external GNU getopt command,
+  # and bash's builtin getops, have problems.  GNU's getopt does not
+  # handle empty flag arguments well; bash's builtin getopts does.
+  # GNU's getopt allows for the parsing of long options ( --help
+  # instead of -h ); bash's builtin getopts does not.
+
+  # The method I use below can both handle empty arguments (such as
+  # the "-t|-top" option when no optional number of history lines is
+  # given), and can easliy accomodate long-form options.  It is also,
+  # frankly, easier to understand, and more portable, than either
+  # GNU's getopt or bash's getopts.
 
   for (( INDEX=0; INDEX<ARG_LIST_LENGTH; INDEX++ ))
   do
@@ -774,29 +787,42 @@ fnPARSE_CMDLINE()
 
     case ${OPTION} in
       -f|--font)
+        # If this option is given, see if the next value
+        # is a number from 1 to 4
         NEXT=$((INDEX + 1))
         PARAM="${ARG_LIST[${NEXT}]}"
         if [[ ${PARAM} == ?(-)+([1-4]) ]]
         then
+          # It is, so use it to set the font.
           MY_FONT=${PARAM}
+          # Skip over the number we were passed, and look
+          # for the next cmdline option.
+          INDEX=$((INDEX + 1))
         else
+          # It is not, so show the usage text and exit.
           tput flash
           fnUSAGE
           echo -en "${BELL}"
           exit 1
         fi
-        INDEX=$((INDEX + 1))
         continue
         ;;
 
       -t|--top)
         TOP=1
+        # If this option is given, see if the next value
+        # is a number from 0 to 99
         NEXT=$((INDEX + 1))
         PARAM="${ARG_LIST[${NEXT}]}"
         if [[ ${PARAM} =~ ^-?[0-9]|[1-2][0-9]+$ ]]
         then
+          # It is, so use it to set the history depth.
           HIST_MAX="${PARAM}"
+          # Skip over the number we were passed, and look
+          # for the next cmdline option.
+          INDEX=$((INDEX + 1))
         else
+          # It is not, so assume a default history of 5.
           HIST_MAX=5
         fi
         BELOW_NOSCROLL=$((HIST_MAX + 7))
@@ -869,13 +895,10 @@ fnPARSE_CMDLINE()
         ;;
 
       *)
-        if [[ ! ${OPTION} =~ ^-?[0-9]|[1-3][0-9]+$ ]]
-        then
-          tput flash
-          fnUSAGE
-          echo -en "${BELL}"
-          exit 1
-        fi
+        tput flash
+        fnUSAGE
+        echo -en "${BELL}"
+        exit 1
         ;;
     esac
   done
@@ -1690,7 +1713,9 @@ fnYSF_SHOW_CURRENT_CALL()
   printf %05d "${QSO_COUNT}"
   echo "${SGR0}${WHI}"
 
-  FROM_NAME="$(grep ",${FROM}," "${USERCSV}" "${NXDNCSV}" | tail -1 | cut -f3 -d",")"
+  #KPC
+  CSV_FROM="$(echo "${FROM}" | cut -f1 -d"/" | cut -f1 -d"-")"
+  FROM_NAME="$(grep ",${CSV_FROM}," "${USERCSV}" "${NXDNCSV}" | tail -1 | cut -f3 -d",")"
   if [[ -n "${FROM_NAME}" ]]
   then
     P_FROM_NAME="$(printf "%-15s" "(${FROM_NAME})")"
@@ -1709,7 +1734,8 @@ fnYSF_SHOW_CURRENT_CALL()
   tput cuf 32
   echo -e "${DIM}Src.:${SGR0} ${BOLD}${CYA}${SOURCE}${SGR0}${WHI}"
 
-  CSV_CALLSIGN="${FROM}"
+  #KPC
+  CSV_CALLSIGN="$(echo "${FROM}" | cut -f1 -d"/" | cut -f1 -d"-")"
   # Maybe the callsign is also a DMR user...
   QTH_SRC="user.csv"
   CSV_RECORD="$(grep ",${CSV_CALLSIGN}," "${USERCSV}" | cut -f5-7 -d"," | sort -u)"
@@ -2592,18 +2618,40 @@ fnWINCH()
 ###########################################################
 # A few last items in the pre-flight checklist...
 
+# If user presses Ctrl-C, stop the program
+trap fnEXIT SIGINT SIGTERM
+
 # Disable line-wrap
 # Prevents unexpectedly long fields from busting up the screen.
 # (There's one entry in user.csv that is over 170 characters long!)
 echo -en "${WRAP_OFF}"
-
-fnDEFINE_BOXCHARS
 
 # Check for any options passed to the script.
 if [[ -n "${ARG_LIST[0]}" ]]
 then
   fnPARSE_CMDLINE
 fi
+
+#KPC
+# Ensure that...
+# A.) MMDVMHost is running.  If not, then exit.
+# B.) It is writing to the log.  If not, sleep, then re-try.
+if [[ "$(ps -ef | grep "[M]MDVMHost")" = "" ]]
+then
+  echo -e "\n  ${RED}MMDVMHost is NOT RUNNING.${SGR0}"
+  echo -e "  Check status in the pi-star GUI and try again.\n"
+  exit
+else
+  if [[ "$(sudo fuser -v "${WORKING_LOG}" 2>&1 | grep "MMDVMHost")" = "" ]]
+  then
+    echo -e "\n  ${YEL}MMDVMHost is RUNNING but is NOT writing to $(basename ${WORKING_LOG}).${SGR0}"
+    echo -e "  Sleeping another 10 seconds before trying again...\n"
+    sleep 10
+    exec /bin/bash -c "${SCRIPT} ${MY_CMDLINE} -l"
+  fi
+fi
+
+fnDEFINE_BOXCHARS
 
 if [[ ${LOGO} -eq 1 ]]
 then
@@ -2730,8 +2778,8 @@ fnMAIN_LOOP
 # during pi-star's nightly update, or it has rolled to a new day's log.
 
 # Sleep to let things settle, then restart the script.
-echo -en "${BOLD}${YEL}SLEEPING 45 SECS BEFORE WATCHING FOR NEW LOG ACTIVITY...${WHI}${SGR0} "
-sleep 45
+echo -en "${BOLD}${YEL}SLEEPING 60 SECS BEFORE WATCHING FOR NEW LOG ACTIVITY...${WHI}${SGR0} "
+sleep 60
 echo
 
 fnRESET_SCROLLING
