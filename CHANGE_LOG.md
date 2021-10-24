@@ -1,4 +1,12 @@
 ```
+CHANGES: V2.16
+ 1. Replaced a ps|grep pipeline w/ pgrep -f.
+ 2. Set PATH to place most often-used directories first.
+ 3. Small updates to fnPARSE_CMDLINE and fnUSAGE, to
+    clarify valid syntax, and give appropriate error
+    messages, if invalid options or parameters are used.
+ 4. Other minor changes.
+
 CHANGES: V2.15
  1. Increased sleep time from 45 to 60 seconds, during
     auto-restart at log rotation or nightly update.

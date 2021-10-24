@@ -6,9 +6,10 @@
 
 set -o allexport
 
-VERSION=2.15
+VERSION=2.16
 
 umask 0077
+PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 
 # Any equal signs passed on the cmdline are replaced w/ spaces,
 # so that an option, and it's parameter (if any), are two separate
@@ -749,15 +750,14 @@ fnRESET_SCROLLING()
 #----------
 fnUSAGE()
 {
-  echo "
-USAGE - valid options and parameters include:
+  echo "  USAGE:  Valid options and parameters include:
 
   Short Form:
     [-c] [-d] [-e] [-f <1-4>] [-h] [-l] [-m] [-n] [-t [integer]] [-v] [-w]
 
   Long Form:
     [--csv] [--dat] [--errors] [--font <1-4>] [--help]
-    [--logo] [--mono] [--nobig] [--top [<integer>]] [--version] [--wrap]
+    [--logo] [--mono] [--nobig] [--top [integer]] [--version] [--wrap]
   " >&2
 }
 
@@ -801,8 +801,9 @@ fnPARSE_CMDLINE()
         else
           # It is not, so show the usage text and exit.
           tput flash
-          fnUSAGE
           echo -en "${BELL}"
+          echo -e "\n  ERROR:  The use of \"-f|--font\" requires an integer 1-4"
+          fnUSAGE
           exit 1
         fi
         continue
@@ -896,8 +897,9 @@ fnPARSE_CMDLINE()
 
       *)
         tput flash
-        fnUSAGE
         echo -en "${BELL}"
+        echo -e "\n  ERROR:  \"${OPTION}\" is not a valid option."
+        fnUSAGE
         exit 1
         ;;
     esac
@@ -1774,7 +1776,7 @@ fnYSF_SHOW_CURRENT_CALL()
   # Show location details
   if [[ "${CITY}" = "n/a" ]] && [[ "${STATE}" = "n/a" ]] && [[ "${COUNTRY}" = "n/a" ]]
   then
-    echo "${MAG}${BOLD}No Location Data Available${SGR0}${WHI}"
+    echo "${MAG}${BOLD}Unable To Determine Location Data${SGR0}${WHI}"
   else
     echo -en "${DIM}File:${SGR0} ${MAG}${BOLD}${QTH_SRC}${SGR0}${WHI}\r"
     tput cuf 18
@@ -2636,7 +2638,7 @@ fi
 # Ensure that...
 # A.) MMDVMHost is running.  If not, then exit.
 # B.) It is writing to the log.  If not, sleep, then re-try.
-if [[ "$(ps -ef | grep "[M]MDVMHost")" = "" ]]
+if [[ "$(pgrep -f "/usr/local/bin/MMDVMHost /etc/mmdvmhost")" = "" ]]
 then
   echo -e "\n  ${RED}MMDVMHost is NOT RUNNING.${SGR0}"
   echo -e "  Check status in the pi-star GUI and try again.\n"
