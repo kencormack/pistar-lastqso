@@ -165,14 +165,14 @@ The program remembers which options (if any) you specified at launch, so that it
 
 **Valid Options and Parameters...**
 ```
-USAGE - valid options and parameters include:
+  USAGE:  Valid options and parameters include:
 
   Short Form:
     [-c] [-d] [-e] [-f <1-4>] [-h] [-l] [-m] [-n] [-t [integer]] [-v] [-w]
 
   Long Form:
     [--csv] [--dat] [--errors] [--font <1-4>] [--help]
-    [--logo] [--mono] [--nobig] [--top [<integer>]] [--version] [--wrap]
+    [--logo] [--mono] [--nobig] [--top [integer]] [--version] [--wrap]
 ```
 
 Also, options that take a parameter (-f|--font and -t|--top) will accept either a space, or an equal sign (=) between the option, and it's parameter.  For example, all of the following are valid forms:
