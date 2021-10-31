@@ -1,4 +1,8 @@
 ```
+CHANGES: V2.17
+ 1. Added a check to see if an updated version of the
+    program has been posted to github.
+
 CHANGES: V2.16
  1. Replaced a ps|grep pipeline w/ pgrep -f.
  2. Set PATH to place most often-used directories first.

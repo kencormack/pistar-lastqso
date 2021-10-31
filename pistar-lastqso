@@ -6,7 +6,7 @@
 
 set -o allexport
 
-VERSION=2.16
+VERSION=2.17
 
 umask 0077
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
@@ -20,7 +20,6 @@ MY_CMDLINE="${*}"
 # Strip any "=" signs separating an option and it's parameter...
 MY_CMDLINE="${*//=/ }"
 # Place the groomed elements into an array
-# shellcheck disable=SC2206
 ARG_LIST=(${MY_CMDLINE})
 ARG_LIST_LENGTH=${#ARG_LIST[@]}
 
@@ -269,6 +268,14 @@ EOF
 ###########################################################
 # FUNCTIONS
 ###########################################################
+
+#KPC
+#----------
+# Because bash can't do simple floating-point comparisons....
+fnCOMPARE_FLOATS()
+{
+   awk -v FLOAT1="${1}" -v FLOAT2="${2}" 'BEGIN {printf "%s " (FLOAT1<FLOAT2?"<":">=") " %s\n", FLOAT1, FLOAT2}'
+}
 
 #----------
 # gratuitous eye-candy
@@ -1273,7 +1280,6 @@ fnGOODBYE_BOX()
       echo -n "${SGR0}${DIM}${WHI}${WARNING_COUNT_COLOR}MMDVM Log WARNINGS: $(printf %04d "${WARNING_COUNT}")${SGR0}"
     fi
   fi
-  tput cup 22 0
 }
 
 #----------
@@ -1715,7 +1721,6 @@ fnYSF_SHOW_CURRENT_CALL()
   printf %05d "${QSO_COUNT}"
   echo "${SGR0}${WHI}"
 
-  #KPC
   CSV_FROM="$(echo "${FROM}" | cut -f1 -d"/" | cut -f1 -d"-")"
   FROM_NAME="$(grep ",${CSV_FROM}," "${USERCSV}" "${NXDNCSV}" | tail -1 | cut -f3 -d",")"
   if [[ -n "${FROM_NAME}" ]]
@@ -1736,7 +1741,6 @@ fnYSF_SHOW_CURRENT_CALL()
   tput cuf 32
   echo -e "${DIM}Src.:${SGR0} ${BOLD}${CYA}${SOURCE}${SGR0}${WHI}"
 
-  #KPC
   CSV_CALLSIGN="$(echo "${FROM}" | cut -f1 -d"/" | cut -f1 -d"-")"
   # Maybe the callsign is also a DMR user...
   QTH_SRC="user.csv"
@@ -2601,6 +2605,7 @@ fnEXIT()
   fi
 
   fnGOODBYE_BOX
+  tput cup "${LINES}" 0
 
   rm "${STATIC_TG_FILE} ${QSO_COUNT_FILE} ${KERCHUNK_FILE} ${ERROR_FILE} ${WARNING_FILE} ${HISTORY_FILE}" 2> /dev/null
   exit
@@ -2634,10 +2639,8 @@ then
   fnPARSE_CMDLINE
 fi
 
-#KPC
 # Ensure that...
-# A.) MMDVMHost is running.  If not, then exit.
-# B.) It is writing to the log.  If not, sleep, then re-try.
+# MMDVMHost is running, and that it is writing to the log.
 if [[ "$(pgrep -f "/usr/local/bin/MMDVMHost /etc/mmdvmhost")" = "" ]]
 then
   echo -e "\n  ${RED}MMDVMHost is NOT RUNNING.${SGR0}"
@@ -2646,7 +2649,7 @@ then
 else
   if [[ "$(sudo fuser -v "${WORKING_LOG}" 2>&1 | grep "MMDVMHost")" = "" ]]
   then
-    echo -e "\n  ${YEL}MMDVMHost is RUNNING but is NOT writing to $(basename ${WORKING_LOG}).${SGR0}"
+    echo -e "\n  ${YEL}MMDVMHost is running, but is NOT writing to $(basename "${WORKING_LOG}").${SGR0}"
     echo -e "  Sleeping another 10 seconds before trying again...\n"
     sleep 10
     exec /bin/bash -c "${SCRIPT} ${MY_CMDLINE} -l"
@@ -2664,7 +2667,25 @@ else
   tput cup 4 0
 fi
 
+#KPC
+# Fetch the version number from what's posted on github.
+# Compare that version number with what is currently running.
+# If github has a later version, tell the user.
+echo -en "\r${SGR0}${WHI}Performing version check... "
+VER_CHECK="$(curl -s https://raw.githubusercontent.com/kencormack/pistar-lastqso/main/pistar-lastqso 2>/dev/null | grep "^VERSION=" | cut -f2 -d"=")"
+if fnCOMPARE_FLOATS "${VERSION}" "${VER_CHECK}" | grep -q "<"
+then
+  echo -e "\r${GRE}${BOLD}AN UPDATE TO THIS SCRIPT IS AVAILABLE AT:"
+  echo "${GRE}${DIM}https://github.com/kencormack/pistar-lastqso"
+  echo "${WHI}${DIM}  Current Version: ${VERSION}${SGR0}"
+  echo -e "${WHI}${BOLD}Available Version: ${VER_CHECK}${SGR0}${WHI}\n"
+  sleep 2
+else
+  echo -en "\r${CLR_EL}"
+fi
+
 fnCHECK_MODES_ENABLED
+
 echo -en "${WHI}Initializing... "
 
 # These will store the history to be displayed, if the
