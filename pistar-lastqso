@@ -6,7 +6,7 @@
 
 set -o allexport
 
-VERSION=2.17
+VERSION=2.18
 
 umask 0077
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
@@ -533,8 +533,9 @@ fnCENTER()
 #----------
 fnDMR_BM_STATIC_TGS()
 {
+#KPC
   curl -s "https://api.brandmeister.network/v1.0/repeater/?action=profile&q=${HOTSPOT_ID}" \
-    | sed 's/"talkgroup":/\n/g' | grep "${HOTSPOT_ID}" | cut -f1,4 -d"," | sed 's/,"slot":/ /' \
+    | sed 's/"talkgroup":/\n/g' | grep "${HOTSPOT_ID}" | cut -f1,3 -d"," | sed 's/,"slot":/ /' \
     > "${STATIC_TG_FILE}"
 
   STATIC_LIST=""
@@ -2037,7 +2038,7 @@ fnDMR_DOWNLOAD_USERCSV()
   # then download a new one from the web.
   if [[ ! -f "${USERCSV}" ]] || [[ -n "$(find "${USERCSV}" -mtime +7)" ]] || [[ ${GET_CSV_NOW} -eq 1 ]]
   then
-    echo "Downloading latest DMR user.csv file..."
+    echo -e "\nDownloading latest DMR user.csv file..."
     sudo mount -o remount,rw / 2> /dev/null
     if sudo wget -q --show-progress --progress=bar:force:noscroll https://database.radioid.net/static/user.csv -O "${USERCSV}.tmp"
     then
@@ -2068,7 +2069,7 @@ fnYSF_DOWNLOAD_CTYDAT()
   # then download a new one from the web.
   if [[ ! -f "${CTYDAT}" ]] || [[ -n "$(find "${CTYDAT}" -mtime +30)" ]] || [[ ${GET_DAT_NOW} -eq 1 ]]
   then
-    echo "Downloading latest DXCC cty.dat file..."
+    echo -e "\nDownloading latest DXCC cty.dat file..."
     sudo mount -o remount,rw / 2> /dev/null
 
     BIGCTYZIP="$(curl -s "https://www.country-files.com/category/big-cty/" | grep "\[download\]" | sort -nr | head -1 | cut -f2 -d"\"")"
