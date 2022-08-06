@@ -6,7 +6,7 @@
 
 set -o allexport
 
-VERSION=2.18
+VERSION=2.19
 
 umask 0077
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
@@ -662,7 +662,7 @@ fnNOSCROLL_ZONE()
   echo -n "${CUR_HOME}"
 
   # Print line 0
-  echo -en "${CYA}LASTQSO:${SGR0} ${WHI}${BOLD}${MY_VER}${SGR0}\r"
+  echo -en "${CYA}LASTQSO:${SGR0} ${VER_CHECK_COLOR}${BOLD}${MY_VER}${SGR0}\r"
   tput cuf 16
   echo -en "${CYA}DAT:${SGR0} ${WHI}${BOLD}${DAT_DATE}${SGR0}\r"
   tput cuf 32
@@ -2673,6 +2673,7 @@ fi
 # Compare that version number with what is currently running.
 # If github has a later version, tell the user.
 echo -en "\r${SGR0}${WHI}Performing version check... "
+VER_CHECK_COLOR="${WHI}"
 VER_CHECK="$(curl -s https://raw.githubusercontent.com/kencormack/pistar-lastqso/main/pistar-lastqso 2>/dev/null | grep "^VERSION=" | cut -f2 -d"=")"
 if fnCOMPARE_FLOATS "${VERSION}" "${VER_CHECK}" | grep -q "<"
 then
@@ -2680,6 +2681,7 @@ then
   echo "${GRE}${DIM}https://github.com/kencormack/pistar-lastqso"
   echo "${WHI}${DIM}  Current Version: ${VERSION}${SGR0}"
   echo -e "${WHI}${BOLD}Available Version: ${VER_CHECK}${SGR0}${WHI}\n"
+  VER_CHECK_COLOR="${RED}"
   sleep 2
 else
   echo -en "\r${CLR_EL}"
