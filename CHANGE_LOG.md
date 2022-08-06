@@ -1,10 +1,12 @@
 ```
-CHANGES: V2.18
+CHANGES: V2.19
  1. When "-t|--top" is specified, show script's version
     number in RED, when an update is available on github.
     Otherwise, the version number is shown in white.
  2. A few cleanups suggested by shellcheck 0.8.0
- 3. Output of the BM static TG query has changed.  Fixed
+
+CHANGES: V2.18
+ 1. Output of the BM static TG query has changed.  Fixed
     parsing to show slot # with each static TG shown in
     the -t|--top section of the screen.
 
