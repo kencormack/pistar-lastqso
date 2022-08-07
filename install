@@ -53,7 +53,7 @@ else
     echo -e "${RED}  Installation failed.\n${WHI}"
     exit
   fi
-  if [ "$( sudo chmod +x /usr/local/sbin/pistar-lastqso 2> /dev/null)" ]
+  if [ "$(sudo chmod +x /usr/local/sbin/pistar-lastqso 2> /dev/null)" ]
   then
     echo -e "${RED}\n  Unable to set execute permission.${WHI}"
     echo -e "${RED}  Installation failed.\n${WHI}"
@@ -74,7 +74,7 @@ else
     echo -e "${RED}  Installation failed.\n${WHI}"
     exit
   fi
-  if [ "$( sudo chmod +x /usr/local/bin/dxcc.pl 2> /dev/null)" ]
+  if [ "$(sudo chmod +x /usr/local/bin/dxcc.pl 2> /dev/null)" ]
   then
     echo -e "${RED}\n  Unable to set execute permission.${WHI}"
     echo -e "${RED}  Installation failed.\n${WHI}"
