@@ -1,12 +1,12 @@
 #!/bin/bash
 # pistar-lastqso
 # Written by:   Ken Cormack, KE8DPF, unixken@yahoo.com
-# Copyright (c) 2021, Ken Cormack
+# Copyright (c) 2022, Ken Cormack
 # github:       https://github.com/kencormack/pistar-lastqso
 
 set -o allexport
 
-VERSION=2.19
+VERSION=2.20
 
 umask 0077
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
@@ -48,6 +48,9 @@ ARG_LIST_LENGTH=${#ARG_LIST[@]}
 # INITIALIZATION
 ###########################################################
 
+# Get the full path to this script
+SCRIPT="$(readlink -f "${0}")"
+
 #---------------
 # Turn on privileged mode. In this mode, the $BASH_ENV and $ENV files
 # are not processed, shell functions are not inherited from the
@@ -64,8 +67,29 @@ set -o errtrace
 # and subshell environments.  (The -E causes errors within functions to bubble up.)
 set -E -o functrace
 
-# Get the full path to this script
-SCRIPT="$(readlink -f "${0}")"
+#KPC
+#---------------
+###### SET UP DEBUGGING LOG
+# DEBUG FILE DESCRIPTOR
+# If it doesn't already exist, setup the file descriptor for debugging
+[ -e /proc/self/fd/3 ] || exec 3> /dev/null
+
+# If no redirection has been applied by the user, "${DEBUG_LOG}" will be "/dev/null".
+# But if the user has redirected fd 3 to a file, then "${DEBUG_LOG}" will contain the
+# name (with full path), to the file.
+DEBUG_LOG="$(readlink /proc/self/fd/3 2>/dev/null)"
+
+# FOR DEBUGGING: THE DEBUG TRAP
+# This trap writes each line to be executed, just before it is executed, to the debug log.
+trap 'echo -e "line#: ${LINENO}...\t${BASH_COMMAND}" >&3' DEBUG
+
+# FOR DEBUGGING: THE ERR TRAP
+# This trap will log all non-0 return codes.
+trap 'echo -e "NON-0: LINE ${LINENO}: RETURN CODE: ${?}\t${BASH_COMMAND}" >&3' ERR
+
+# FOR DEBUGGING: THE RETURN TRAP
+# This trap logs the completion of each function, upon return.
+trap 'echo -e "leave: ${FUNCNAME} -> back to ${FUNCNAME[1]}\n" >&3' RETURN
 
 #---------------
 # Defaults that can be overriden with cmdline options...
@@ -82,11 +106,11 @@ GET_DAT_NOW=0
 # Can be overriden with "-e|--errors" cmdline option
 SHOW_LOG_ERRORS=1
 #
-# Display Callsigns & TGs/DG-ISs in large font.
+# Display Callsigns & TGs/DG-IDs in large font.
 # Can be overriden with "-n|--nobig" cmdline option
 USE_FIGLET=1
 #
-# A value of 0 allows figlet to auto-wrap as needed.
+# Allow figlet to auto-wrap as needed.
 # Can be overridden with "-w|--wrap" cmdline option
 NO_WRAP=0
 #
@@ -269,12 +293,13 @@ EOF
 # FUNCTIONS
 ###########################################################
 
-#KPC
 #----------
 # Because bash can't do simple floating-point comparisons....
 fnCOMPARE_FLOATS()
 {
-   awk -v FLOAT1="${1}" -v FLOAT2="${2}" 'BEGIN {printf "%s " (FLOAT1<FLOAT2?"<":">=") " %s\n", FLOAT1, FLOAT2}'
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
+  awk -v FLOAT1="${1}" -v FLOAT2="${2}" 'BEGIN {printf "%s " (FLOAT1<FLOAT2?"<":">=") " %s\n", FLOAT1, FLOAT2}'
 }
 
 #----------
@@ -286,6 +311,8 @@ fnCOMPARE_FLOATS()
 # shellcheck disable=SC2034
 fnDEFINE_BOXCHARS()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   # Unicode box-drawing characters.  We'll use a few of these.
   #         0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
   # U+250x  ─  ━  │  ┃                          ┌        ┏
@@ -393,6 +420,8 @@ fnDEFINE_BOXCHARS()
 #   BOX_SHADOW = no drop-shadow [0] or add a drop-shadow [1]
 fnDRAW_BOX()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   BOX_TOP=${1}
   BOX_LEFT=${2}
   BOX_HEIGHT=${3}
@@ -516,6 +545,8 @@ fnDRAW_BOX()
 #   printf "%*s\n" "$(((${#1} + COLUMNS)/2))" "$1"
 fnCENTER()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
   STRING="${1}"
   #LENGTH=${#STRING}
@@ -533,7 +564,9 @@ fnCENTER()
 #----------
 fnDMR_BM_STATIC_TGS()
 {
-#KPC
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
+  #KPC
   curl -s "https://api.brandmeister.network/v1.0/repeater/?action=profile&q=${HOTSPOT_ID}" \
     | sed 's/"talkgroup":/\n/g' | grep "${HOTSPOT_ID}" | cut -f1,3 -d"," | sed 's/,"slot":/ /' \
     > "${STATIC_TG_FILE}"
@@ -549,6 +582,8 @@ fnDMR_BM_STATIC_TGS()
 #----------
 fnTOP_DATA()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   # This function deals with the optional non-scrolling zone,
   # created when the -t|--top option is specified on the cmdline.
 
@@ -563,7 +598,7 @@ fnTOP_DATA()
 
   # GATHER LINE 0 DATA...
   # This script's version
-  MY_VER="$(echo "${VERSION}${TOP_PAD}" | cut -c1-7)"
+  MY_VER="$(echo "${IS_DEV}${VERSION}${IS_DEV}${TOP_PAD}" | cut -c1-7)"
 
   # Datestamp of the user.csv file
   CSV_DATE="$(stat /usr/local/etc/user.csv 2> /dev/null | grep "^Modify" | awk '{ print $2 }')"
@@ -642,6 +677,8 @@ fnTOP_DATA()
 #----------
 fnNOSCROLL_ZONE()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   if [[ "${TOP}" = "0" ]]
   then
     return
@@ -737,6 +774,8 @@ fnNOSCROLL_ZONE()
 #----------
 fnRESET_SCROLLING()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   if [[ "${TOP}" = "0" ]]
   then
     return
@@ -758,6 +797,8 @@ fnRESET_SCROLLING()
 #----------
 fnUSAGE()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   echo "  USAGE:  Valid options and parameters include:
 
   Short Form:
@@ -772,6 +813,8 @@ fnUSAGE()
 #----------
 fnPARSE_CMDLINE()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   # Loop through all the cmdline arguments.  In the loop, current
   # value would be the option, and the next would be the parameter.
   # An example would be the -f|--font option, and it's parameter,
@@ -865,7 +908,7 @@ fnPARSE_CMDLINE()
 
       -m|--mono)
         # Forground colors
-        #BLA=""
+        # BLA=""
         RED=""
         GRE=""
         YEL=""
@@ -946,6 +989,8 @@ fnPARSE_CMDLINE()
 #----------
 fnGET_HELP()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   cat <<'EOF' | less -M
 PISTAR-LASTQSO - HELP
 
@@ -1073,10 +1118,12 @@ EOF
 #----------
 fnVERSION()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   clear
   echo -e "${BOLD}${WHI}$(basename "${0}") version: ${VERSION}${SGR0}"
   cat <<'EOF'
-Copyright (c) 2021 Ken Cormack, KE8DPF
+Copyright (c) 2022 Ken Cormack, KE8DPF
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published
@@ -1097,10 +1144,12 @@ EOF
 #----------
 fnNO_LOGO()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   clear
   echo -en "${SGR0}${WHI}"
   echo -e "PISTAR-LASTQSO v${VERSION}"
-  echo -e "Copyright 2021 Ken Cormack - KE8DPF"
+  echo -e "Copyright 2022 Ken Cormack - KE8DPF"
   echo -e "https://github.com/kencormack/pistar-lastqso"
   echo -en "${SGR0}${WHI}"
 }
@@ -1108,6 +1157,8 @@ fnNO_LOGO()
 #----------
 fnLOGO()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   clear
   # Initialize screen, disable line-wrap, cursor off, color to white
   echo -en "${CUR_OFF}${SGR0}${WHI}"
@@ -1180,7 +1231,7 @@ EOF
   tput cup 15 30
   echo -e "${SGR0}${BOLD}${YEL}PISTAR-LASTQSO v${VERSION}${WHI}${SGR0}"
   tput cuf 22
-  echo -e "${SGR0}${BOLD}${BLU}Copyright 2021 Ken Cormack - KE8DPF${WHI}${SGR0}"
+  echo -e "${SGR0}${BOLD}${BLU}Copyright 2022 Ken Cormack - KE8DPF${WHI}${SGR0}"
   tput cuf 17
   echo -e "${SGR0}${BOLD}${BLU}https://github.com/kencormack/pistar-lastqso${WHI}${SGR0}"
   echo -en "${SGR0}${WHI}${CUR_ON}"
@@ -1189,6 +1240,8 @@ EOF
 #----------
 fnCHECK_MODES_ENABLED()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   if [[ ${DMR_ENABLED} -eq 0 ]] && [[ ${YSF_ENABLED} -eq 0 ]]
   then
     echo -en "${SGR0}${RED}"
@@ -1210,6 +1263,17 @@ fnCHECK_MODES_ENABLED()
     echo "PLEASE ENABLE, THEN RE-RUN THIS SCRIPT"
     tput cup 22 2
     echo -e "${CUR_ON}Aborting... "
+
+    #KPC
+    # FOR DEBUGGING: Close the debugging file descriptor
+    exec 3>&- 2> /dev/null
+    if [ "${DEBUG_LOG}" != "/dev/null" ]
+    then
+      DEBUG_LINE=$((LINES - 2))
+      tput cup "${DEBUG_LINE}" 0
+      echo -e "${CUR_ON}DEBUG LOG: ${DEBUG_LOG}"
+    fi
+
     exit
   fi
 }
@@ -1217,6 +1281,8 @@ fnCHECK_MODES_ENABLED()
 #----------
 fnGOODBYE_BOX()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   # Usage: fnDRAW_BOX BOX_TOP BOX_LEFT BOX_HEIGHT BOX_WIDTH BOX_STYLE BOX_FILL BOX_SHADOW
   echo -en "${SGR0}${BLU}"
   tput cup 11 18
@@ -1288,6 +1354,8 @@ fnGOODBYE_BOX()
 # to the working log (for the "while read" loop to catch.)
 fnMMDVMLOG_FUSER()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   # This function (exported and spawned later in the script) runs
   # as a background task, in a seperate process.
 
@@ -1323,6 +1391,8 @@ fnMMDVMLOG_FUSER()
 #----------
 fnCLEAR_CURRENT_LINE()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   trap fnWINCH WINCH
 
   echo -en "\r${CLR_EL}"
@@ -1331,6 +1401,8 @@ fnCLEAR_CURRENT_LINE()
 #----------
 fnSEPARATOR()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   trap fnWINCH WINCH
 
   fnCLEAR_CURRENT_LINE
@@ -1340,6 +1412,8 @@ fnSEPARATOR()
 #----------
 fnLISTENING()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   trap fnWINCH WINCH
 
   echo -n "  ${GRE}${BOLD}Listening for Traffic...${SGR0}${WHI}${CLR_EL} "
@@ -1349,6 +1423,8 @@ fnLISTENING()
 #----------
 fnQSO_IN_PROGRESS()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   trap fnWINCH WINCH
 
   echo -n "  ${YEL}${BOLD}QSO In Progress...${SGR0}${WHI}${CLR_EL} "
@@ -1360,6 +1436,8 @@ fnQSO_IN_PROGRESS()
 # city, state, and country fields
 fnDMR_CSV_SEARCH()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   trap fnWINCH WINCH
 
   # Fields in the file:
@@ -1401,6 +1479,8 @@ fnDMR_CSV_SEARCH()
 # city, state, and country fields
 fnNXDN_CSV_SEARCH()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   trap fnWINCH WINCH
 
   # Fields in the file:
@@ -1427,6 +1507,8 @@ fnNXDN_CSV_SEARCH()
 #----------
 fnCONVERT_DATE_TIME()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   trap fnWINCH WINCH
 
   # Convert the log entry UTC date/timestamps to localized, human-readable form
@@ -1437,6 +1519,8 @@ fnCONVERT_DATE_TIME()
 #----------
 fnDMR_PAD_ABSENT_TG()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   trap fnWINCH WINCH
 
   # "private" call log entries lack "TG" in the log line, which skews
@@ -1457,6 +1541,8 @@ fnDMR_PAD_ABSENT_TG()
 #----------
 fnDMR_GET_FROM()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   trap fnWINCH WINCH
 
   FROM="$(echo "${RECORD}" | awk '{ print $12 }')"
@@ -1509,6 +1595,8 @@ fnDMR_GET_FROM()
 #----------
 fnDMR_GET_TO()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   trap fnWINCH WINCH
 
   TO="$(echo "${RECORD}" | awk '{ print $15 }' | cut -f1 -d",")"
@@ -1575,6 +1663,8 @@ fnDMR_GET_TO()
 #----------
 fnFIGLET_AUTO_FONT_SELECT()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   trap fnWINCH WINCH
 
   # A screen width of less than 80 columns will select figlet's
@@ -1596,6 +1686,8 @@ fnFIGLET_AUTO_FONT_SELECT()
 #----------
 fnFIGLET()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   trap fnWINCH WINCH
 
   if [[ "${USE_FIGLET}" -eq 1 ]]
@@ -1658,6 +1750,8 @@ fnFIGLET()
 #----------
 fnDMR_GET_VOICE_OR_DATA()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   trap fnWINCH WINCH
 
   # Determine if voice or data
@@ -1674,6 +1768,8 @@ fnDMR_GET_VOICE_OR_DATA()
 #----------
 fnYSF_END_NETWORK_TRAFFIC()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   trap fnWINCH WINCH
 
   # Fields to pass to the history...
@@ -1711,6 +1807,8 @@ fnYSF_END_NETWORK_TRAFFIC()
 #----------
 fnYSF_SHOW_CURRENT_CALL()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   trap fnWINCH WINCH
 
   # Show our human-readable date/time
@@ -1799,6 +1897,8 @@ fnYSF_SHOW_CURRENT_CALL()
 #----------
 fnDMR_SHOW_CURRENT_CALL()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   trap fnWINCH WINCH
 
   # Show our human-readable date/time
@@ -1859,6 +1959,8 @@ fnDMR_SHOW_CURRENT_CALL()
 #----------
 fnDMR_GET_NET_BER()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   trap fnWINCH WINCH
 
   # BER is in different positions, for network and RF log entries
@@ -1868,6 +1970,8 @@ fnDMR_GET_NET_BER()
 #----------
 fnDMR_GET_RF_BER()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   trap fnWINCH WINCH
 
   # BER is in different positions, for network and RF log entries
@@ -1877,6 +1981,8 @@ fnDMR_GET_RF_BER()
 #----------
 fnCOLORIZE_BER()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   trap fnWINCH WINCH
 
   # Default to Good/Green
@@ -1897,6 +2003,8 @@ fnCOLORIZE_BER()
 #----------
 fnDMR_GET_LOSS()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   trap fnWINCH WINCH
 
   # Get the packet loss
@@ -1906,6 +2014,8 @@ fnDMR_GET_LOSS()
 #----------
 fnCOLORIZE_LOSS()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   trap fnWINCH WINCH
 
   # Default to Good/Green
@@ -1926,6 +2036,8 @@ fnCOLORIZE_LOSS()
 #----------
 fnDMR_GET_RSSI()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   trap fnWINCH WINCH
 
   # Get the RSSI
@@ -1936,6 +2048,8 @@ fnDMR_GET_RSSI()
 #----------
 fnCOLORIZE_RSSI()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   trap fnWINCH WINCH
 
   # What follows converts RSSI dBm to S-Meter values.
@@ -2008,6 +2122,8 @@ fnCOLORIZE_RSSI()
 #----------
 fnDMR_TALKER_ALIAS()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   trap fnWINCH WINCH
 
   # The log entries show that TA arrives in chunks.  Make sure we have
@@ -2034,6 +2150,8 @@ fnDMR_TALKER_ALIAS()
 #----------
 fnDMR_DOWNLOAD_USERCSV()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   # If the user.csv file is missing, or is older than 7 days,
   # then download a new one from the web.
   if [[ ! -f "${USERCSV}" ]] || [[ -n "$(find "${USERCSV}" -mtime +7)" ]] || [[ ${GET_CSV_NOW} -eq 1 ]]
@@ -2065,6 +2183,8 @@ fnDMR_DOWNLOAD_USERCSV()
 #----------
 fnYSF_DOWNLOAD_CTYDAT()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   # If the cty.dat file is missing, or is older than 30 days,
   # then download a new one from the web.
   if [[ ! -f "${CTYDAT}" ]] || [[ -n "$(find "${CTYDAT}" -mtime +30)" ]] || [[ ${GET_DAT_NOW} -eq 1 ]]
@@ -2108,6 +2228,8 @@ fnYSF_DOWNLOAD_CTYDAT()
 #----------
 fnBUILD_HISTORY()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   trap fnWINCH WINCH
 
   if [[ -n "${FROM}" ]]
@@ -2185,6 +2307,8 @@ fnBUILD_HISTORY()
 #----------
 fnTALLY_ERRORS()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   trap fnWINCH WINCH
 
   ERROR_MSG="$(echo "${RECORD}" | cut -f4- -d" ")"
@@ -2212,6 +2336,8 @@ fnTALLY_ERRORS()
 #----------
 fnTALLY_WARNINGS()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   trap fnWINCH WINCH
 
   WARNING_MSG="$(echo "${RECORD}" | cut -f4- -d" ")"
@@ -2236,6 +2362,8 @@ fnTALLY_WARNINGS()
 #----------
 fnMAIN_LOOP()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   tail -f -n 1 "${WORKING_LOG}" | grep -E --line-buffered " DMR | YSF, |MMDVMHOST-STOP|SIGTERM" \
     | grep -v -E --line-buffered "^D:|^I:|0000:|Opening|Closing|Embedded Talker Alias" \
     | while read -r RECORD
@@ -2588,8 +2716,10 @@ fnMAIN_LOOP()
 }
 
 #----------
-fnEXIT()
+fnABORT()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   fnRESET_SCROLLING
 
   # Clear the bottom line of the screen
@@ -2608,13 +2738,27 @@ fnEXIT()
   fnGOODBYE_BOX
   tput cup "${LINES}" 0
 
-  rm "${STATIC_TG_FILE} ${QSO_COUNT_FILE} ${KERCHUNK_FILE} ${ERROR_FILE} ${WARNING_FILE} ${HISTORY_FILE}" 2> /dev/null
+  #KPC
+  rm "${STATIC_TG_FILE}" "${QSO_COUNT_FILE}" "${KERCHUNK_FILE}" "${ERROR_FILE}" "${WARNING_FILE}" "${HISTORY_FILE}" 2> /dev/null || :
+
+  #KPC
+  # FOR DEBUGGING: Close the debugging file descriptor
+  exec 3>&- 2> /dev/null
+  if [ "${DEBUG_LOG}" != "/dev/null" ]
+  then
+    DEBUG_LINE=$((LINES - 2))
+    tput cup "${DEBUG_LINE}" 0
+    echo -e "${CUR_ON}DEBUG LOG: ${DEBUG_LOG}"
+  fi
+
   exit
 }
 
 #----------
 fnWINCH()
 {
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
   if [[ ${TOP} -eq 1 ]]
   then
     clear
@@ -2627,7 +2771,7 @@ fnWINCH()
 # A few last items in the pre-flight checklist...
 
 # If user presses Ctrl-C, stop the program
-trap fnEXIT SIGINT SIGTERM
+trap fnABORT SIGINT SIGTERM
 
 # Disable line-wrap
 # Prevents unexpectedly long fields from busting up the screen.
@@ -2668,24 +2812,29 @@ else
   tput cup 4 0
 fi
 
-#KPC
 # Fetch the version number from what's posted on github.
 # Compare that version number with what is currently running.
 # If github has a later version, tell the user.
 echo -en "\r${SGR0}${WHI}Performing version check... "
 VER_CHECK_COLOR="${WHI}"
 VER_CHECK="$(curl -s https://raw.githubusercontent.com/kencormack/pistar-lastqso/main/pistar-lastqso 2>/dev/null | grep "^VERSION=" | cut -f2 -d"=")"
-if fnCOMPARE_FLOATS "${VERSION}" "${VER_CHECK}" | grep -q "<"
+IS_DEV=""
+if fnCOMPARE_FLOATS "${VERSION}" "${VER_CHECK}" | grep -q ">"
 then
-  echo -e "\r${GRE}${BOLD}AN UPDATE TO THIS SCRIPT IS AVAILABLE AT:"
-  echo "${GRE}${DIM}https://github.com/kencormack/pistar-lastqso"
-  echo "${WHI}${DIM}  Current Version: ${VERSION}${SGR0}"
-  echo -e "${WHI}${BOLD}Available Version: ${VER_CHECK}${SGR0}${WHI}\n"
-  VER_CHECK_COLOR="${RED}"
-  sleep 2
+  IS_DEV="*"
 else
-  echo -en "\r${CLR_EL}"
+  # See if the user is running a version older than the latest available
+  if fnCOMPARE_FLOATS "${VERSION}" "${VER_CHECK}" | grep -q "<"
+  then
+    echo -e "\r${GRE}${BOLD}AN UPDATE TO THIS SCRIPT IS AVAILABLE AT:"
+    echo "${GRE}${DIM}https://github.com/kencormack/pistar-lastqso"
+    echo "${WHI}${DIM}  Current Version: ${VERSION}${SGR0}"
+    echo -e "${WHI}${BOLD}Available Version: ${VER_CHECK}${SGR0}${WHI}\n"
+    VER_CHECK_COLOR="${RED}"
+    sleep 2
+  fi
 fi
+echo -en "\r${CLR_EL}"
 
 fnCHECK_MODES_ENABLED
 
@@ -2723,7 +2872,7 @@ fi
 
 # When we query Brandmeister to learn a hotspot's statically
 # linked TGs, the findings are written to this tmpfile.
-STATIC_TG_FILE="$(mktemp --tmpdir static_tg_file.$$.XXX)"
+STATIC_TG_FILE="/tmp/pistar-lastqso-static-tg.$$"
 
 # collect the data for the no-scroll region
 fnTOP_DATA
@@ -2809,6 +2958,10 @@ sleep 60
 echo
 
 fnRESET_SCROLLING
+
+#KPC
+# FOR DEBUGGING: Close the debugging file descriptor
+exec 3>&- 2> /dev/null
 
 # Restart, with the same options as originally passed
 echo -e "${BOLD}${GRE}RE-LAUNCHING AS \"${SCRIPT} ${MY_CMDLINE} -l\"...${WHI}${SGR0}"
