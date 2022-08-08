@@ -1,4 +1,12 @@
 ```
+CHANGES: V2.20
+ 1. Updated copyright.
+ 2. Added visual cue for dev or production version.
+ 3. Added mechanism for creating a debugging log, via
+    redirection of file descriptor 3.
+ 4. Fixed cleanup of files in the /tmp dir.
+ 5. Rename fnEXIT() to fnABORT().
+
 CHANGES: V2.19
  1. When "-t|--top" is specified, show script's version
     number in RED, when an update is available on github.
