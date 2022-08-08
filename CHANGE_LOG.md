@@ -1,4 +1,10 @@
 ```
+CHANGES: V2.21
+ 1. More cleanup of tmpfile (stale files were still
+    present after script self-restart.)
+ 2. Ensure debug option (if used at initial launch)
+    is passed when the script re-launches itself.
+
 CHANGES: V2.20
  1. Updated copyright.
  2. Added visual cue for dev or production version.
