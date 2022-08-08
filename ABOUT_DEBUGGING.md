@@ -126,9 +126,10 @@ echo -e "\nenter: ${FUNCNAME[*]}" >&3
 
 ## Step 5 - Closing the file descriptor
 
-After the inspections are performed, and the script is ready to
-come to an end, we close the file descriptor.  (This command
-is also used in the fnABORT function, described next.)
+Closing the file descriptor with the following, is performed
+in functions fnCHECK_MODES_ENABLED, fnABORT, and near the
+bottom of the script, just before the script re-launches
+itself.
 ```
 exec 3>&- 2> /dev/null
 ```
@@ -157,9 +158,6 @@ If no redirection has been applied by the user, "${DEBUG_LOG}"
 will be "/dev/null".  But if the user has redirected fd 3 to a
 file, then "${DEBUG_LOG}" will contain the name (with full
 path), to the file.
-
-In pistar-lastqso, this is done near the bottom of the script,
-with the following test...
 ```
 if [ "${DEBUG_LOG}" != "/dev/null" ]
 then
@@ -172,10 +170,8 @@ fi
 When working on the pistar-lastqso script, I generally call upon the
 debugging feature, to ensure that I have all the diagnostics I need,
 to troubleshoot any problems.
-
 ```
 $ pistar-lastqso [any options and parameters] 3> /tmp/debug.log
-
 ```
 
 # In closing
