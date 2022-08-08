@@ -6,7 +6,8 @@
 
 set -o allexport
 
-VERSION=2.20
+VERSION=2.21
+MY_SESSION="$(tty | sed 's/\//-/g')"
 
 umask 0077
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
@@ -259,11 +260,11 @@ WORKING_LOG="$(ls -1tr "${LOGDIR}/${LOGROOT}"*.log | tail -1)"
 # APIKEY="$(grep "^apikey=" /etc/bmapi.key 2> /dev/null | cut -f2 -d"=")"
 HOTSPOT_ID="$(grep -A 13 "^\[DMR\]" /etc/mmdvmhost | grep "^Id=" | cut -f2 -d"=")"
 
-QSO_COUNT_FILE="/tmp/pistar-lastqso-qso-count.$$"
-KERCHUNK_FILE="/tmp/pistar-lastqso-kerchunk-count.$$"
-ERROR_FILE="/tmp/pistar-lastqso-error-count.$$"
-WARNING_FILE="/tmp/pistar-lastqso-warning-count.$$"
-HISTORY_FILE="/tmp/pistar-lastqso-history.$$"
+QSO_COUNT_FILE="/tmp/pistar-lastqso-qso-count.${MY_SESSION}"
+KERCHUNK_FILE="/tmp/pistar-lastqso-kerchunk-count.${MY_SESSION}"
+ERROR_FILE="/tmp/pistar-lastqso-error-count.${MY_SESSION}"
+WARNING_FILE="/tmp/pistar-lastqso-warning-count.${MY_SESSION}"
+HISTORY_FILE="/tmp/pistar-lastqso-history.${MY_SESSION}"
 
 #---------------
 # Finding a way to get the screen width of a window that can
@@ -2738,7 +2739,6 @@ fnABORT()
   fnGOODBYE_BOX
   tput cup "${LINES}" 0
 
-  #KPC
   rm "${STATIC_TG_FILE}" "${QSO_COUNT_FILE}" "${KERCHUNK_FILE}" "${ERROR_FILE}" "${WARNING_FILE}" "${HISTORY_FILE}" 2> /dev/null || :
 
   #KPC
@@ -2797,7 +2797,8 @@ else
     echo -e "\n  ${YEL}MMDVMHost is running, but is NOT writing to $(basename "${WORKING_LOG}").${SGR0}"
     echo -e "  Sleeping another 10 seconds before trying again...\n"
     sleep 10
-    exec /bin/bash -c "${SCRIPT} ${MY_CMDLINE} -l"
+    #KPC
+    exec /bin/bash -c "${SCRIPT} -l ${MY_CMDLINE} ${OPTIONAL_DEBUGGING}"
   fi
 fi
 
@@ -2872,7 +2873,7 @@ fi
 
 # When we query Brandmeister to learn a hotspot's statically
 # linked TGs, the findings are written to this tmpfile.
-STATIC_TG_FILE="/tmp/pistar-lastqso-static-tg.$$"
+STATIC_TG_FILE="/tmp/pistar-lastqso-static-tg.${MY_SESSION}"
 
 # collect the data for the no-scroll region
 fnTOP_DATA
@@ -2963,10 +2964,21 @@ fnRESET_SCROLLING
 # FOR DEBUGGING: Close the debugging file descriptor
 exec 3>&- 2> /dev/null
 
+# If the debugging was passed on the commandline, bash doesn't save it as
+# part of the original commandline.  So, if it was used when first launch,
+# we tack it on after "${MY_CMDLINE}" before exec'ing the script.
+OPTIONAL_DEBUGGING=""
+if [ "${DEBUG_LOG}" != "/dev/null" ]
+then
+  OPTIONAL_DEBUGGING="3> ${DEBUG_LOG}"
+fi
+
+
 # Restart, with the same options as originally passed
 echo -e "${BOLD}${GRE}RE-LAUNCHING AS \"${SCRIPT} ${MY_CMDLINE} -l\"...${WHI}${SGR0}"
 echo "${GRE}${DBL_LINE}${WHI}${SGR0}${CLR_EL}"
 sleep 2
 clear
-exec /bin/bash -c "${SCRIPT} ${MY_CMDLINE} -l"
+#KPC
+exec /bin/bash -c "${SCRIPT} -l ${MY_CMDLINE} ${OPTIONAL_DEBUGGING}"
 
