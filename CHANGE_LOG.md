@@ -1,4 +1,10 @@
 ```
+CHANGES: V2.22
+ 1. More frequent -t|--top no-scroll region redraws.
+ 2. Minor cleanup when passing debug option at restart.
+ 3. Added a mechanism for a performance profiling log,
+    via redirection of file descriptor 4.
+
 CHANGES: V2.21
  1. More cleanup of tmpfile (stale files were still
     present after script self-restart.)
