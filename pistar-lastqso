@@ -6,8 +6,7 @@
 
 set -o allexport
 
-VERSION=2.21
-MY_SESSION="$(tty | sed 's/\//-/g')"
+VERSION=2.22
 
 umask 0077
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
@@ -28,15 +27,16 @@ ARG_LIST_LENGTH=${#ARG_LIST[@]}
 # Support for YSF (plus DMR2YSF and YSF2DMR) was added later.  If the
 # log structure changes in any way with future releases of pi-star, or
 # if you want to display modes other than DMR and YSF (D-Star, P25, etc.)
-# you will need to modify this script accordingly.  I started with DMR,
-# and later added YSF, so that's the mode I wrote this for.
+# you will need to modify this script accordingly.  I developed this
+# first for DMR, using a TYT MD-UV390GPS.  I later purchased a Yaesu
+# FT-70DR and added support for YSF.
 
 # NOTE #2: I've tried to write this script with readability in mind.
 # A year after having last touched a script, I like to look at it and
 # quickly understand what it's doing, without a lot of head scratching.
 # Comments are applied liberally, throughout, and "clever but cryptic"
 # one-liners that are not immediately understandable without reading
-# (and then re-reading) the man pages, are generally avoided.  The
+# (and then re-reading) various man pages, are generally avoided.  The
 # priority is understandability, rather than clever elegance or raw
 # performance, within reason.
 
@@ -51,6 +51,10 @@ ARG_LIST_LENGTH=${#ARG_LIST[@]}
 
 # Get the full path to this script
 SCRIPT="$(readlink -f "${0}")"
+
+# Get the terminal we're using.  Tmp files will be suffixed to keep
+# multiple concurrent sessions from stomping on each other's files.
+MY_SESSION="$(tty | sed 's/\//-/g')"
 
 #---------------
 # Turn on privileged mode. In this mode, the $BASH_ENV and $ENV files
@@ -70,27 +74,43 @@ set -E -o functrace
 
 #KPC
 #---------------
-###### SET UP DEBUGGING LOG
+###### SET UP DEBUGGING AND PROFILING LOGS
 # DEBUG FILE DESCRIPTOR
 # If it doesn't already exist, setup the file descriptor for debugging
 [ -e /proc/self/fd/3 ] || exec 3> /dev/null
-
 # If no redirection has been applied by the user, "${DEBUG_LOG}" will be "/dev/null".
 # But if the user has redirected fd 3 to a file, then "${DEBUG_LOG}" will contain the
 # name (with full path), to the file.
 DEBUG_LOG="$(readlink /proc/self/fd/3 2>/dev/null)"
-
 # FOR DEBUGGING: THE DEBUG TRAP
 # This trap writes each line to be executed, just before it is executed, to the debug log.
 trap 'echo -e "line#: ${LINENO}...\t${BASH_COMMAND}" >&3' DEBUG
-
 # FOR DEBUGGING: THE ERR TRAP
 # This trap will log all non-0 return codes.
 trap 'echo -e "NON-0: LINE ${LINENO}: RETURN CODE: ${?}\t${BASH_COMMAND}" >&3' ERR
-
 # FOR DEBUGGING: THE RETURN TRAP
 # This trap logs the completion of each function, upon return.
 trap 'echo -e "leave: ${FUNCNAME} -> back to ${FUNCNAME[1]}\n" >&3' RETURN
+#---------------
+# PROFILING FILE DESCRIPTOR
+# For a rough profiling of this script
+[ -e /proc/self/fd/4 ] || exec 4> /dev/null
+# If no redirection has been applied by the user, "${PROFILING_LOG}" will be "/dev/null".
+# But if the user has redirected fd 4 to a file, then "${PROFILING_LOG}" will contain the
+# name (with full path), to the file.
+PROFILING_LOG="$(readlink /proc/self/fd/4 2>/dev/null)"
+echo "LASTQSO v${VERSION} - PROFILING LOG" >&4
+echo -e "==================================\n" >&4
+BASH_XTRACEFD="4"
+# Using PS4, "\011" is a tab, and "\t" is a current hh:mm:ss timestamp
+# (I don't need subsecond accuracy here.)
+PS4='+\011\t ${LINENO}\011'
+# Enclose any section of code we want to profile with "set -x"..."set +x".
+# Profiling data will be sent to the fd whenever "set -x" is in effect.
+# Turning it on now, for example, would basically profile everything from
+# here down.  Use sparingly, as it can seriously impact performance
+# (and don't forget to turn it off when done).
+# set -x
 
 #---------------
 # Defaults that can be overriden with cmdline options...
@@ -567,7 +587,6 @@ fnDMR_BM_STATIC_TGS()
 {
   echo -e "\nenter: ${FUNCNAME[*]}" >&3
 
-  #KPC
   curl -s "https://api.brandmeister.network/v1.0/repeater/?action=profile&q=${HOTSPOT_ID}" \
     | sed 's/"talkgroup":/\n/g' | grep "${HOTSPOT_ID}" | cut -f1,3 -d"," | sed 's/,"slot":/ /' \
     > "${STATIC_TG_FILE}"
@@ -1265,14 +1284,21 @@ fnCHECK_MODES_ENABLED()
     tput cup 22 2
     echo -e "${CUR_ON}Aborting... "
 
+    read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
+    DEBUG_PROFILING_LINE=$((LINES - 2))
+
     #KPC
-    # FOR DEBUGGING: Close the debugging file descriptor
+    # Close the debugging and profiling file descriptors
     exec 3>&- 2> /dev/null
-    if [ "${DEBUG_LOG}" != "/dev/null" ]
+    set +x 2>/dev/null
+    exec 4>&- 2> /dev/null
+    # If debugging and/or profiling was used, show the names of the logs, at exit
+    if [[ "${DEBUG_LOG}" != "/dev/null" ]] || [[ "${PROFILING_LOG}" != "/dev/null" ]]
     then
-      DEBUG_LINE=$((LINES - 2))
-      tput cup "${DEBUG_LINE}" 0
-      echo -e "${CUR_ON}DEBUG LOG: ${DEBUG_LOG}"
+      tput cup "${DEBUG_PROFILING_LINE}" 0
+      echo -e "${CUR_ON}DEBUG LOG: ${DEBUG_LOG}\tPROFILING_LOG: ${PROFILING_LOG}"
+    else
+      tput cup "${LINES}" 0
     fi
 
     exit
@@ -1417,6 +1443,8 @@ fnLISTENING()
 
   trap fnWINCH WINCH
 
+  #KPC
+  fnNOSCROLL_ZONE
   echo -n "  ${GRE}${BOLD}Listening for Traffic...${SGR0}${WHI}${CLR_EL} "
   TA_DISPLAYED=0
 }
@@ -1428,6 +1456,8 @@ fnQSO_IN_PROGRESS()
 
   trap fnWINCH WINCH
 
+  #KPC
+  fnNOSCROLL_ZONE
   echo -n "  ${YEL}${BOLD}QSO In Progress...${SGR0}${WHI}${CLR_EL} "
   TA_DISPLAYED=0
 }
@@ -1745,6 +1775,8 @@ fnFIGLET()
       *)
         ;;
     esac
+    #KPC
+    fnNOSCROLL_ZONE
   fi
 }
 
@@ -2741,14 +2773,21 @@ fnABORT()
 
   rm "${STATIC_TG_FILE}" "${QSO_COUNT_FILE}" "${KERCHUNK_FILE}" "${ERROR_FILE}" "${WARNING_FILE}" "${HISTORY_FILE}" 2> /dev/null || :
 
+  read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
+  DEBUG_PROFILING_LINE=$((LINES - 2))
+
   #KPC
-  # FOR DEBUGGING: Close the debugging file descriptor
+  # Close the debugging and profiling file descriptors
   exec 3>&- 2> /dev/null
-  if [ "${DEBUG_LOG}" != "/dev/null" ]
+  set +x 2>/dev/null
+  exec 4>&- 2> /dev/null
+  # If debugging and/or profiling was used, show the names of the logs, at exit
+  if [[ "${DEBUG_LOG}" != "/dev/null" ]] || [[ "${PROFILING_LOG}" != "/dev/null" ]]
   then
-    DEBUG_LINE=$((LINES - 2))
-    tput cup "${DEBUG_LINE}" 0
-    echo -e "${CUR_ON}DEBUG LOG: ${DEBUG_LOG}"
+    tput cup "${DEBUG_PROFILING_LINE}" 0
+    echo -e "${CUR_ON}DEBUG LOG: ${DEBUG_LOG}\tPROFILING_LOG: ${PROFILING_LOG}"
+  else
+    tput cup "${LINES}" 0
   fi
 
   exit
@@ -2784,6 +2823,21 @@ then
   fnPARSE_CMDLINE
 fi
 
+#KPC
+# If FD redirection was used on the commandline, bash doesn't save it as
+# part of the original commandline.  So, if it was used when first launched,
+# we tack it on after "${MY_CMDLINE}" before exec'ing the script.
+OPTIONAL_DEBUGGING=""
+if [ "${DEBUG_LOG}" != "/dev/null" ]
+then
+  OPTIONAL_DEBUGGING=" 3> ${DEBUG_LOG}"
+fi
+OPTIONAL_PROFILING=""
+if [ "${PROFILING_LOG}" != "/dev/null" ]
+then
+  OPTIONAL_PROFILING=" 4> ${PROFILING_LOG}"
+fi
+
 # Ensure that...
 # MMDVMHost is running, and that it is writing to the log.
 if [[ "$(pgrep -f "/usr/local/bin/MMDVMHost /etc/mmdvmhost")" = "" ]]
@@ -2798,7 +2852,7 @@ else
     echo -e "  Sleeping another 10 seconds before trying again...\n"
     sleep 10
     #KPC
-    exec /bin/bash -c "${SCRIPT} -l ${MY_CMDLINE} ${OPTIONAL_DEBUGGING}"
+    exec /bin/bash -c "${SCRIPT} -l ${MY_CMDLINE}${OPTIONAL_DEBUGGING}${OPTIONAL_PROFILING}"
   fi
 fi
 
@@ -2961,18 +3015,10 @@ echo
 fnRESET_SCROLLING
 
 #KPC
-# FOR DEBUGGING: Close the debugging file descriptor
+# FOR DEBUGGING & PROFILING: Close the file descriptors
 exec 3>&- 2> /dev/null
-
-# If the debugging was passed on the commandline, bash doesn't save it as
-# part of the original commandline.  So, if it was used when first launch,
-# we tack it on after "${MY_CMDLINE}" before exec'ing the script.
-OPTIONAL_DEBUGGING=""
-if [ "${DEBUG_LOG}" != "/dev/null" ]
-then
-  OPTIONAL_DEBUGGING="3> ${DEBUG_LOG}"
-fi
-
+set +x
+exec 4>&- 2> /dev/null
 
 # Restart, with the same options as originally passed
 echo -e "${BOLD}${GRE}RE-LAUNCHING AS \"${SCRIPT} ${MY_CMDLINE} -l\"...${WHI}${SGR0}"
@@ -2980,5 +3026,5 @@ echo "${GRE}${DBL_LINE}${WHI}${SGR0}${CLR_EL}"
 sleep 2
 clear
 #KPC
-exec /bin/bash -c "${SCRIPT} -l ${MY_CMDLINE} ${OPTIONAL_DEBUGGING}"
+exec /bin/bash -c "${SCRIPT} -l ${MY_CMDLINE}${OPTIONAL_DEBUGGING}${OPTIONAL_PROFILING}"
 
