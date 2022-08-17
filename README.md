@@ -27,7 +27,7 @@
 
 -------------------------------------------------------------------
 ## About
-**pistar-lastqso is a tool to monitor DMR and YSF traffic (including DMR2YSF and YSF2DMR cross-modes) on a PI-STAR node, either via SSH, or, on an HDMI-connected console.  Written as a bash shell script (with just a few lines of python), no web browser or other GUI client is required.**
+**pistar-lastqso is a tool to monitor DMR and YSF traffic (including DMR2YSF and YSF2DMR cross-modes) on a PI-STAR node, either via SSH, or, on an HDMI-connected console.  Written as a bash shell script (with a few lines of python), no web browser or other GUI client is required.**
 
 **For each QSO (either DMR or YSF), the program displays the following data:**
 - The localized Time and Date of the contact
@@ -168,10 +168,10 @@ The program remembers which options (if any) you specified at launch, so that it
   USAGE:  Valid options and parameters include:
 
   Short Form:
-    [-c] [-d] [-e] [-f <1-4>] [-h] [-l] [-m] [-n] [-t [integer]] [-v] [-w]
+    [-c] [-d] [-e] [-f <1-5>] [-h] [-l] [-m] [-n] [-t [integer]] [-v] [-w]
 
   Long Form:
-    [--csv] [--dat] [--errors] [--font <1-4>] [--help]
+    [--csv] [--dat] [--errors] [--font <1-5>] [--help]
     [--logo] [--mono] [--nobig] [--top [integer]] [--version] [--wrap]
 ```
 
@@ -225,21 +225,26 @@ PISTAR-LASTQSO - HELP
       The [-f|--font] option forces use of the selected font, regardless of
       screen-width.
 
-      Valid options are 1, 2, 3, or 4
+      Valid options are 1, 2, 3, 4, or 5
         1 = "small"
         2 = "standard"
         3 = "big"
         4 = "ansi_shadow"
+        5 = "emulator-dependent alternate charset"
 
       If this option is omitted, the script will auto-select an
-      appropriately sized font based on the following screen-width
-      thresholds:
+      appropriately sized figlet font based on the following screen-
+      width thresholds:
 
         < 80 chars wide:  "small" font
       80-120 chars wide:  "standard" font
         >120 chars wide:  "big" font
 
-      The "ansi_shadow" font is never auto-selected.
+      The "ansi_shadow" and "emulator-dependent alternate character set"
+      fonts are never auto-selected.
+
+      Font # 5 may not work for everyone.  Not all terminal emulators
+      or TERM-types support the ANSI control codes for this feature.
 
   -h|--help
       Display this help screen, then exit.
@@ -400,6 +405,33 @@ The "ansi_shadow" font can be utilized by specifying "-f | --font 4" on the **pi
 ```
   "-f 4" or "--font 4" will force the "ansi_shadow" font.
 ```
+
+Lastly, a 5th font *MAY* be available, depending upon the SSH client emulator, and your $TERM type.  This is *NOT* a figlet font, but is an
+alternate character set that *some* term types and emulators support.  It is based on the '\e'#3 and '\e'#4 ANSI Escape sequences.  If it
+works for you, you should see a line of text DOUBLE HIGH & DOUBLE WIDE.  If it does *NOT* work for you, you will see *TWO* single-width &
+single-height lines, that look like any other line of text on the screen.
+
+The "emulator-dependent alternate charset" font can be tried by specifying "-f | --font 5" on the **pistar-lastqso** commandline.
+
+```
+  "-f 5" or "--font 5" will force the "emulator-dependent alternate charset" font.
+```
+
+ 9. A new font: "-f 5"... This is NOT a figlet font!
+    If your SSH client and TERM type support both the
+    "${ESC}#3" and "${ESC}#4" ANSI control codes, you
+    can try specifying font #5 ("-f 5" or "--font 5"),
+    when launching pistar-lastqso.  THE PI HDMI CONSOLE
+    DOES NOT SUPPORT THIS ALTERNATE CHARACTER SET.  It
+    works mainly with SSH clients that do GOOD "xterm"
+    emulation.  Other term-types and emulators *may*
+    work, but YMMV.  If you try it, and instead of
+    seeing one line printed "double-high & double-wide"
+    you see two lines printed normally, then this font
+    is not for you.  (And it's nothing this script can
+    fix... it's a limitation of your terminal emulator
+    and TERM type.)
+
 
 If you specify an invalid numeric parameter for the "-f | --font" option, **pistar-lastqso** will display a usage screen showing valid options and parameters, and then exit.
 
