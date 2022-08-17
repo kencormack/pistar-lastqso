@@ -417,22 +417,6 @@ The "emulator-dependent alternate charset" font can be tried by specifying "-f |
   "-f 5" or "--font 5" will force the "emulator-dependent alternate charset" font.
 ```
 
- 9. A new font: "-f 5"... This is NOT a figlet font!
-    If your SSH client and TERM type support both the
-    "${ESC}#3" and "${ESC}#4" ANSI control codes, you
-    can try specifying font #5 ("-f 5" or "--font 5"),
-    when launching pistar-lastqso.  THE PI HDMI CONSOLE
-    DOES NOT SUPPORT THIS ALTERNATE CHARACTER SET.  It
-    works mainly with SSH clients that do GOOD "xterm"
-    emulation.  Other term-types and emulators *may*
-    work, but YMMV.  If you try it, and instead of
-    seeing one line printed "double-high & double-wide"
-    you see two lines printed normally, then this font
-    is not for you.  (And it's nothing this script can
-    fix... it's a limitation of your terminal emulator
-    and TERM type.)
-
-
 If you specify an invalid numeric parameter for the "-f | --font" option, **pistar-lastqso** will display a usage screen showing valid options and parameters, and then exit.
 
 Note that for any given font you specify with the "-f | --font" option, figlet may decide it needs to line-wrap the output.  This can waste a lot of screen space if you force a too-large font on a too-small screen.  If that happens, try a lower-numbered parameter for the "-f | --font" option, to select a smaller font, or add the "-w | --wrap" option, to disable figlet's automatic line-wrapping.
