@@ -1,14 +1,18 @@
 #!/bin/bash
 # pistar-lastqso
 # Written by:   Ken Cormack, KE8DPF, unixken@yahoo.com
-# Copyright (c) 2022, Ken Cormack
+# Copyright © 2022, Ken Cormack
 # github:       https://github.com/kencormack/pistar-lastqso
 
 set -o allexport
 
-VERSION=2.22
+VERSION=2.23
 
-umask 0077
+# For whatever reason, "umask 0077" isn't locking down permissions
+# on files written to /tmp, the way symbolically setting it does.
+# I'll need to look into that a bit more.
+umask u=rw,g=,o=
+
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 
 # Any equal signs passed on the cmdline are replaced w/ spaces,
@@ -28,8 +32,9 @@ ARG_LIST_LENGTH=${#ARG_LIST[@]}
 # log structure changes in any way with future releases of pi-star, or
 # if you want to display modes other than DMR and YSF (D-Star, P25, etc.)
 # you will need to modify this script accordingly.  I developed this
-# first for DMR, using a TYT MD-UV390GPS.  I later purchased a Yaesu
-# FT-70DR and added support for YSF.
+# first for DMR, using a TYT MD-UV390GPS.  I later obtained a Yaesu
+# FT-70DR and added support for YSF.  If someone would like to gift me
+# an I-COM ID52A or similar HT, I'd be happy to add D-Star.  ;)
 
 # NOTE #2: I've tried to write this script with readability in mind.
 # A year after having last touched a script, I like to look at it and
@@ -72,7 +77,6 @@ set -o errtrace
 # and subshell environments.  (The -E causes errors within functions to bubble up.)
 set -E -o functrace
 
-#KPC
 #---------------
 ###### SET UP DEBUGGING AND PROFILING LOGS
 # DEBUG FILE DESCRIPTOR
@@ -82,6 +86,8 @@ set -E -o functrace
 # But if the user has redirected fd 3 to a file, then "${DEBUG_LOG}" will contain the
 # name (with full path), to the file.
 DEBUG_LOG="$(readlink /proc/self/fd/3 2>/dev/null)"
+echo "LASTQSO v${VERSION} - DEBUGGING LOG" >&3
+echo -e "==================================\n" >&3
 # FOR DEBUGGING: THE DEBUG TRAP
 # This trap writes each line to be executed, just before it is executed, to the debug log.
 trap 'echo -e "line#: ${LINENO}...\t${BASH_COMMAND}" >&3' DEBUG
@@ -129,7 +135,7 @@ SHOW_LOG_ERRORS=1
 #
 # Display Callsigns & TGs/DG-IDs in large font.
 # Can be overriden with "-n|--nobig" cmdline option
-USE_FIGLET=1
+USE_BANNER=1
 #
 # Allow figlet to auto-wrap as needed.
 # Can be overridden with "-w|--wrap" cmdline option
@@ -168,8 +174,8 @@ then
   RMCUP="$(tput rmcup)"		# Restore primary screen buffer
   HAS_BUFFER=1
 else
-  SMCUP="$(clear)"
-  RMCUP="$(clear)"
+  SMCUP="$(tput clear)"
+  RMCUP="$(tput clear)"
   HAS_BUFFER=0
 fi
 
@@ -200,12 +206,6 @@ CUR_UP="$(tput cuu1)"		# Cursor up, one line
 WRAP_OFF="$(tput rmam)"		# Disable line-wrap
 WRAP_ON="$(tput smam)"		# Enable line-wrap
 
-# "tput sgr0" fails to restore terminal settings under certain
-# circumstances.  This may(?) be a better choice, upon exit.
-# Not every terminal emulator or term type may support ANSI
-# escape sequences, though most common ones do.
-# TERM_RESET="$(echo -ne "\E[0m")"
-
 # Forground colors
 #BLA="$(tput setaf 0)"		# Black
 RED="$(tput setaf 1)"		# Red
@@ -230,6 +230,31 @@ DEF="$(tput setaf 9)"		# Default
 # BG_DEF="$(tput setab 9)"	# Default
 
 #---------------
+# ANSI STUFF - for things that tput can't address.
+# Not every terminal emulator or term type may support ANSI
+# escape sequences, though most common ones do.  YMMV
+#
+# The ESCape character
+ESC=$(echo -n $'\e' 2>/dev/null)
+#
+# "tput sgr0" fails to restore terminal settings under certain
+# circumstances.  This may(?) be a better choice, upon exit.
+TERM_RESET="$(echo -ne "${ESC}[0m")"
+#
+# Wide character set
+# 6 sets line double-width, with normal height
+WIDE_FONT="$(echo -n "${ESC}"#6 2>/dev/null)"
+# 5 sets line single-width (lines are set this way when cleared by ESC [ J)
+NORM_FONT="$(echo -n "${ESC}"#5 2>/dev/null)"
+#
+# Double-height, double-width character set.
+# 3 is top half of charset, 4 is bottom half.
+# Not every terminal type/emulation supports these.
+LARGE_TOP="$(echo -n "${ESC}#3")"
+LARGE_BOT="$(echo -n "${ESC}#4")"
+
+#---------------
+# MISC stuff...
 # For grepping stuff that includes tabs
 GTAB=$'\t'
 
@@ -280,18 +305,18 @@ WORKING_LOG="$(ls -1tr "${LOGDIR}/${LOGROOT}"*.log | tail -1)"
 # APIKEY="$(grep "^apikey=" /etc/bmapi.key 2> /dev/null | cut -f2 -d"=")"
 HOTSPOT_ID="$(grep -A 13 "^\[DMR\]" /etc/mmdvmhost | grep "^Id=" | cut -f2 -d"=")"
 
-QSO_COUNT_FILE="/tmp/pistar-lastqso-qso-count.${MY_SESSION}"
-KERCHUNK_FILE="/tmp/pistar-lastqso-kerchunk-count.${MY_SESSION}"
-ERROR_FILE="/tmp/pistar-lastqso-error-count.${MY_SESSION}"
-WARNING_FILE="/tmp/pistar-lastqso-warning-count.${MY_SESSION}"
-HISTORY_FILE="/tmp/pistar-lastqso-history.${MY_SESSION}"
+QSO_COUNT_FILE="/tmp/pistar-lastqso-qso-count${MY_SESSION}"
+KERCHUNK_FILE="/tmp/pistar-lastqso-kerchunk-count${MY_SESSION}"
+ERROR_FILE="/tmp/pistar-lastqso-error-count${MY_SESSION}"
+WARNING_FILE="/tmp/pistar-lastqso-warning-count${MY_SESSION}"
+HISTORY_FILE="/tmp/pistar-lastqso-history${MY_SESSION}"
 
 #---------------
 # Finding a way to get the screen width of a window that can
 # be dynamically re-sized is funky, in bash.  Neither tput,
 # stty, bash's own $LINES and $COLUMNS, or other such tools
 # work to read a terminal's screen size, from within a script.
-# So, I call on a few lines of python.
+# So, I have to call on a few lines of python.
 #
 # The advantage to using the "here doc" is that I don't need
 # to host, bundle, distribute and install a trivial external
@@ -308,26 +333,56 @@ print (ts.lines, ts.columns, sep=' ')
 EOF
 )
 # The above is called like this, whenever needed...
-# read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
+read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
 
 ###########################################################
 # FUNCTIONS
 ###########################################################
 
 #----------
-# Because bash can't do simple floating-point comparisons....
-fnCOMPARE_FLOATS()
+# Double high, double wide character set
+fnLARGE_FONT()
 {
   echo -e "\nenter: ${FUNCNAME[*]}" >&3
 
+  echo -n "${SGR0}"
+  case ${MY_FONT} in
+    5)
+      echo "${LARGE_TOP}${*}"
+      echo "${LARGE_BOT}${*}"
+      echo -n "${NORM_FONT}"
+      ;;
+    *)
+      echo "${*}"
+      ;;
+  esac
+}
+
+#----------
+# Because bash can't do simple floating-point comparisons....
+fnCOMPARE_FLOAT_LT()
+{
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
+  # Look for this to return "<" if FLOAT1 is less than FLOAT2
   awk -v FLOAT1="${1}" -v FLOAT2="${2}" 'BEGIN {printf "%s " (FLOAT1<FLOAT2?"<":">=") " %s\n", FLOAT1, FLOAT2}'
 }
 
 #----------
-# gratuitous eye-candy
+# Because bash can't do simple floating-point comparisons....
+fnCOMPARE_FLOAT_GT()
+{
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
+  # Look for this to return ">" if FLOAT1 is greater than FLOAT2
+  awk -v FLOAT1="${1}" -v FLOAT2="${2}" 'BEGIN {printf "%s " (FLOAT1>FLOAT2?">":"<=") " %s\n", FLOAT1, FLOAT2}'
+}
+
+#----------
+# Gratuitous eye-candy
 # UTF-8 has richer, more predictable box-drawing characters
 # than old fashioned terminfo acsc characters.  The caveat is
-# that the terminal must support UTF-8.)
+# that the terminal must support UTF-8.
 #
 # shellcheck disable=SC2034
 fnDEFINE_BOXCHARS()
@@ -454,10 +509,6 @@ fnDRAW_BOX()
   BOX_BOTTOM=$((BOX_TOP + BOX_HEIGHT))
   BOX_RIGHT=$((BOX_LEFT + BOX_WIDTH))
 
-  # TO DO: Add limit-checks comparing against current screen-size.
-  # Get current screen dimensions
-  # read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
-
   if [[ "${BOX_STYLE}" = "1" ]]
   then
     # single-line characters
@@ -551,35 +602,6 @@ fnDRAW_BOX()
       printf "${HALF_SHADOW}%0.s"
     done
   fi
-}
-
-#----------
-# Reserved for possible future use.
-# This allows centering a string of text without overwriting
-# anything that might already be to the left of the string we
-# want to display.  Example:  This could center some text within
-# an existing box, without destroying the left side of the box.
-#
-# Original old idea - considerably faster, but destructive to
-# anything to the left of the text to be centered.  Still might
-# be useful for future needs.
-#   printf "%*s\n" "$(((${#1} + COLUMNS)/2))" "$1"
-fnCENTER()
-{
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
-
-  read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
-  STRING="${1}"
-  #LENGTH=${#STRING}
-  # Calculate x and y coordinates so that we can display ${STRING}
-  # centered in the screen
-  X=$(( "${LINES}" / 2 ))
-  Y=$(( ( "${COLUMNS}" - ${#STRING} ) / 2 ))
-
-  # set x and y position
-  tput cup "${X}" "${Y}"
-
-  echo "${STRING}"
 }
 
 #----------
@@ -707,10 +729,9 @@ fnNOSCROLL_ZONE()
   # Save the current cursor position, and turn the cursor off
   echo -en "${CUR_SC}${CUR_OFF}"
 
-  # Get the screensize.  We'll be needing the number of lines.
   read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
 
-  # Define the scrolling region of the screen to be from the line just
+  # Define the scrolling region of the screen as the line just
   # below the no-scroll region, to the bottom of screen.
   # (Screen lines are numbered beginning with line 0.)
   tput csr "${BELOW_NOSCROLL}" $((LINES - 1))
@@ -737,7 +758,7 @@ fnNOSCROLL_ZONE()
   echo -e "${CYA}FW:${SGR0} ${WHI}${BOLD}${FW}${SGR0}${CLR_EL}"
 
   # Print line 2
-  CPU_TEMP="$(vcgencmd measure_temp | cut -f2 -d"=")"
+  CPU_TEMP="$(vcgencmd measure_temp | cut -f2 -d"=" | sed s/\'/°/)"
   CPU_TEMP_INT="$(echo "${CPU_TEMP}" | cut -f1 -d".")"
   if [[ "${CPU_TEMP_INT}" -lt 50 ]]
   then
@@ -751,6 +772,12 @@ fnNOSCROLL_ZONE()
   then
     CPU_TEMP_COLOR="${RED}"
   fi
+
+  # Added to clear out residual artifacts left in -t|--top
+  # no-scroll zone,if the zone gets corrupted.
+  CPU_TEMP="$(echo "${CPU_TEMP}${TOP_PAD}" | cut -c1-11)"
+  MODEM_PORT="$(echo "${MODEM_PORT}${TOP_PAD}" | cut -c1-10)"
+  PLATFORM="$(echo "${PLATFORM}${TOP_PAD}" | cut -c1-34)"
 
   echo -en "${CYA}Temp:${SGR0} ${CPU_TEMP_COLOR}${BOLD}${CPU_TEMP}${SGR0}\r"
   tput cuf 16
@@ -822,10 +849,10 @@ fnUSAGE()
   echo "  USAGE:  Valid options and parameters include:
 
   Short Form:
-    [-c] [-d] [-e] [-f <1-4>] [-h] [-l] [-m] [-n] [-t [integer]] [-v] [-w]
+    [-c] [-d] [-e] [-f <1-5>] [-h] [-l] [-m] [-n] [-t [integer]] [-v] [-w]
 
   Long Form:
-    [--csv] [--dat] [--errors] [--font <1-4>] [--help]
+    [--csv] [--dat] [--errors] [--font <1-5>] [--help]
     [--logo] [--mono] [--nobig] [--top [integer]] [--version] [--wrap]
   " >&2
 }
@@ -859,10 +886,10 @@ fnPARSE_CMDLINE()
     case ${OPTION} in
       -f|--font)
         # If this option is given, see if the next value
-        # is a number from 1 to 4
+        # is a number from 1 to 5
         NEXT=$((INDEX + 1))
         PARAM="${ARG_LIST[${NEXT}]}"
-        if [[ ${PARAM} == ?(-)+([1-4]) ]]
+        if [[ ${PARAM} == ?(-)+([1-5]) ]]
         then
           # It is, so use it to set the font.
           MY_FONT=${PARAM}
@@ -873,7 +900,7 @@ fnPARSE_CMDLINE()
           # It is not, so show the usage text and exit.
           tput flash
           echo -en "${BELL}"
-          echo -e "\n  ERROR:  The use of \"-f|--font\" requires an integer 1-4"
+          echo -e "\n  ERROR:  The use of \"-f|--font\" requires an integer 1-5"
           fnUSAGE
           exit 1
         fi
@@ -953,7 +980,7 @@ fnPARSE_CMDLINE()
         ;;
 
       -n|--nobig)
-        USE_FIGLET=0
+        USE_BANNER=0
         continue
         ;;
 
@@ -1048,25 +1075,30 @@ PISTAR-LASTQSO - HELP
       show up in the log.  Although the -e|--error option will supress
       display of ERRORS, it will NOT supress display of WARNINGS.
 
-  -f|--font <1-4>
+  -f|--font <1-5>
       The [-f|--font] option forces use of the selected font, regardless of
       screen-width.
 
-      Valid options are 1, 2, 3, or 4
+      Valid options are 1, 2, 3, 4, or 5
         1 = "small"
         2 = "standard"
         3 = "big"
         4 = "ansi_shadow"
+        5 = "emulator-dependent alternate charset"
 
       If this option is omitted, the script will auto-select an
-      appropriately sized font based on the following screen-width
-      thresholds:
+      appropriately sized figlet font based on the following screen-
+      width thresholds:
 
         < 80 chars wide:  "small" font
       80-120 chars wide:  "standard" font
         >120 chars wide:  "big" font
 
-      The "ansi_shadow" font is never auto-selected.
+      The "ansi_shadow" and "emulator-dependent alternate character set"
+      fonts are never auto-selected.
+
+      Font # 5 may not work for everyone.  Not all terminal emulators
+      or TERM-types support the ANSI control codes for this feature.
 
   -h|--help
       Display this help screen, then exit.
@@ -1141,9 +1173,9 @@ fnVERSION()
   echo -e "\nenter: ${FUNCNAME[*]}" >&3
 
   clear
-  echo -e "${BOLD}${WHI}$(basename "${0}") version: ${VERSION}${SGR0}"
+  echo -e "${BOLD}${WHI}$(basename "${0}") v${VERSION}${SGR0}"
   cat <<'EOF'
-Copyright (c) 2022 Ken Cormack, KE8DPF
+Copyright © 2022 Ken Cormack, KE8DPF
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published
@@ -1167,11 +1199,9 @@ fnNO_LOGO()
   echo -e "\nenter: ${FUNCNAME[*]}" >&3
 
   clear
-  echo -en "${SGR0}${WHI}"
-  echo -e "PISTAR-LASTQSO v${VERSION}"
-  echo -e "Copyright 2022 Ken Cormack - KE8DPF"
-  echo -e "https://github.com/kencormack/pistar-lastqso"
-  echo -en "${SGR0}${WHI}"
+  fnLARGE_FONT "${BOLD}${WHI}PISTAR-LASTQSO v${VERSION}${SGR0}"
+  echo -e "Copyright © 2022 Ken Cormack - KE8DPF"
+  echo -e "${DIM}https://github.com/kencormack/pistar-lastqso${SGR0}"
 }
 
 #----------
@@ -1250,8 +1280,9 @@ EOF
 
   tput cup 15 30
   echo -e "${SGR0}${BOLD}${YEL}PISTAR-LASTQSO v${VERSION}${WHI}${SGR0}"
+
   tput cuf 22
-  echo -e "${SGR0}${BOLD}${BLU}Copyright 2022 Ken Cormack - KE8DPF${WHI}${SGR0}"
+  echo -e "${SGR0}${BOLD}${BLU}Copyright © 2022 Ken Cormack - KE8DPF${WHI}${SGR0}"
   tput cuf 17
   echo -e "${SGR0}${BOLD}${BLU}https://github.com/kencormack/pistar-lastqso${WHI}${SGR0}"
   echo -en "${SGR0}${WHI}${CUR_ON}"
@@ -1284,10 +1315,9 @@ fnCHECK_MODES_ENABLED()
     tput cup 22 2
     echo -e "${CUR_ON}Aborting... "
 
+    # Get the screensize.  We'll be needing the number of lines.
     read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
-    DEBUG_PROFILING_LINE=$((LINES - 2))
 
-    #KPC
     # Close the debugging and profiling file descriptors
     exec 3>&- 2> /dev/null
     set +x 2>/dev/null
@@ -1295,12 +1325,15 @@ fnCHECK_MODES_ENABLED()
     # If debugging and/or profiling was used, show the names of the logs, at exit
     if [[ "${DEBUG_LOG}" != "/dev/null" ]] || [[ "${PROFILING_LOG}" != "/dev/null" ]]
     then
+      DEBUG_PROFILING_LINE=$((LINES - 6))
       tput cup "${DEBUG_PROFILING_LINE}" 0
-      echo -e "${CUR_ON}DEBUG LOG: ${DEBUG_LOG}\tPROFILING_LOG: ${PROFILING_LOG}"
-    else
-      tput cup "${LINES}" 0
+      fnLARGE_FONT "DEBUGGING: ${DEBUG_LOG}"
+      fnLARGE_FONT "PROFILING: ${PROFILING_LOG}"
+      echo
     fi
 
+    tput cup "${LINES}" 0
+    echo -en "${TERM_RESET}"
     exit
   fi
 }
@@ -1312,13 +1345,13 @@ fnGOODBYE_BOX()
 
   # Usage: fnDRAW_BOX BOX_TOP BOX_LEFT BOX_HEIGHT BOX_WIDTH BOX_STYLE BOX_FILL BOX_SHADOW
   echo -en "${SGR0}${BLU}"
-  tput cup 11 18
-  for ((I=17; I<=59; I++))
-  do
-    printf "${DBOX_HL}%0.s"
-  done
-  fnDRAW_BOX 10 18 2 41 2 1 1
-  fnDRAW_BOX 9 17 4 43 2 1 1
+# tput cup 11 18
+# for ((I=17; I<=59; I++))
+# do
+#   printf "${DBOX_HL}%0.s"
+# done
+# fnDRAW_BOX 10 18 2 41 2 1 1
+# fnDRAW_BOX 9 17 4 43 2 1 1
   fnDRAW_BOX 8 16 6 45 2 1 1
   #fnDRAW_BOX 7 15 8 47 2 1 1
 
@@ -1416,23 +1449,14 @@ fnMMDVMLOG_FUSER()
 }
 
 #----------
-fnCLEAR_CURRENT_LINE()
-{
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
-
-  trap fnWINCH WINCH
-
-  echo -en "\r${CLR_EL}"
-}
-
-#----------
 fnSEPARATOR()
 {
   echo -e "\nenter: ${FUNCNAME[*]}" >&3
 
   trap fnWINCH WINCH
 
-  fnCLEAR_CURRENT_LINE
+  # Clear current line
+  echo -en "\r${CLR_EL}"
   echo "${DBL_LINE}${WHI}${SGR0}${CLR_EL}"
 }
 
@@ -1443,9 +1467,11 @@ fnLISTENING()
 
   trap fnWINCH WINCH
 
-  #KPC
+  # Get the screensize.  We'll be needing the number of lines.
+  read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
+
   fnNOSCROLL_ZONE
-  echo -n "  ${GRE}${BOLD}Listening for Traffic...${SGR0}${WHI}${CLR_EL} "
+  echo -n "  ${GRE}${BOLD}Listening for Traffic... ${SGR0}${WHI}${CLR_EL} "
   TA_DISPLAYED=0
 }
 
@@ -1456,9 +1482,11 @@ fnQSO_IN_PROGRESS()
 
   trap fnWINCH WINCH
 
-  #KPC
+  # Get the screensize.  We'll be needing the number of lines.
+  read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
+
   fnNOSCROLL_ZONE
-  echo -n "  ${YEL}${BOLD}QSO In Progress...${SGR0}${WHI}${CLR_EL} "
+  echo -n "  ${YEL}${BOLD}QSO In Progress... ${SGR0}${WHI}${CLR_EL} "
   TA_DISPLAYED=0
 }
 
@@ -1692,92 +1720,94 @@ fnDMR_GET_TO()
 }
 
 #----------
-fnFIGLET_AUTO_FONT_SELECT()
+fnBANNER()
 {
   echo -e "\nenter: ${FUNCNAME[*]}" >&3
 
   trap fnWINCH WINCH
 
-  # A screen width of less than 80 columns will select figlet's
-  # "small" font.  A screen width greater than 80 columns will
-  # use figlet's larger "standard" font.  A screen width greater
-  # than 120 columns will use figlet's "big" font.
-
-  FONT="small"
-  if [[ "${COLUMNS}" -gt 80 ]]
+  # If -n|--nobig was used, get out of here.
+  if [[ "${USE_BANNER}" = "0" ]]
   then
-    FONT="standard"
+    return
   fi
-  if [[ "${COLUMNS}" -gt 120 ]]
+
+  # Get the screensize.  We'll be needing the number of columns.
+  read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
+  OUTPUT_WIDTH="${COLUMNS}"
+
+  if [[ "${LOGREC_MODE}" = "YSF" ]]
   then
-    FONT="big"
+    BANNER_COLOR="${YEL}"
+  else
+    BANNER_COLOR="${WHI}"
   fi
-}
 
-#----------
-fnFIGLET()
-{
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
-
-  trap fnWINCH WINCH
-
-  if [[ "${USE_FIGLET}" -eq 1 ]]
+  # This deals with the alternate charset font only...
+  if [[ "${MY_FONT}" = "5" ]]
   then
-    # Disable the large font display callsign to save screen space,
-    # by passing the "--nobig" parameter to this script:
-    #
-    #     pistar-lastqso -n|--nobig
-    #
-    read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
-    case ${MY_FONT} in
-      1)
-        FONT="small"
-        ;;
-      2)
-        FONT="standard"
-        ;;
-      3)
-        FONT="big"
-        ;;
-      4)
-        FONT="ansi_shadow"
-        ;;
-      *)
-        fnFIGLET_AUTO_FONT_SELECT
-        ;;
-    esac
-
-    # This flag is set with the "-w|--wrap" cmdline option.
-    if [[ "${NO_WRAP}" = "1" ]]
-    then
-      OUTPUT_WIDTH=1000
-    else
-      OUTPUT_WIDTH="${COLUMNS}"
-    fi
-
-    BANNER="$(figlet -t -w "${OUTPUT_WIDTH}" -f "${FONT}" "${FROM} ... ${TO}")"
-    if [[ "${LOGREC_MODE}" = "YSF" ]]
-    then
-      BANNER_COLOR="${YEL}"
-    else
-      BANNER_COLOR="${WHI}"
-    fi
-
-    echo "${BOLD}${BANNER_COLOR}${BANNER}${SGR0}"
-
-    # Tighten up the leading with these two fonts.
-    # This moves the cursor up one line to recover
-    # an extra blank line that follows these fonts.
-    case ${FONT} in
-      "big"|"ansi_shadow")
-        echo -en "${CUR_UP}"
-        ;;
-      *)
-        ;;
-    esac
-    #KPC
+    # Font #5 is not a figlet font.  Do what we need to
+    # do, and get out.
+    fnLARGE_FONT "${BOLD}${BANNER_COLOR}${FROM} ... ${TO}"
     fnNOSCROLL_ZONE
+    return
   fi
+
+  # And this deals with figlet fonts...
+  # Disable the large font display callsign to save screen space,
+  # by passing the "--nobig" parameter to this script:
+  #     pistar-lastqso -n|--nobig
+  case ${MY_FONT} in
+    1)
+      FONT="small"
+      ;;
+    2)
+      FONT="standard"
+      ;;
+    3)
+      FONT="big"
+      ;;
+    4)
+      FONT="ansi_shadow"
+      ;;
+    *)
+      # A screen width of less than 80 columns will select figlet's
+      # "small" font.  A screen width greater than 80 columns will
+      # use figlet's larger "standard" font.  A screen width greater
+      # than 120 columns will use figlet's "big" font.
+      FONT="small"
+      if [[ "${COLUMNS}" -gt 80 ]]
+      then
+        FONT="standard"
+      fi
+      if [[ "${COLUMNS}" -gt 120 ]]
+      then
+        FONT="big"
+      fi
+      ;;
+  esac
+
+  # This flag is set with the "-w|--wrap" cmdline option.
+  if [[ "${NO_WRAP}" = "1" ]]
+  then
+    OUTPUT_WIDTH=1000
+  fi
+
+  BANNER="$(figlet -t -w "${OUTPUT_WIDTH}" -f "${FONT}" "${FROM} ... ${TO}")"
+
+  echo "${BOLD}${BANNER_COLOR}${BANNER}${SGR0}"
+
+  # Tighten up the leading with these two fonts.
+  # This moves the cursor up one line to recover
+  # an extra blank line that follows these fonts.
+  case ${FONT} in
+    "big"|"ansi_shadow")
+      echo -en "${CUR_UP}"
+      ;;
+    *)
+      ;;
+  esac
+  fnNOSCROLL_ZONE
 }
 
 #----------
@@ -1813,7 +1843,8 @@ fnYSF_END_NETWORK_TRAFFIC()
   fnCOLORIZE_BER
   fnCOLORIZE_LOSS
 
-  fnCLEAR_CURRENT_LINE
+  # Clear current line
+  echo -en "\r${CLR_EL}"
   echo -en "\r${DIM}Dur.:${SGR0} ${BLU}${BOLD}${LOGREC_SECS}${SGR0}${WHI}${DIM}sec\r"
   tput cuf 18
   echo -en "${DIM}BER:${SGR0} ${BER_COLOR}${BOLD}${BER}%${SGR0}${WHI}\r"
@@ -1983,7 +2014,7 @@ fnDMR_SHOW_CURRENT_CALL()
   fi
 
   # show the time slot, source (RF or network), and type (voice or data)
-  echo -en "${DIM}Slot:${SGR0} ${CYA}${BOLD}DMR TS${TIME_SLOT}${SGR0}${WHI}\r"
+  echo -en "${DIM}Mode:${SGR0} ${CYA}${BOLD}DMR TS${TIME_SLOT}${SGR0}${WHI}\r"
   tput cuf 18
   echo -e "${DIM}Src:${SGR0} ${CYA}${BOLD}${SOURCE}${SGR0}${WHI}\t${DIM}Type:${SGR0} ${BOLD}${TYPE}${SGR0}${WHI}"
   fnQSO_IN_PROGRESS
@@ -2172,7 +2203,8 @@ fnDMR_TALKER_ALIAS()
     TA="$(echo "${RECORD}" | grep "DMR Talker Alias" | cut -f5- -d":" | sed -e "s/^ //" -e "s/'//g")"
     if [[ -n "${TA}" ]]
     then
-      fnCLEAR_CURRENT_LINE
+      # Clear current line
+      echo -en "\r${CLR_EL}"
       echo "${DIM}TA..:${SGR0} ${MAG}${BOLD}${TA}${SGR0}${WHI}"
       TA_DISPLAYED=1
       fnQSO_IN_PROGRESS
@@ -2471,8 +2503,9 @@ fnMAIN_LOOP()
 
         FROM="${LOGREC_CALLSIGN}"
         TO="${LOGREC_DG_ID} ${LOGREC_DG_ID_NUM}"
-        fnCLEAR_CURRENT_LINE
-        fnFIGLET
+        # Clear current line
+        echo -en "\r${CLR_EL}"
+        fnBANNER
 
         SOURCE="NET"
 
@@ -2515,8 +2548,9 @@ fnMAIN_LOOP()
 
         FROM="${LOGREC_CALLSIGN}"
         TO="${LOGREC_DG_ID} ${LOGREC_DG_ID_NUM}"
-        fnCLEAR_CURRENT_LINE
-        fnFIGLET
+        # Clear current line
+        echo -en "\r${CLR_EL}"
+        fnBANNER
 
         SOURCE="RF"
 
@@ -2551,7 +2585,8 @@ fnMAIN_LOOP()
         fnCOLORIZE_BER
         fnCOLORIZE_RSSI
 
-        fnCLEAR_CURRENT_LINE
+        # Clear current line
+        echo -en "\r${CLR_EL}"
         echo -e "\r${BOLD}${YEL}TRANSMISSION LOST${SGR0}${WHI}"
         echo -en "\r${DIM}Dur.:${SGR0} ${BLU}${BOLD}${LOGREC_SECS}${SGR0}${WHI} sec\r"
         tput cuf 18
@@ -2617,7 +2652,8 @@ fnMAIN_LOOP()
         fnCOLORIZE_BER
         fnCOLORIZE_RSSI
 
-        fnCLEAR_CURRENT_LINE
+        # Clear current line
+        echo -en "\r${CLR_EL}"
         echo -en "\r${DIM}Dur.:${SGR0} ${BLU}${BOLD}${LOGREC_SECS}${SGR0}${WHI} sec\r"
         tput cuf 18
         echo -en "${DIM}BER:${SGR0} ${BER_COLOR}${BOLD}${LOGREC_BER}${SGR0}${WHI}\r"
@@ -2667,8 +2703,9 @@ fnMAIN_LOOP()
         QSO_START_TIME="${TIME}"
         fnDMR_GET_FROM
         fnDMR_GET_TO
-        fnCLEAR_CURRENT_LINE
-        fnFIGLET
+        # Clear current line
+        echo -en "\r${CLR_EL}"
+        fnBANNER
         fnDMR_GET_VOICE_OR_DATA
         fnDMR_SHOW_CURRENT_CALL
       else
@@ -2689,7 +2726,8 @@ fnMAIN_LOOP()
             fnDMR_GET_LOSS
             fnCOLORIZE_LOSS
 
-            fnCLEAR_CURRENT_LINE
+            # Clear current line
+            echo -en "\r${CLR_EL}"
             echo -en "\r${DIM}Dur.:${SGR0} ${BLU}${BOLD}${SECS}${SGR0}${WHI} sec\r"
             tput cuf 18
             echo -en "${DIM}BER:${SGR0} ${BER_COLOR}${BOLD}${BER}%${SGR0}${WHI}\t${DIM}Loss:${SGR0} ${LOSS_COLOR}${BOLD}${LOSS}%${SGR0}${WHI}\r"
@@ -2700,7 +2738,8 @@ fnMAIN_LOOP()
             fnDMR_GET_RSSI
             fnCOLORIZE_RSSI
 
-            fnCLEAR_CURRENT_LINE
+            # Clear current line
+            echo -en "\r${CLR_EL}"
             echo -en "\r${DIM}Dur.:${SGR0} ${BLU}${BOLD}${SECS}${SGR0}${WHI}${DIM}sec\r"
             tput cuf 18
             echo -en "${DIM}BER:${SGR0} ${BER_COLOR}${BOLD}${BER}%${SGR0}${WHI}\t${DIM}RSSI:${SGR0} ${SMETER_COLOR}${BOLD}${SMETER} (-${DBM} dBm)${SGR0}${WHI}\r"
@@ -2757,7 +2796,8 @@ fnABORT()
 
   # Clear the bottom line of the screen
   tput cup "${LINES}" 0
-  fnCLEAR_CURRENT_LINE
+  # Clear current line
+  echo -en "\r${CLR_EL}"
 
   # Re-Enable line-wrap, turn the cursor on, reset the terminal,
   # and switch back to the primary screen buffer
@@ -2773,10 +2813,9 @@ fnABORT()
 
   rm "${STATIC_TG_FILE}" "${QSO_COUNT_FILE}" "${KERCHUNK_FILE}" "${ERROR_FILE}" "${WARNING_FILE}" "${HISTORY_FILE}" 2> /dev/null || :
 
+  # Get the screensize.  We'll be needing the number of lines.
   read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
-  DEBUG_PROFILING_LINE=$((LINES - 2))
 
-  #KPC
   # Close the debugging and profiling file descriptors
   exec 3>&- 2> /dev/null
   set +x 2>/dev/null
@@ -2784,12 +2823,15 @@ fnABORT()
   # If debugging and/or profiling was used, show the names of the logs, at exit
   if [[ "${DEBUG_LOG}" != "/dev/null" ]] || [[ "${PROFILING_LOG}" != "/dev/null" ]]
   then
+    DEBUG_PROFILING_LINE=$((LINES - 6))
     tput cup "${DEBUG_PROFILING_LINE}" 0
-    echo -e "${CUR_ON}DEBUG LOG: ${DEBUG_LOG}\tPROFILING_LOG: ${PROFILING_LOG}"
-  else
-    tput cup "${LINES}" 0
+    fnLARGE_FONT "DEBUGGING: ${DEBUG_LOG}"
+    fnLARGE_FONT "PROFILING: ${PROFILING_LOG}"
+    echo
   fi
 
+  tput cup "${LINES}" 0
+  echo -en "${TERM_RESET}"
   exit
 }
 
@@ -2797,6 +2839,11 @@ fnABORT()
 fnWINCH()
 {
   echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
+  # Get the screensize.  We'll be needing the number of lines.
+  read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
+  LINES="$(tput lines)"
+  COLUMNS="$(tput cols)"
 
   if [[ ${TOP} -eq 1 ]]
   then
@@ -2823,7 +2870,6 @@ then
   fnPARSE_CMDLINE
 fi
 
-#KPC
 # If FD redirection was used on the commandline, bash doesn't save it as
 # part of the original commandline.  So, if it was used when first launched,
 # we tack it on after "${MY_CMDLINE}" before exec'ing the script.
@@ -2851,7 +2897,6 @@ else
     echo -e "\n  ${YEL}MMDVMHost is running, but is NOT writing to $(basename "${WORKING_LOG}").${SGR0}"
     echo -e "  Sleeping another 10 seconds before trying again...\n"
     sleep 10
-    #KPC
     exec /bin/bash -c "${SCRIPT} -l ${MY_CMDLINE}${OPTIONAL_DEBUGGING}${OPTIONAL_PROFILING}"
   fi
 fi
@@ -2864,7 +2909,7 @@ then
   tput cup 22 2
 else
   fnNO_LOGO
-  tput cup 4 0
+  tput cup 5 0
 fi
 
 # Fetch the version number from what's posted on github.
@@ -2873,22 +2918,24 @@ fi
 echo -en "\r${SGR0}${WHI}Performing version check... "
 VER_CHECK_COLOR="${WHI}"
 VER_CHECK="$(curl -s https://raw.githubusercontent.com/kencormack/pistar-lastqso/main/pistar-lastqso 2>/dev/null | grep "^VERSION=" | cut -f2 -d"=")"
+
 IS_DEV=""
-if fnCOMPARE_FLOATS "${VERSION}" "${VER_CHECK}" | grep -q ">"
+if fnCOMPARE_FLOAT_GT "${VERSION}" "${VER_CHECK}" | grep -q ">"
 then
   IS_DEV="*"
-else
-  # See if the user is running a version older than the latest available
-  if fnCOMPARE_FLOATS "${VERSION}" "${VER_CHECK}" | grep -q "<"
-  then
-    echo -e "\r${GRE}${BOLD}AN UPDATE TO THIS SCRIPT IS AVAILABLE AT:"
-    echo "${GRE}${DIM}https://github.com/kencormack/pistar-lastqso"
-    echo "${WHI}${DIM}  Current Version: ${VERSION}${SGR0}"
-    echo -e "${WHI}${BOLD}Available Version: ${VER_CHECK}${SGR0}${WHI}\n"
-    VER_CHECK_COLOR="${RED}"
-    sleep 2
-  fi
 fi
+
+# See if the user is running a version older than the latest available
+if fnCOMPARE_FLOAT_LT "${VERSION}" "${VER_CHECK}" | grep -q "<"
+then
+  echo -e "\r${GRE}${BOLD}AN UPDATE TO THIS SCRIPT IS AVAILABLE AT:"
+  echo "${GRE}${DIM}https://github.com/kencormack/pistar-lastqso"
+  echo "${WHI}${DIM}  Current Version: ${VERSION}${SGR0}"
+  echo -e "${WHI}${BOLD}Available Version: ${VER_CHECK}${SGR0}${WHI}\n"
+  VER_CHECK_COLOR="${RED}"
+  sleep 2
+fi
+# Clear current line
 echo -en "\r${CLR_EL}"
 
 fnCHECK_MODES_ENABLED
@@ -3014,7 +3061,6 @@ echo
 
 fnRESET_SCROLLING
 
-#KPC
 # FOR DEBUGGING & PROFILING: Close the file descriptors
 exec 3>&- 2> /dev/null
 set +x
@@ -3025,6 +3071,5 @@ echo -e "${BOLD}${GRE}RE-LAUNCHING AS \"${SCRIPT} ${MY_CMDLINE} -l\"...${WHI}${S
 echo "${GRE}${DBL_LINE}${WHI}${SGR0}${CLR_EL}"
 sleep 2
 clear
-#KPC
 exec /bin/bash -c "${SCRIPT} -l ${MY_CMDLINE}${OPTIONAL_DEBUGGING}${OPTIONAL_PROFILING}"
 
