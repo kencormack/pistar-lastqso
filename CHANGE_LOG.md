@@ -1,4 +1,18 @@
 ```
+CHANGES: V2.24
+ 1. Ever since the script was first set up to track
+    a dynamically resizeable SSH window, getting and
+    tracking screen dimensions (rows and colums) has
+    been a real ass-kicker.  But, I think I have
+    finally conquered the gremlins.  Screen redraws
+    now appear correct, with less corruption of the
+    non-scrolling "top" section (-t|--top) and/or
+    history.  Reminds me of my days admining corporate
+    sendmail servers.  Yes, there are legitimate,
+    technical reasons why it requires sacrificing a
+    live chicken!  (Chickens, beware - I'm hungry.)
+ 2. Clean up errors from new ANSI ESCape codes.
+
 CHANGES: V2.23
  1. Fixed dev version indicator.
  2. Removed unused fnCENTER function.
