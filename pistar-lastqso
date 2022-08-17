@@ -6,7 +6,7 @@
 
 set -o allexport
 
-VERSION=2.23
+VERSION=2.24
 
 # For whatever reason, "umask 0077" isn't locking down permissions
 # on files written to /tmp, the way symbolically setting it does.
@@ -90,6 +90,7 @@ echo "LASTQSO v${VERSION} - DEBUGGING LOG" >&3
 echo -e "==================================\n" >&3
 # FOR DEBUGGING: THE DEBUG TRAP
 # This trap writes each line to be executed, just before it is executed, to the debug log.
+#trap 'export LINES COLUMNS ; echo -e "line#: ${LINENO}...\t${BASH_COMMAND}" >&3' DEBUG
 trap 'echo -e "line#: ${LINENO}...\t${BASH_COMMAND}" >&3' DEBUG
 # FOR DEBUGGING: THE ERR TRAP
 # This trap will log all non-0 return codes.
@@ -239,7 +240,7 @@ ESC=$(echo -n $'\e' 2>/dev/null)
 #
 # "tput sgr0" fails to restore terminal settings under certain
 # circumstances.  This may(?) be a better choice, upon exit.
-TERM_RESET="$(echo -ne "${ESC}[0m")"
+TERM_RESET="$(echo -ne "${ESC}[0m" 2>/dev/null)"
 #
 # Wide character set
 # 6 sets line double-width, with normal height
@@ -250,8 +251,8 @@ NORM_FONT="$(echo -n "${ESC}"#5 2>/dev/null)"
 # Double-height, double-width character set.
 # 3 is top half of charset, 4 is bottom half.
 # Not every terminal type/emulation supports these.
-LARGE_TOP="$(echo -n "${ESC}#3")"
-LARGE_BOT="$(echo -n "${ESC}#4")"
+LARGE_TOP="$(echo -n "${ESC}#3" 2>/dev/null)"
+LARGE_BOT="$(echo -n "${ESC}#4" 2>/dev/null)"
 
 #---------------
 # MISC stuff...
@@ -324,6 +325,7 @@ HISTORY_FILE="/tmp/pistar-lastqso-history${MY_SESSION}"
 # stays within the bash script.
 #
 # Note to self: My 40" 1080P screen is 61 lines x 228 columns
+export LINES COLUMNS
 PY3_SCRIPT=$(cat <<'EOF'
 import os
 ts = os.get_terminal_size(2)
@@ -731,13 +733,16 @@ fnNOSCROLL_ZONE()
 
   read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
 
+#KPC
+  # Set the whole screen as scrollable
+  tput csr 0 $((LINES - 1))
+  # Go to line 0
+  echo -n "${CUR_HOME}"
+
   # Define the scrolling region of the screen as the line just
   # below the no-scroll region, to the bottom of screen.
   # (Screen lines are numbered beginning with line 0.)
   tput csr "${BELOW_NOSCROLL}" $((LINES - 1))
-
-  # Go to line 0, the top of the no-scroll region
-  echo -n "${CUR_HOME}"
 
   # Print line 0
   echo -en "${CYA}LASTQSO:${SGR0} ${VER_CHECK_COLOR}${BOLD}${MY_VER}${SGR0}\r"
@@ -1199,9 +1204,9 @@ fnNO_LOGO()
   echo -e "\nenter: ${FUNCNAME[*]}" >&3
 
   clear
-  fnLARGE_FONT "${BOLD}${WHI}PISTAR-LASTQSO v${VERSION}${SGR0}"
-  echo -e "Copyright © 2022 Ken Cormack - KE8DPF"
-  echo -e "${DIM}https://github.com/kencormack/pistar-lastqso${SGR0}"
+  echo "${BOLD}${WHI}PISTAR-LASTQSO v${VERSION}${SGR0}"
+  echo "Copyright © 2022 Ken Cormack - KE8DPF"
+  echo "${DIM}https://github.com/kencormack/pistar-lastqso${SGR0}"
 }
 
 #----------
@@ -1449,6 +1454,18 @@ fnMMDVMLOG_FUSER()
 }
 
 #----------
+fnKPC()
+{
+  return
+
+  # Try to spot where accurate determination of screen
+  # size was breaking down.
+  echo -en "${CUR_UP}"
+  tput cuf 78
+  echo "  SCROLL ZONE: ${BELOW_NOSCROLL} THRU ${LINES}"
+}
+
+#----------
 fnSEPARATOR()
 {
   echo -e "\nenter: ${FUNCNAME[*]}" >&3
@@ -1458,6 +1475,8 @@ fnSEPARATOR()
   # Clear current line
   echo -en "\r${CLR_EL}"
   echo "${DBL_LINE}${WHI}${SGR0}${CLR_EL}"
+
+  fnKPC
 }
 
 #----------
@@ -1749,6 +1768,7 @@ fnBANNER()
     # Font #5 is not a figlet font.  Do what we need to
     # do, and get out.
     fnLARGE_FONT "${BOLD}${BANNER_COLOR}${FROM} ... ${TO}"
+    fnKPC
     fnNOSCROLL_ZONE
     return
   fi
@@ -1807,6 +1827,7 @@ fnBANNER()
     *)
       ;;
   esac
+  fnKPC
   fnNOSCROLL_ZONE
 }
 
@@ -1860,6 +1881,7 @@ fnYSF_END_NETWORK_TRAFFIC()
   else
     echo
   fi
+  fnKPC
 
   fnBUILD_HISTORY
   fnNOSCROLL_ZONE
@@ -1883,6 +1905,7 @@ fnYSF_SHOW_CURRENT_CALL()
   echo -n "${DIM}QSOs Watched:${SGR0} ${BLU}${BOLD}"
   printf %05d "${QSO_COUNT}"
   echo "${SGR0}${WHI}"
+  fnKPC
 
   CSV_FROM="$(echo "${FROM}" | cut -f1 -d"/" | cut -f1 -d"-")"
   FROM_NAME="$(grep ",${CSV_FROM}," "${USERCSV}" "${NXDNCSV}" | tail -1 | cut -f3 -d",")"
@@ -1900,9 +1923,12 @@ fnYSF_SHOW_CURRENT_CALL()
   else
     echo "${DIM} To..:${SGR0} ${BOLD}${LOGREC_DG_ID} ${LOGREC_DG_ID_NUM}${SGR0}${WHI}"
   fi
+  fnKPC
+
   echo -en "${DIM}Mode:${SGR0} ${BOLD}${CYA}System Fusion${SGR0}${WHI}\r"
   tput cuf 32
   echo -e "${DIM}Src.:${SGR0} ${BOLD}${CYA}${SOURCE}${SGR0}${WHI}"
+  fnKPC
 
   CSV_CALLSIGN="$(echo "${FROM}" | cut -f1 -d"/" | cut -f1 -d"-")"
   # Maybe the callsign is also a DMR user...
@@ -1954,6 +1980,7 @@ fnYSF_SHOW_CURRENT_CALL()
       echo -e "${DIM}QTH:${SGR0} ${MAG}${BOLD}${CITY}, ${STATE}, ${COUNTRY}${SGR0}${WHI}"
     fi
   fi
+  fnKPC
 
   fnQSO_IN_PROGRESS
 }
@@ -1975,6 +2002,7 @@ fnDMR_SHOW_CURRENT_CALL()
 
   printf %05d "${QSO_COUNT}"
   echo "${SGR0}${WHI}"
+  fnKPC
 
   # Show formatted to and from names
   P_FROM_NAME="$(printf "%-15s" "(${FROM_NAME})")"
@@ -1982,6 +2010,7 @@ fnDMR_SHOW_CURRENT_CALL()
   echo -en "${DIM}From:${SGR0} ${BOLD}${FROM} ${P_FROM_NAME}${SGR0}\r"
   tput cuf 31
   echo "${DIM} To..:${SGR0} ${BOLD}${TO} ${P_TO_NAME}${SGR0}${WHI}"
+  fnKPC
 
   # Show DMR ID# (Best guess - see comment in function fnDMR_GET_FROM)
   if [[ -n "${FROM_ID}" ]]
@@ -2012,11 +2041,14 @@ fnDMR_SHOW_CURRENT_CALL()
       echo -e "${DIM}QTH:${SGR0} ${MAG}${BOLD}${CITY}, ${STATE}, ${COUNTRY}${SGR0}${WHI}"
     fi
   fi
+  fnKPC
 
   # show the time slot, source (RF or network), and type (voice or data)
   echo -en "${DIM}Mode:${SGR0} ${CYA}${BOLD}DMR TS${TIME_SLOT}${SGR0}${WHI}\r"
   tput cuf 18
   echo -e "${DIM}Src:${SGR0} ${CYA}${BOLD}${SOURCE}${SGR0}${WHI}\t${DIM}Type:${SGR0} ${BOLD}${TYPE}${SGR0}${WHI}"
+  fnKPC
+
   fnQSO_IN_PROGRESS
 }
 
@@ -2207,6 +2239,7 @@ fnDMR_TALKER_ALIAS()
       echo -en "\r${CLR_EL}"
       echo "${DIM}TA..:${SGR0} ${MAG}${BOLD}${TA}${SGR0}${WHI}"
       TA_DISPLAYED=1
+      fnKPC
       fnQSO_IN_PROGRESS
     fi
   fi
@@ -2603,6 +2636,7 @@ fnMAIN_LOOP()
         else
           echo
         fi
+        fnKPC
 
         fnBUILD_HISTORY
         fnNOSCROLL_ZONE
@@ -2669,6 +2703,7 @@ fnMAIN_LOOP()
         else
           echo
         fi
+        fnKPC
 
         fnBUILD_HISTORY
         fnNOSCROLL_ZONE
@@ -2775,6 +2810,7 @@ fnMAIN_LOOP()
             echo -e "\r${CLR_EL}${YEL}${BOLD}End of Data Transmission (${BLOCKS} block${S})${SGR0}${WHI}"
           fi
         fi
+        fnKPC
 
         fnBUILD_HISTORY
         fnNOSCROLL_ZONE
@@ -2842,14 +2878,14 @@ fnWINCH()
 
   # Get the screensize.  We'll be needing the number of lines.
   read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
-  LINES="$(tput lines)"
-  COLUMNS="$(tput cols)"
+  clear
+  tput csr 0 $((LINES - 1))
 
+#KPC
   if [[ ${TOP} -eq 1 ]]
   then
-    clear
-    fnNOSCROLL_ZONE
     tput cup "${BELOW_NOSCROLL}" 0
+    fnNOSCROLL_ZONE
   fi
 }
 
