@@ -1,4 +1,36 @@
 ```
+CHANGES: V2.23
+ 1. Fixed dev version indicator.
+ 2. Removed unused fnCENTER function.
+ 3. Padded more fields in no-scroll zone to clear some 
+    artifacts left when the zone gets corrupted.
+ 4. Set umask symbollically (for some reason, octal
+    wasn't inherited by debugging and profiling logs).
+ 5. Minor cosmetic and other tweaks.
+ 6. Corrected (I hope) intermittent scrolling within
+    the -t|--top non-scrolling region.
+ 7. If not forced with -f|--font at launch, the figlet
+    font now dynamically adjusts to the screen size,
+    for GUI-based SSH clients like PuTTY, that can be
+    re-sized on the fly.  To prevent dynamic font
+    changes, specify a font with -f|--font.
+ 8. Consolidated a pair of figlet-related functions,
+    renamed to fnBANNER.
+ 9. A new font: "-f 5"... This is NOT a figlet font!
+    If your SSH client and TERM type support both the
+    "${ESC}#3" and "${ESC}#4" ANSI control codes, you
+    can try specifying font #5 ("-f 5" or "--font 5"),
+    when launching pistar-lastqso.  THE PI HDMI CONSOLE
+    DOES NOT SUPPORT THIS ALTERNATE CHARACTER SET.  It
+    works mainly with SSH clients that do GOOD "xterm"
+    emulation.  Other term-types and emulators *may*
+    work, but YMMV.  If you try it, and instead of
+    seeing one line printed "double-high & double-wide"
+    you see two lines printed normally, then this font
+    is not for you.  (And it's nothing this script can
+    fix... it's a limitation of your terminal emulator
+    and TERM type.)
+
 CHANGES: V2.22
  1. More frequent -t|--top no-scroll region redraws.
  2. Minor cleanup when passing debug option at restart.
