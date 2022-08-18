@@ -6,7 +6,7 @@
 
 set -o allexport
 
-VERSION=2.25
+VERSION=2.26
 
 # For whatever reason, "umask 0077" isn't locking down permissions
 # on files written to /tmp, the way symbolically setting it does.
@@ -309,6 +309,7 @@ KERCHUNK_FILE="/tmp/pistar-lastqso-kerchunk-count${MY_SESSION}"
 ERROR_FILE="/tmp/pistar-lastqso-error-count${MY_SESSION}"
 WARNING_FILE="/tmp/pistar-lastqso-warning-count${MY_SESSION}"
 HISTORY_FILE="/tmp/pistar-lastqso-history${MY_SESSION}"
+rm "${QSO_COUNT_FILE} ${KERCHUNK_FILE} ${ERROR_FILE} ${WARNING_FILE} ${HISTORY_FILE}" 2> /dev/null
 
 #---------------
 # Finding a way to get the screen width of a window that can
@@ -356,6 +357,7 @@ fnLARGE_FONT()
       echo "${*}"
       ;;
   esac
+  echo -n "${CLR_ED}"
 }
 
 #----------
@@ -729,8 +731,6 @@ fnNOSCROLL_ZONE()
   # Save the current cursor position, and turn the cursor off
   echo -en "${CUR_SC}${CUR_OFF}"
 
-  read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
-
   # Set the whole screen as scrollable
   tput csr 0 $((LINES - 1))
   # Go to line 0
@@ -785,7 +785,7 @@ fnNOSCROLL_ZONE()
   tput cuf 16
   echo -en "${CYA}Port:${SGR0} ${WHI}${BOLD}${MODEM_PORT}${SGR0}\r"
   tput cuf 32
-  echo -e "${CYA}Platform:${SGR0} ${WHI}${BOLD}${PLATFORM}${SGR0}"
+  echo -e "${CYA}Platform:${SGR0} ${WHI}${BOLD}${PLATFORM}${SGR0}${CLR_EL}"
 
   # Print line 3
   echo -en "${CYA}YSF MASTER:${SGR0} ${WHI}${BOLD}${YSF_MASTER}${SGR0}\r"
@@ -832,9 +832,6 @@ fnRESET_SCROLLING()
 
   # Save the current cursor position, and turn the cursor off
   echo -en "${CUR_SC}${CUR_OFF}"
-
-  # Get the screensize.  We'll be needing the lines.
-  read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
 
   # Define the entire screen as the scrolling region
   tput csr 0 $((LINES - 1))
@@ -1317,9 +1314,6 @@ fnCHECK_MODES_ENABLED()
     tput cup 22 2
     echo -e "${CUR_ON}Aborting... "
 
-    # Get the screensize.  We'll be needing the number of lines.
-    read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
-
     # Close the debugging and profiling file descriptors
     exec 3>&- 2> /dev/null
     set +x 2>/dev/null
@@ -1469,11 +1463,8 @@ fnLISTENING()
 
   trap fnWINCH WINCH
 
-  # Get the screensize.  We'll be needing the number of lines.
-  read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
-
   fnNOSCROLL_ZONE
-  echo -n "  ${GRE}${BOLD}Listening for Traffic... ${SGR0}${WHI}${CLR_EL} "
+  echo -n "  ${GRE}${BOLD}Listening for Traffic... ${SGR0}${WHI}${CLR_EL}${CLR_ED} "
   TA_DISPLAYED=0
 }
 
@@ -1484,11 +1475,8 @@ fnQSO_IN_PROGRESS()
 
   trap fnWINCH WINCH
 
-  # Get the screensize.  We'll be needing the number of lines.
-  read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
-
   fnNOSCROLL_ZONE
-  echo -n "  ${YEL}${BOLD}QSO In Progress... ${SGR0}${WHI}${CLR_EL} "
+  echo -n "  ${YEL}${BOLD}QSO In Progress... ${SGR0}${WHI}${CLR_EL}${CLR_ED} "
   TA_DISPLAYED=0
 }
 
@@ -1734,8 +1722,6 @@ fnBANNER()
     return
   fi
 
-  # Get the screensize.  We'll be needing the number of columns.
-  read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
   OUTPUT_WIDTH="${COLUMNS}"
 
   if [[ "${LOGREC_MODE}" = "YSF" ]]
@@ -1809,6 +1795,7 @@ fnBANNER()
     *)
       ;;
   esac
+  echo -n "${CLR_ED}"
   fnNOSCROLL_ZONE
 }
 
@@ -1884,7 +1871,7 @@ fnYSF_SHOW_CURRENT_CALL()
   tput cuf 4
   echo -n "${DIM}QSOs Watched:${SGR0} ${BLU}${BOLD}"
   printf %05d "${QSO_COUNT}"
-  echo "${SGR0}${WHI}"
+  echo "${SGR0}${WHI}${CLR_ED}"
 
   CSV_FROM="$(echo "${FROM}" | cut -f1 -d"/" | cut -f1 -d"-")"
   FROM_NAME="$(grep ",${CSV_FROM}," "${USERCSV}" "${NXDNCSV}" | tail -1 | cut -f3 -d",")"
@@ -1898,14 +1885,14 @@ fnYSF_SHOW_CURRENT_CALL()
   tput cuf 31
   if [[ -n "${LOGREC_MASTER}" ]]
   then
-    echo "${DIM} To..:${SGR0} ${BOLD}${LOGREC_DG_ID} ${LOGREC_DG_ID_NUM} ${DIM}at${SGR0} ${BOLD}${LOGREC_MASTER}${SGR0}${WHI}"
+    echo "${DIM} To..:${SGR0} ${BOLD}${LOGREC_DG_ID} ${LOGREC_DG_ID_NUM} ${DIM}at${SGR0} ${BOLD}${LOGREC_MASTER}${SGR0}${WHI}${CLR_ED}"
   else
-    echo "${DIM} To..:${SGR0} ${BOLD}${LOGREC_DG_ID} ${LOGREC_DG_ID_NUM}${SGR0}${WHI}"
+    echo "${DIM} To..:${SGR0} ${BOLD}${LOGREC_DG_ID} ${LOGREC_DG_ID_NUM}${SGR0}${WHI}${CLR_ED}"
   fi
 
   echo -en "${DIM}Mode:${SGR0} ${BOLD}${CYA}System Fusion${SGR0}${WHI}\r"
   tput cuf 32
-  echo -e "${DIM}Src.:${SGR0} ${BOLD}${CYA}${SOURCE}${SGR0}${WHI}"
+  echo -e "${DIM}Src.:${SGR0} ${BOLD}${CYA}${SOURCE}${SGR0}${WHI}${CLR_ED}"
 
   CSV_CALLSIGN="$(echo "${FROM}" | cut -f1 -d"/" | cut -f1 -d"-")"
   # Maybe the callsign is also a DMR user...
@@ -1946,15 +1933,15 @@ fnYSF_SHOW_CURRENT_CALL()
   # Show location details
   if [[ "${CITY}" = "n/a" ]] && [[ "${STATE}" = "n/a" ]] && [[ "${COUNTRY}" = "n/a" ]]
   then
-    echo "${MAG}${BOLD}Unable To Determine Location Data${SGR0}${WHI}"
+    echo "${MAG}${BOLD}Unable To Determine Location Data${SGR0}${WHI}${CLR_ED}"
   else
     echo -en "${DIM}File:${SGR0} ${MAG}${BOLD}${QTH_SRC}${SGR0}${WHI}\r"
     tput cuf 18
     if [[ "${QTH_SRC}" = "cty.dat" ]]
     then
-      echo -e "${DIM}QTH:${SGR0} ${MAG}${BOLD}${COUNTRY}${SGR0}${WHI}"
+      echo -e "${DIM}QTH:${SGR0} ${MAG}${BOLD}${COUNTRY}${SGR0}${WHI}${CLR_ED}"
     else
-      echo -e "${DIM}QTH:${SGR0} ${MAG}${BOLD}${CITY}, ${STATE}, ${COUNTRY}${SGR0}${WHI}"
+      echo -e "${DIM}QTH:${SGR0} ${MAG}${BOLD}${CITY}, ${STATE}, ${COUNTRY}${SGR0}${WHI}${CLR_ED}"
     fi
   fi
 
@@ -1972,19 +1959,17 @@ fnDMR_SHOW_CURRENT_CALL()
   echo -n "${DIM}Date:${SGR0} ${BLU}${BOLD}${DATE}${SGR0}${WHI}"
   tput cuf 11
   echo -n "${DIM}Time:${SGR0} ${BLU}${BOLD}${TIME}${SGR0}${WHI}"
-
   tput cuf 4
-  echo -n "${DIM}QSOs Watched:${SGR0} ${BLU}${BOLD}"
-
+  echo -n "${DIM}QSOs Watched:${SGR0} ${BLU}${BOLD}${CLR_ED}"
   printf %05d "${QSO_COUNT}"
-  echo "${SGR0}${WHI}"
+  echo "${SGR0}${WHI}${CLR_ED}"
 
   # Show formatted to and from names
   P_FROM_NAME="$(printf "%-15s" "(${FROM_NAME})")"
   P_TO_NAME="$(printf "%-15s" "(${TO_NAME})")"
   echo -en "${DIM}From:${SGR0} ${BOLD}${FROM} ${P_FROM_NAME}${SGR0}\r"
   tput cuf 31
-  echo "${DIM} To..:${SGR0} ${BOLD}${TO} ${P_TO_NAME}${SGR0}${WHI}"
+  echo "${DIM} To..:${SGR0} ${BOLD}${TO} ${P_TO_NAME}${SGR0}${WHI}${CLR_ED}"
 
   # Show DMR ID# (Best guess - see comment in function fnDMR_GET_FROM)
   if [[ -n "${FROM_ID}" ]]
@@ -2006,20 +1991,20 @@ fnDMR_SHOW_CURRENT_CALL()
   # Show location details from the user.csv file
   if [[ "${CITY}" = "n/a" ]] && [[ "${STATE}" = "n/a" ]] && [[ "${COUNTRY}" = "n/a" ]]
   then
-    echo "${MAG}${BOLD}No Location Data Found${SGR0}${WHI}"
+    echo "${MAG}${BOLD}No Location Data Found${SGR0}${WHI}${CLR_ED}"
   else
     # Another "empty" TA containing only blank spaces.  :/
     # Either put something useful in your TA, or don't bother using it.
     if echo "${CITY}${STATE}${COUNTRY}" | grep -q "[a-zA-Z]"
     then
-      echo -e "${DIM}QTH:${SGR0} ${MAG}${BOLD}${CITY}, ${STATE}, ${COUNTRY}${SGR0}${WHI}"
+      echo -e "${DIM}QTH:${SGR0} ${MAG}${BOLD}${CITY}, ${STATE}, ${COUNTRY}${SGR0}${WHI}${CLR_ED}"
     fi
   fi
 
   # show the time slot, source (RF or network), and type (voice or data)
   echo -en "${DIM}Mode:${SGR0} ${CYA}${BOLD}DMR TS${TIME_SLOT}${SGR0}${WHI}\r"
   tput cuf 18
-  echo -e "${DIM}Src:${SGR0} ${CYA}${BOLD}${SOURCE}${SGR0}${WHI}\t${DIM}Type:${SGR0} ${BOLD}${TYPE}${SGR0}${WHI}"
+  echo -e "${DIM}Src:${SGR0} ${CYA}${BOLD}${SOURCE}${SGR0}${WHI}\t${DIM}Type:${SGR0} ${BOLD}${TYPE}${SGR0}${WHI}${CLR_ED}"
 
   fnQSO_IN_PROGRESS
 }
@@ -2209,7 +2194,7 @@ fnDMR_TALKER_ALIAS()
     then
       # Clear current line
       echo -en "\r${CLR_EL}"
-      echo "${DIM}TA..:${SGR0} ${MAG}${BOLD}${TA}${SGR0}${WHI}"
+      echo "${DIM}TA..:${SGR0} ${MAG}${BOLD}${TA}${SGR0}${WHI}${CLR_ED}"
       TA_DISPLAYED=1
       fnQSO_IN_PROGRESS
     fi
@@ -2607,6 +2592,7 @@ fnMAIN_LOOP()
         else
           echo
         fi
+        echo -n "${CLR_ED}"
 
         fnBUILD_HISTORY
         fnNOSCROLL_ZONE
@@ -2817,9 +2803,6 @@ fnABORT()
 
   rm "${STATIC_TG_FILE}" "${QSO_COUNT_FILE}" "${KERCHUNK_FILE}" "${ERROR_FILE}" "${WARNING_FILE}" "${HISTORY_FILE}" 2> /dev/null || :
 
-  # Get the screensize.  We'll be needing the number of lines.
-  read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
-
   # Close the debugging and profiling file descriptors
   exec 3>&- 2> /dev/null
   set +x 2>/dev/null
@@ -2853,6 +2836,31 @@ fnWINCH()
   then
     tput cup "${BELOW_NOSCROLL}" 0
     fnNOSCROLL_ZONE
+    # Clear to end of display
+    echo -n "${CLR_ED}"
+  fi
+}
+
+#----------
+fnLOAD_HISTORY_FILE()
+{
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
+  # If we are auto-restarting, load the previous history...
+  if [[ -f "${HISTORY_FILE}" ]]
+  then
+    # shellcheck disable=SC1090
+    . "${HISTORY_FILE}"
+
+    # Push them all down the list, one position.
+    HIST_COUNT=${HIST_MAX}
+    until [[ ${HIST_COUNT} -eq 0 ]]
+    do
+      HISTORY[HIST_COUNT]="${HISTORY[$((HIST_COUNT - 1))]}"
+      HIST_COUNT="$((HIST_COUNT - 1))"
+    done
+    # Insert a restart marker as the most recent history entry
+    HISTORY[1]="${CYA}$(date +%H:%M:%S) ${SGR0}${WHI}${SBOX_VL} ---------- ${SBOX_VL} ---------- ${SBOX_VL} ----- ${SBOX_VL} ----- ${SBOX_VL} --- ${SBOX_VL}${CYA} - Watching Log - ${SGR0}${WHI}"
   fi
 }
 
@@ -2957,22 +2965,7 @@ then
     HIST_COUNT="$((HIST_COUNT + 1))"
   done
 
-  # If we are auto-restarting, load the previous history...
-  if [[ -f "${HISTORY_FILE}" ]]
-  then
-    # shellcheck disable=SC1090
-    . "${HISTORY_FILE}"
-
-    # Push them all down the list, one position.
-    HIST_COUNT=${HIST_MAX}
-    until [[ ${HIST_COUNT} -eq 0 ]]
-    do
-      HISTORY[HIST_COUNT]="${HISTORY[$((HIST_COUNT - 1))]}"
-      HIST_COUNT="$((HIST_COUNT - 1))"
-    done
-    # Insert a restart marker as the most recent history entry
-    HISTORY[1]="${CYA}$(date +%H:%M:%S) ${SGR0}${WHI}${SBOX_VL} ---------- ${SBOX_VL} ---------- ${SBOX_VL} ----- ${SBOX_VL} ----- ${SBOX_VL} --- ${SBOX_VL}${CYA} - Auto-Restart - ${SGR0}${WHI}"
-  fi
+  fnLOAD_HISTORY_FILE
 fi
 
 # When we query Brandmeister to learn a hotspot's statically
@@ -2988,11 +2981,24 @@ fnDMR_DOWNLOAD_USERCSV
 # Make sure we have an updated cty.dat file
 fnYSF_DOWNLOAD_CTYDAT
 
+echo -en "\r${CLR_EL}${SMCUP}"
+echo -n "${CUR_HOME}"
+
+if [[ ${TOP} -eq 1 ]]
+then
+  fnNOSCROLL_ZONE
+  tput cup "${BELOW_NOSCROLL}" 0
+  echo -en "${CLR_ED}"
+fi
+
+rm "${HISTORY_FILE}" 2>/dev/null
+
 ###########################################################
 # Now for the meat and potatoes...
 while true
 do
   WORKING_LOG="$(ls -1tr "${LOGDIR}/${LOGROOT}"*.log | tail -1)"
+  fnLOAD_HISTORY_FILE
 
   # This forks fnMMDVMLOG_FUSER into the background as a child process.
   # It runs "fuser" against the log.  If "MMDVMHost" no longer shows
@@ -3005,16 +3011,6 @@ do
   if [[ "$(pgrep -f "/bin/bash -c fnMMDVMLOG_FUSER")" = "" ]]
   then
     /bin/bash -c fnMMDVMLOG_FUSER > /dev/null 2>&1 &
-  fi
-
-  echo -en "\r${CLR_EL}${SMCUP}"
-  echo -n "${CUR_HOME}"
-
-  if [[ ${TOP} -eq 1 ]]
-  then
-    fnNOSCROLL_ZONE
-    tput cup "${BELOW_NOSCROLL}" 0
-    echo -en "${CLR_ED}"
   fi
 
   # If we've auto-restarted, get our stored QSO, kerchunk, and error counts
@@ -3056,7 +3052,7 @@ do
   # And here we go...
   fnMAIN_LOOP
 
-  # If we've exited the loop, it's because MMDVMHost is no longer writing
+  # If we've exited fnMAIN_LOOP, it's because MMDVMHost is no longer writing
   # to the log that we've been watching.  Either the service was stopped
   # during pi-star's nightly update, or it has rolled to a new day's log.
 
@@ -3065,15 +3061,10 @@ do
   sleep 60
   echo
 
-  fnRESET_SCROLLING
-
-  # Restart, with the same options as originally passed
-  #echo -e "${BOLD}${GRE}RE-LAUNCHING AS \"${SCRIPT} ${MY_CMDLINE} -l\"...${WHI}${SGR0}"
-  echo -e "${BOLD}${GRE}LOG ACTIVITY HAS RESUMED USING ${WORKING_LOG}...${WHI}${SGR0}"
+  # Loop, with the same options as originally passed
+  echo -e "${BOLD}${GRE}LOG ACTIVITY HAS RESUMED USING $(basename "${WORKING_LOG}")...${WHI}${SGR0}"
   echo "${GRE}${DBL_LINE}${WHI}${SGR0}${CLR_EL}"
   sleep 3
-  echo -en "${TERM_RESET}"
-  clear
 done
 
 # FOR DEBUGGING & PROFILING: Close the file descriptors

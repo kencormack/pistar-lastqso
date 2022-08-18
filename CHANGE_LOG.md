@@ -1,4 +1,22 @@
 ```
+CHANGES: V2.26
+ 1. Numerous small changes to cleanup fallout
+    from the restructuring of restarts sans exec.
+    Testing was far more structured and complete
+    (and far less rushed) with this version.
+    It's amazing, what a day-off allows.
+
+ 2. Removed all the superfluous calls to python
+    that were used when trying to figure out why
+    the screen geometry stuff was breaking.  Only
+    the two calls that are actually needed remain.
+
+    Appologies for the recent flurry of changes
+    (and all the bugs they created.)  The script
+    is finally performing (and behaving) as I had
+    originally envisioned.  Humble Pie is what I'll
+    be eating tonight.
+
 CHANGES: V2.25
  1. With V2.24 I thought I was eating chicken.  It
     turns out I was eating crow.  Just hours after
