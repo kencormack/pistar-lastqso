@@ -221,7 +221,7 @@ PISTAR-LASTQSO - HELP
       show up in the log.  Although the -e|--error option will supress
       display of ERRORS, it will NOT supress display of WARNINGS.
 
-  -f|--font <1-4>
+  -f|--font <1-5>
       The [-f|--font] option forces use of the selected font, regardless of
       screen-width.
 
@@ -323,7 +323,7 @@ When **pistar-lastqso** is launched, it searches for the most recent MMDVM log i
 -------------------------------------------------------------------
 ## User-Custom Talkgroup List (DMR only)
 
-In order to display the name of a Talkgroup, **pistar-lastqso** consults the PI-STAR file "/usr/local/etc/TGList_BM.txt".  This file is updated automatically by PI-STAR, but does NOT include talkgroup names that include characters with umlauts, or those found in German and other languages (ä ö ü ß), etc.  To compensate, this program allows the user to build their own custom file containing any missing talkgroup (or "private" contact ID) names the user wishes to display.
+In order to display the name of a Talkgroup, **pistar-lastqso** consults the PI-STAR file "/usr/local/etc/TGList_BM.txt".  This file is updated automatically by PI-STAR, but does NOT include talkgroup names that include characters with umlauts, or those found in German and other languages (Ã¤ Ã¶ Ã¼ ÃŸ), etc.  To compensate, this program allows the user to build their own custom file containing any missing talkgroup (or "private" contact ID) names the user wishes to display.
 
 Create the file "/usr/local/etc/MY_LIST.txt".  Records in that file must appear in the same format as PI-STAR's TGList_BM.txt file.
 
