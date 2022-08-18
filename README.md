@@ -6,6 +6,8 @@
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/animation.gif)
 
 -------------------------------------------------------------------
+## NOTE: Due to changes made in version 2.26, this README will need minor revisions as my time allows.  These changes do not alter the usage or functionality of the script as described here, only how it operates internally.
+
 ## Contents
 - **[About](https://github.com/kencormack/pistar-lastqso#about)**
 - **[Installation](https://github.com/kencormack/pistar-lastqso#installation)**
