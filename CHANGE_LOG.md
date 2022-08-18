@@ -1,4 +1,18 @@
 ```
+CHANGES: V2.25
+ 1. With V2.24 I thought I was eating chicken.  It
+    turns out I was eating crow.  Just hours after
+    I thought I'd crushed corruption of the --top
+    section of the screen, a script re-launch showed
+    I wasn't even close.  It turned out that the
+    "exec" that re-launched the script was parting
+    the script from it's terminal enough that once
+    restarted, the script could not determine screen
+    rows and columns.  The exec has been done away
+    with, replaced with a simple loop that runs the
+    main logic.  All is now right with the world.
+    (Well, at least the script is better.)
+
 CHANGES: V2.24
  1. Ever since the script was first set up to track
     a dynamically resizeable SSH window, getting and

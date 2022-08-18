@@ -6,7 +6,7 @@
 
 set -o allexport
 
-VERSION=2.24
+VERSION=2.25
 
 # For whatever reason, "umask 0077" isn't locking down permissions
 # on files written to /tmp, the way symbolically setting it does.
@@ -90,7 +90,6 @@ echo "LASTQSO v${VERSION} - DEBUGGING LOG" >&3
 echo -e "==================================\n" >&3
 # FOR DEBUGGING: THE DEBUG TRAP
 # This trap writes each line to be executed, just before it is executed, to the debug log.
-#trap 'export LINES COLUMNS ; echo -e "line#: ${LINENO}...\t${BASH_COMMAND}" >&3' DEBUG
 trap 'echo -e "line#: ${LINENO}...\t${BASH_COMMAND}" >&3' DEBUG
 # FOR DEBUGGING: THE ERR TRAP
 # This trap will log all non-0 return codes.
@@ -299,7 +298,6 @@ CTYDAT=/usr/local/etc/cty.dat
 # Find the latest log
 LOGDIR="$(grep -A 4 "^\[Log\]" /etc/mmdvmhost | grep "^FilePath=" | cut -f2 -d"=")"
 LOGROOT="$(grep -A 4 "^\[Log\]" /etc/mmdvmhost | grep "^FileRoot=" | cut -f2 -d"=")"
-# shellcheck disable=SC2012
 WORKING_LOG="$(ls -1tr "${LOGDIR}/${LOGROOT}"*.log | tail -1)"
 
 #---------------
@@ -733,7 +731,6 @@ fnNOSCROLL_ZONE()
 
   read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
 
-#KPC
   # Set the whole screen as scrollable
   tput csr 0 $((LINES - 1))
   # Go to line 0
@@ -1330,7 +1327,7 @@ fnCHECK_MODES_ENABLED()
     # If debugging and/or profiling was used, show the names of the logs, at exit
     if [[ "${DEBUG_LOG}" != "/dev/null" ]] || [[ "${PROFILING_LOG}" != "/dev/null" ]]
     then
-      DEBUG_PROFILING_LINE=$((LINES - 6))
+      DEBUG_PROFILING_LINE=$((LINES - 4))
       tput cup "${DEBUG_PROFILING_LINE}" 0
       fnLARGE_FONT "DEBUGGING: ${DEBUG_LOG}"
       fnLARGE_FONT "PROFILING: ${PROFILING_LOG}"
@@ -1454,18 +1451,6 @@ fnMMDVMLOG_FUSER()
 }
 
 #----------
-fnKPC()
-{
-  return
-
-  # Try to spot where accurate determination of screen
-  # size was breaking down.
-  echo -en "${CUR_UP}"
-  tput cuf 78
-  echo "  SCROLL ZONE: ${BELOW_NOSCROLL} THRU ${LINES}"
-}
-
-#----------
 fnSEPARATOR()
 {
   echo -e "\nenter: ${FUNCNAME[*]}" >&3
@@ -1475,8 +1460,6 @@ fnSEPARATOR()
   # Clear current line
   echo -en "\r${CLR_EL}"
   echo "${DBL_LINE}${WHI}${SGR0}${CLR_EL}"
-
-  fnKPC
 }
 
 #----------
@@ -1768,7 +1751,6 @@ fnBANNER()
     # Font #5 is not a figlet font.  Do what we need to
     # do, and get out.
     fnLARGE_FONT "${BOLD}${BANNER_COLOR}${FROM} ... ${TO}"
-    fnKPC
     fnNOSCROLL_ZONE
     return
   fi
@@ -1827,7 +1809,6 @@ fnBANNER()
     *)
       ;;
   esac
-  fnKPC
   fnNOSCROLL_ZONE
 }
 
@@ -1881,7 +1862,6 @@ fnYSF_END_NETWORK_TRAFFIC()
   else
     echo
   fi
-  fnKPC
 
   fnBUILD_HISTORY
   fnNOSCROLL_ZONE
@@ -1905,7 +1885,6 @@ fnYSF_SHOW_CURRENT_CALL()
   echo -n "${DIM}QSOs Watched:${SGR0} ${BLU}${BOLD}"
   printf %05d "${QSO_COUNT}"
   echo "${SGR0}${WHI}"
-  fnKPC
 
   CSV_FROM="$(echo "${FROM}" | cut -f1 -d"/" | cut -f1 -d"-")"
   FROM_NAME="$(grep ",${CSV_FROM}," "${USERCSV}" "${NXDNCSV}" | tail -1 | cut -f3 -d",")"
@@ -1923,12 +1902,10 @@ fnYSF_SHOW_CURRENT_CALL()
   else
     echo "${DIM} To..:${SGR0} ${BOLD}${LOGREC_DG_ID} ${LOGREC_DG_ID_NUM}${SGR0}${WHI}"
   fi
-  fnKPC
 
   echo -en "${DIM}Mode:${SGR0} ${BOLD}${CYA}System Fusion${SGR0}${WHI}\r"
   tput cuf 32
   echo -e "${DIM}Src.:${SGR0} ${BOLD}${CYA}${SOURCE}${SGR0}${WHI}"
-  fnKPC
 
   CSV_CALLSIGN="$(echo "${FROM}" | cut -f1 -d"/" | cut -f1 -d"-")"
   # Maybe the callsign is also a DMR user...
@@ -1980,7 +1957,6 @@ fnYSF_SHOW_CURRENT_CALL()
       echo -e "${DIM}QTH:${SGR0} ${MAG}${BOLD}${CITY}, ${STATE}, ${COUNTRY}${SGR0}${WHI}"
     fi
   fi
-  fnKPC
 
   fnQSO_IN_PROGRESS
 }
@@ -2002,7 +1978,6 @@ fnDMR_SHOW_CURRENT_CALL()
 
   printf %05d "${QSO_COUNT}"
   echo "${SGR0}${WHI}"
-  fnKPC
 
   # Show formatted to and from names
   P_FROM_NAME="$(printf "%-15s" "(${FROM_NAME})")"
@@ -2010,7 +1985,6 @@ fnDMR_SHOW_CURRENT_CALL()
   echo -en "${DIM}From:${SGR0} ${BOLD}${FROM} ${P_FROM_NAME}${SGR0}\r"
   tput cuf 31
   echo "${DIM} To..:${SGR0} ${BOLD}${TO} ${P_TO_NAME}${SGR0}${WHI}"
-  fnKPC
 
   # Show DMR ID# (Best guess - see comment in function fnDMR_GET_FROM)
   if [[ -n "${FROM_ID}" ]]
@@ -2041,13 +2015,11 @@ fnDMR_SHOW_CURRENT_CALL()
       echo -e "${DIM}QTH:${SGR0} ${MAG}${BOLD}${CITY}, ${STATE}, ${COUNTRY}${SGR0}${WHI}"
     fi
   fi
-  fnKPC
 
   # show the time slot, source (RF or network), and type (voice or data)
   echo -en "${DIM}Mode:${SGR0} ${CYA}${BOLD}DMR TS${TIME_SLOT}${SGR0}${WHI}\r"
   tput cuf 18
   echo -e "${DIM}Src:${SGR0} ${CYA}${BOLD}${SOURCE}${SGR0}${WHI}\t${DIM}Type:${SGR0} ${BOLD}${TYPE}${SGR0}${WHI}"
-  fnKPC
 
   fnQSO_IN_PROGRESS
 }
@@ -2239,7 +2211,6 @@ fnDMR_TALKER_ALIAS()
       echo -en "\r${CLR_EL}"
       echo "${DIM}TA..:${SGR0} ${MAG}${BOLD}${TA}${SGR0}${WHI}"
       TA_DISPLAYED=1
-      fnKPC
       fnQSO_IN_PROGRESS
     fi
   fi
@@ -2636,7 +2607,6 @@ fnMAIN_LOOP()
         else
           echo
         fi
-        fnKPC
 
         fnBUILD_HISTORY
         fnNOSCROLL_ZONE
@@ -2703,7 +2673,6 @@ fnMAIN_LOOP()
         else
           echo
         fi
-        fnKPC
 
         fnBUILD_HISTORY
         fnNOSCROLL_ZONE
@@ -2810,7 +2779,6 @@ fnMAIN_LOOP()
             echo -e "\r${CLR_EL}${YEL}${BOLD}End of Data Transmission (${BLOCKS} block${S})${SGR0}${WHI}"
           fi
         fi
-        fnKPC
 
         fnBUILD_HISTORY
         fnNOSCROLL_ZONE
@@ -2859,7 +2827,7 @@ fnABORT()
   # If debugging and/or profiling was used, show the names of the logs, at exit
   if [[ "${DEBUG_LOG}" != "/dev/null" ]] || [[ "${PROFILING_LOG}" != "/dev/null" ]]
   then
-    DEBUG_PROFILING_LINE=$((LINES - 6))
+    DEBUG_PROFILING_LINE=$((LINES - 4))
     tput cup "${DEBUG_PROFILING_LINE}" 0
     fnLARGE_FONT "DEBUGGING: ${DEBUG_LOG}"
     fnLARGE_FONT "PROFILING: ${PROFILING_LOG}"
@@ -2881,7 +2849,6 @@ fnWINCH()
   clear
   tput csr 0 $((LINES - 1))
 
-#KPC
   if [[ ${TOP} -eq 1 ]]
   then
     tput cup "${BELOW_NOSCROLL}" 0
@@ -3010,7 +2977,7 @@ fi
 
 # When we query Brandmeister to learn a hotspot's statically
 # linked TGs, the findings are written to this tmpfile.
-STATIC_TG_FILE="/tmp/pistar-lastqso-static-tg.${MY_SESSION}"
+STATIC_TG_FILE="/tmp/pistar-lastqso-static-tg${MY_SESSION}"
 
 # collect the data for the no-scroll region
 fnTOP_DATA
@@ -3023,89 +2990,93 @@ fnYSF_DOWNLOAD_CTYDAT
 
 ###########################################################
 # Now for the meat and potatoes...
+while true
+do
+  WORKING_LOG="$(ls -1tr "${LOGDIR}/${LOGROOT}"*.log | tail -1)"
 
-# This forks fnMMDVMLOG_FUSER into the background as a child process.
-# It runs "fuser" against the log.  If "MMDVMHost" no longer shows
-# in the output, then MMDVMHost is no longer writing to the log.  The
-# function then appends "MMDVMHOST-STOP" to the log file.  The "read" in
-# fnMAIN_LOOP will spot this and will act on it, to re-launch the script.
-#
-# If the background job is already running, don't spawn another copy.
-export -f fnMMDVMLOG_FUSER
-if [[ "$(pgrep -f "/bin/bash -c fnMMDVMLOG_FUSER")" = "" ]]
-then
-  /bin/bash -c fnMMDVMLOG_FUSER > /dev/null 2>&1 &
-fi
+  # This forks fnMMDVMLOG_FUSER into the background as a child process.
+  # It runs "fuser" against the log.  If "MMDVMHost" no longer shows
+  # in the output, then MMDVMHost is no longer writing to the log.  The
+  # function then appends "MMDVMHOST-STOP" to the log file.  The "read" in
+  # fnMAIN_LOOP will spot this and will act on it, to re-launch the script.
+  #
+  # If the background job is already running, don't spawn another copy.
+  export -f fnMMDVMLOG_FUSER
+  if [[ "$(pgrep -f "/bin/bash -c fnMMDVMLOG_FUSER")" = "" ]]
+  then
+    /bin/bash -c fnMMDVMLOG_FUSER > /dev/null 2>&1 &
+  fi
 
-echo -en "\r${CLR_EL}${SMCUP}"
-echo -n "${CUR_HOME}"
+  echo -en "\r${CLR_EL}${SMCUP}"
+  echo -n "${CUR_HOME}"
 
-if [[ ${TOP} -eq 1 ]]
-then
-  fnNOSCROLL_ZONE
-  tput cup "${BELOW_NOSCROLL}" 0
-  echo -en "${CLR_ED}"
-fi
+  if [[ ${TOP} -eq 1 ]]
+  then
+    fnNOSCROLL_ZONE
+    tput cup "${BELOW_NOSCROLL}" 0
+    echo -en "${CLR_ED}"
+  fi
 
-# If we've auto-restarted, get our stored QSO, kerchunk, and error counts
-# else, start each of those counters at zero.
-if [[ -f "${QSO_COUNT_FILE}" ]]
-then
-  QSO_COUNT=$(< "${QSO_COUNT_FILE}")
-else
-  QSO_COUNT=0
-  echo "${QSO_COUNT}" > "${QSO_COUNT_FILE}"
-fi
+  # If we've auto-restarted, get our stored QSO, kerchunk, and error counts
+  # else, start each of those counters at zero.
+  if [[ -f "${QSO_COUNT_FILE}" ]]
+  then
+    QSO_COUNT=$(< "${QSO_COUNT_FILE}")
+  else
+    QSO_COUNT=0
+    echo "${QSO_COUNT}" > "${QSO_COUNT_FILE}"
+  fi
 
-if [[ -f "${KERCHUNK_FILE}" ]]
-then
-  KERCHUNK_COUNT=$(< "${KERCHUNK_FILE}")
-else
-  KERCHUNK_COUNT=0
-  echo "${KERCHUNK_COUNT}" > "${KERCHUNK_FILE}"
-fi
+  if [[ -f "${KERCHUNK_FILE}" ]]
+  then
+    KERCHUNK_COUNT=$(< "${KERCHUNK_FILE}")
+  else
+    KERCHUNK_COUNT=0
+    echo "${KERCHUNK_COUNT}" > "${KERCHUNK_FILE}"
+  fi
 
-if [[ -f "${ERROR_FILE}" ]]
-then
-  ERROR_COUNT=$(< "${ERROR_FILE}")
-else
-  ERROR_COUNT=0
-  echo "${ERROR_COUNT}" > "${ERROR_FILE}"
-fi
+  if [[ -f "${ERROR_FILE}" ]]
+  then
+    ERROR_COUNT=$(< "${ERROR_FILE}")
+  else
+    ERROR_COUNT=0
+    echo "${ERROR_COUNT}" > "${ERROR_FILE}"
+  fi
 
-if [[ -f "${WARNING_FILE}" ]]
-then
-  WARNING_COUNT=$(< "${WARNING_FILE}")
-else
-  WARNING_COUNT=0
-  echo "${WARNING_COUNT}" > "${WARNING_FILE}"
-fi
+  if [[ -f "${WARNING_FILE}" ]]
+  then
+    WARNING_COUNT=$(< "${WARNING_FILE}")
+  else
+    WARNING_COUNT=0
+    echo "${WARNING_COUNT}" > "${WARNING_FILE}"
+  fi
 
-fnLISTENING
+  fnLISTENING
 
-# And here we go...
-fnMAIN_LOOP
+  # And here we go...
+  fnMAIN_LOOP
 
-# If we've exited the loop, it's because MMDVMHost is no longer writing
-# to the log that we've been watching.  Either the service was stopped
-# during pi-star's nightly update, or it has rolled to a new day's log.
+  # If we've exited the loop, it's because MMDVMHost is no longer writing
+  # to the log that we've been watching.  Either the service was stopped
+  # during pi-star's nightly update, or it has rolled to a new day's log.
 
-# Sleep to let things settle, then restart the script.
-echo -en "${BOLD}${YEL}SLEEPING 60 SECS BEFORE WATCHING FOR NEW LOG ACTIVITY...${WHI}${SGR0} "
-sleep 60
-echo
+  # Sleep to let things settle, then restart the script.
+  echo -en "${BOLD}${YEL}SLEEPING 60 SECS BEFORE WATCHING FOR NEW LOG ACTIVITY...${WHI}${SGR0} "
+  sleep 60
+  echo
 
-fnRESET_SCROLLING
+  fnRESET_SCROLLING
+
+  # Restart, with the same options as originally passed
+  #echo -e "${BOLD}${GRE}RE-LAUNCHING AS \"${SCRIPT} ${MY_CMDLINE} -l\"...${WHI}${SGR0}"
+  echo -e "${BOLD}${GRE}LOG ACTIVITY HAS RESUMED USING ${WORKING_LOG}...${WHI}${SGR0}"
+  echo "${GRE}${DBL_LINE}${WHI}${SGR0}${CLR_EL}"
+  sleep 3
+  echo -en "${TERM_RESET}"
+  clear
+done
 
 # FOR DEBUGGING & PROFILING: Close the file descriptors
 exec 3>&- 2> /dev/null
 set +x
 exec 4>&- 2> /dev/null
-
-# Restart, with the same options as originally passed
-echo -e "${BOLD}${GRE}RE-LAUNCHING AS \"${SCRIPT} ${MY_CMDLINE} -l\"...${WHI}${SGR0}"
-echo "${GRE}${DBL_LINE}${WHI}${SGR0}${CLR_EL}"
-sleep 2
-clear
-exec /bin/bash -c "${SCRIPT} -l ${MY_CMDLINE}${OPTIONAL_DEBUGGING}${OPTIONAL_PROFILING}"
-
