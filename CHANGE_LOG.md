@@ -1,4 +1,19 @@
 ```
+CHANGES: V2.27
+ 1. Corrected logfile name shown at bottom of
+    the screen when log activity resumes after
+    log rotation or pistar's daily update.  Just
+    a couple related minor cosmetic changes.
+ 2. Removed the exec from the check that ensures
+    pi-star's MMDVMHost demon is up and running.
+ 3. Monitoring resumes almost instantly following
+    log rotation.  When pistar updates itself
+    each night, slow Pi Zeros can take up to a
+    minute to resume logging (hence the original
+    60 second sleep), but faster Pi models could
+    complete sooner, thus monitoring resumes
+    sooner.
+
 CHANGES: V2.26
  1. Numerous small changes to cleanup fallout
     from the restructuring of restarts sans exec.

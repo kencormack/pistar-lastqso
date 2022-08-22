@@ -6,7 +6,7 @@
 
 set -o allexport
 
-VERSION=2.26
+VERSION=2.27
 
 # For whatever reason, "umask 0077" isn't locking down permissions
 # on files written to /tmp, the way symbolically setting it does.
@@ -34,7 +34,7 @@ ARG_LIST_LENGTH=${#ARG_LIST[@]}
 # you will need to modify this script accordingly.  I developed this
 # first for DMR, using a TYT MD-UV390GPS.  I later obtained a Yaesu
 # FT-70DR and added support for YSF.  If someone would like to gift me
-# an I-COM ID52A or similar HT, I'd be happy to add D-Star.  ;)
+# an ICOM ID52A or similar HT, I'd be happy to add D-Star.  ;)
 
 # NOTE #2: I've tried to write this script with readability in mind.
 # A year after having last touched a script, I like to look at it and
@@ -309,7 +309,7 @@ KERCHUNK_FILE="/tmp/pistar-lastqso-kerchunk-count${MY_SESSION}"
 ERROR_FILE="/tmp/pistar-lastqso-error-count${MY_SESSION}"
 WARNING_FILE="/tmp/pistar-lastqso-warning-count${MY_SESSION}"
 HISTORY_FILE="/tmp/pistar-lastqso-history${MY_SESSION}"
-rm "${QSO_COUNT_FILE} ${KERCHUNK_FILE} ${ERROR_FILE} ${WARNING_FILE} ${HISTORY_FILE}" 2> /dev/null
+rm "${QSO_COUNT_FILE}" "${KERCHUNK_FILE}" "${ERROR_FILE}" "${WARNING_FILE}" "${HISTORY_FILE}" 2> /dev/null
 
 #---------------
 # Finding a way to get the screen width of a window that can
@@ -861,18 +861,33 @@ fnPARSE_CMDLINE()
 {
   echo -e "\nenter: ${FUNCNAME[*]}" >&3
 
-  # Loop through all the cmdline arguments.  In the loop, current
-  # value would be the option, and the next would be the parameter.
+  # Loop through all the cmdline arguments.  It works like this...
+  #
+  # In the loop, current value would be the option we're evaluating.
+  # If the option takes a parameter, we "look ahead" at the "next"
+  # indexed value, and see if it makes sense to the current option.
   # An example would be the -f|--font option, and it's parameter,
-  # for font selection.
-
-  # I use this method because both the external GNU getopt command,
-  # and bash's builtin getops, have problems.  GNU's getopt does not
-  # handle empty flag arguments well; bash's builtin getopts does.
-  # GNU's getopt allows for the parsing of long options ( --help
-  # instead of -h ); bash's builtin getopts does not.
-
-  # The method I use below can both handle empty arguments (such as
+  # for font selection.  Once the option, and it's parameter are
+  # evaluated, we increment the index enough to skip over that
+  # parameter, then loop to evaluate the next option in the array.
+  #
+  # If the "current" option does not expect a parmeter, we just
+  # evaluate as needed, before looping to the next item in the
+  # array of arguments and parameters..
+  #
+  # I chose this method, because both the external GNU getopt
+  # command, and bash's builtin getops, have problems....
+  #
+  #   GNU's getopt does not handle empty flag arguments well.
+  #   Bash's builtin getopts does.
+  #     (Think of the "-t|--top" option to this script, which can
+  #     be used either with or without specifying a history depth)
+  #
+  #   Bash's getopts does't parse long option names.
+  #   GNU's getopt does.
+  #     (Think "--help" vs "-h")
+  #
+  # The method I use can do both - it handle empty arguments (such as
   # the "-t|-top" option when no optional number of history lines is
   # given), and can easliy accomodate long-form options.  It is also,
   # frankly, easier to understand, and more portable, than either
@@ -1321,7 +1336,12 @@ fnCHECK_MODES_ENABLED()
     # If debugging and/or profiling was used, show the names of the logs, at exit
     if [[ "${DEBUG_LOG}" != "/dev/null" ]] || [[ "${PROFILING_LOG}" != "/dev/null" ]]
     then
-      DEBUG_PROFILING_LINE=$((LINES - 4))
+      if [[ "${MY_FONT}" = "5" ]]
+      then
+        DEBUG_PROFILING_LINE=$((LINES - 6))
+      else
+        DEBUG_PROFILING_LINE=$((LINES - 4))
+      fi
       tput cup "${DEBUG_PROFILING_LINE}" 0
       fnLARGE_FONT "DEBUGGING: ${DEBUG_LOG}"
       fnLARGE_FONT "PROFILING: ${PROFILING_LOG}"
@@ -2308,7 +2328,7 @@ fnBUILD_HISTORY()
       HIST_TO="$(printf %-10s "${TO}")"
       HIST_SECS="$(printf %5s "${SECS}")"
       HIST_BER="$(printf %4s "${BER}")%"
-      HIST_LOSS="$(printf %4s "${LOSS}")%"
+      HIST_LOSS="$(printf %3s "${LOSS}")%"
       if [[ "${SOURCE}" = "NET" ]]
       then
         HIST_SRC="$(printf %-3s "Net")"
@@ -2434,8 +2454,6 @@ fnMAIN_LOOP()
       # Once we've caught the trigger, kill the tail that drives the loop.
       TAIL_PID="$(sudo fuser -v "${WORKING_LOG}" 2>&1 | grep "tail" | awk '{ print $2 }')"
       kill "${TAIL_PID}" 2> /dev/null
-      echo -e "\n\n${RED}${DBL_LINE}${WHI}${SGR0}${CLR_EL}"
-      echo -e "${BOLD}${RED}$(basename "${WORKING_LOG}") LOG ACTIVITY HAS STOPPED.${WHI}${SGR0}"
       return
     fi
 
@@ -2810,7 +2828,12 @@ fnABORT()
   # If debugging and/or profiling was used, show the names of the logs, at exit
   if [[ "${DEBUG_LOG}" != "/dev/null" ]] || [[ "${PROFILING_LOG}" != "/dev/null" ]]
   then
-    DEBUG_PROFILING_LINE=$((LINES - 4))
+    if [[ "${MY_FONT}" = "5" ]]
+    then
+      DEBUG_PROFILING_LINE=$((LINES - 6))
+    else
+      DEBUG_PROFILING_LINE=$((LINES - 4))
+    fi
     tput cup "${DEBUG_PROFILING_LINE}" 0
     fnLARGE_FONT "DEBUGGING: ${DEBUG_LOG}"
     fnLARGE_FONT "PROFILING: ${PROFILING_LOG}"
@@ -2906,9 +2929,8 @@ else
   if [[ "$(sudo fuser -v "${WORKING_LOG}" 2>&1 | grep "MMDVMHost")" = "" ]]
   then
     echo -e "\n  ${YEL}MMDVMHost is running, but is NOT writing to $(basename "${WORKING_LOG}").${SGR0}"
-    echo -e "  Sleeping another 10 seconds before trying again...\n"
-    sleep 10
-    exec /bin/bash -c "${SCRIPT} -l ${MY_CMDLINE}${OPTIONAL_DEBUGGING}${OPTIONAL_PROFILING}"
+    echo -e "  Check status in the pi-star GUI and try again.\n"
+    exit
   fi
 fi
 
@@ -2964,8 +2986,6 @@ then
     HISTORY[HIST_COUNT]="         ${SBOX_VL}            ${SBOX_VL}            ${SBOX_VL}       ${SBOX_VL}       ${SBOX_VL}     ${SBOX_VL}${SGR0}${WHI}"
     HIST_COUNT="$((HIST_COUNT + 1))"
   done
-
-  fnLOAD_HISTORY_FILE
 fi
 
 # When we query Brandmeister to learn a hotspot's statically
@@ -2997,7 +3017,6 @@ rm "${HISTORY_FILE}" 2>/dev/null
 # Now for the meat and potatoes...
 while true
 do
-  WORKING_LOG="$(ls -1tr "${LOGDIR}/${LOGROOT}"*.log | tail -1)"
   fnLOAD_HISTORY_FILE
 
   # This forks fnMMDVMLOG_FUSER into the background as a child process.
@@ -3055,19 +3074,20 @@ do
   # If we've exited fnMAIN_LOOP, it's because MMDVMHost is no longer writing
   # to the log that we've been watching.  Either the service was stopped
   # during pi-star's nightly update, or it has rolled to a new day's log.
+  # Watch for new log activity, then resume watching QSOs.
+  echo -e "\n\n${RED}${DBL_LINE}${WHI}${SGR0}${CLR_EL}"
+  echo -e "${RED}$(basename "${WORKING_LOG}") LOG ACTIVITY HAS STOPPED.${WHI}${SGR0}"
+  echo -en "${YEL}WATCHING FOR NEW LOG ACTIVITY...${WHI}${SGR0} "
 
-  # Sleep to let things settle, then restart the script.
-  echo -en "${BOLD}${YEL}SLEEPING 60 SECS BEFORE WATCHING FOR NEW LOG ACTIVITY...${WHI}${SGR0} "
-  sleep 60
+  while [[ "$(sudo fuser -v "${WORKING_LOG}" 2>&1 | grep "MMDVMHost")" = "" ]]
+  do
+    sleep 2
+    # Make sure we're working with latest log.
+    WORKING_LOG="$(ls -1tr "${LOGDIR}/${LOGROOT}"*.log | tail -1)"
+  done
   echo
 
+  echo -e "${GRE}LOG ACTIVITY HAS RESUMED USING $(basename "${WORKING_LOG}")...${WHI}${SGR0}"
+  echo -e "${GRE}${DBL_LINE}${WHI}${SGR0}${CLR_EL}\n"
   # Loop, with the same options as originally passed
-  echo -e "${BOLD}${GRE}LOG ACTIVITY HAS RESUMED USING $(basename "${WORKING_LOG}")...${WHI}${SGR0}"
-  echo "${GRE}${DBL_LINE}${WHI}${SGR0}${CLR_EL}"
-  sleep 3
 done
-
-# FOR DEBUGGING & PROFILING: Close the file descriptors
-exec 3>&- 2> /dev/null
-set +x
-exec 4>&- 2> /dev/null
