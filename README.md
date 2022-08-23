@@ -496,7 +496,7 @@ The **ansi_shadow** font pre-dates figlet.  It appears to have been created usin
 
 **dxcc** (https://fkurz.net/ham/dxcc.html) is a small command line utility, written in perl, which determines the ARRL DXCC entity of a ham radio callsign.  It was written by Fabian Kurz, DJ1YFK and uses the **cty.dat** country file by Jim Reisert, AD1C (http://www.country-files.com/).
 
-**pistar-lastqso** itself was developed on a Raspberry Pi Zero W with eMMC (and backed up to USB storge), with Chinese MMDVM board (including both Duplex and Simplex models).  Development began with pi-star 4.1.4, and has continued through all pi-star updates to date.  Testing the output is performed on 1.) a Lenovo Thinkpad laptop running Windows 10 Pro via SSH with PuTTY and Xming (an X-server), and PuTTY running as term-type TERM=xterm, or 2.) direct HDMI connection from the Pi to a 40" flatscreen (TERM=linux).
+**pistar-lastqso** itself was developed on a Raspberry Pi Zero WH with eMMC (backed up to USB storge), with generic Chinese MMDVM boards (including Duplex and Simplex models).  Development began with pi-star 4.1.4, and has continued through all pi-star updates to date.  Testing the output is performed on 1.) a Lenovo Thinkpad laptop running Windows 10 Pro via SSH with PuTTY and Xming (an X-server), and PuTTY running as term-type TERM=xterm, or 2.) direct HDMI connection from the Pi to a 40" flatscreen (TERM=linux).
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
