@@ -6,8 +6,6 @@
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/animation.gif)
 
 -------------------------------------------------------------------
-## NOTE: Due to changes made in version 2.26, this README will need minor revisions as my time allows.  These changes do not alter the usage or functionality of the script as described here, only how it operates internally.  (Specifically, how the script resumes monitoring, following pi-star's daily updates and log rotation.)
-
 ## Contents
 - **[About](https://github.com/kencormack/pistar-lastqso#about)**
 - **[Installation](https://github.com/kencormack/pistar-lastqso#installation)**
@@ -163,8 +161,6 @@ If the cty.dat file is already present on your hotspot, but is older than 30 day
 **pistar-lastqso** supports a number of commandline options, as shown in the Usage and Help screens, below.  Multiple options can be specified at the same time.  For example, specifying "-c -n -t" (or "--csv --nobig --top") will download the latest updated user.csv file, disable the large font
 display of the callsigns, and activate the non-scrolling information section at the top of the screen.
 
-The program remembers which options (if any) you specified at launch, so that it can re-apply those same options when it re-launches itself, either when PI-STAR's nightly update momentarily cycles the services, or when log rotation to a new day's log is detected.  However, if the "-c" (or "--csv") option is specified, the program will update the user.csv file only upon initial invocation.  Likewise, if the "-d" (or "--dat") option is specified, that option too, will be stripped from the chain of options supplied at initial launch.  This prevents re-downloading these files each time the program re-starts itself.
-
 **Valid Options and Parameters...**
 ```
   USAGE:  Valid options and parameters include:
@@ -318,7 +314,7 @@ PISTAR-LASTQSO - HELP
 -------------------------------------------------------------------
 ## Daily Log Rotation
 
-When **pistar-lastqso** is launched, it searches for the most recent MMDVM log in the /var/log/pi-star directory.  It then watches only that log, to perform it's monitoring.  When the MMDVMHost service opens a new day's log (at midnight UTC), this program detects this, and re-launches itself to monitor the new log.
+When **pistar-lastqso** is launched, it searches for the most recent MMDVM log in the /var/log/pi-star directory.  It then watches only that log, to perform it's monitoring.  When the MMDVMHost service opens a new day's log (at midnight UTC), this program detects this, and resumes monitoring, but with the new log.
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
@@ -364,11 +360,11 @@ The program also watches the MMDVM log for any errors, or more severe warnings, 
 
 **It is the user's responsibility to judge the severity, and find the fix, for any MMDVM log errors or warnings reported by pistar-lastqso.  These MMDVM log errors and warnings are not caused, controlled, or solveable, by pistar-lastqso.  The script only reports what gets logged by the MMDVMhost daemon.  Pistar-lastqso does not create, diagnose, or eliminate the logged errors or warnings.**
 
-Don't panic if you see a single transient occurrance of something like a "queue overflow" error.  Things like that may show up occasionally.  But if you see dozens of them, you will want to look into it.  Other types of errors may require more research on your part.  If you need to investigate any errors, search your /var/log/pi-star/MMDVM-YYYY-MM-DD.log for any lines beginning with "E:".  Warnings are more severe.  Those can be found in the log, on lines beginning with "W:".
+Don't panic if you see a single transient occurrance of something like a "queue overflow" error.  Things like that may show up occasionally.  But if you see dozens (or hundreds!) of them, you will want to look into it.  Other types of errors may require more research on your part.  If you need to investigate any errors, search your /var/log/pi-star/MMDVM-YYYY-MM-DD.log for any lines beginning with "E:".  Warnings are more severe.  Those can be found in the log, on lines beginning with "W:".
 
 **[Please visit the PI-STAR forums](https://forum.pistar.uk/)**, if you need help diagnosing any errors found in the MMDVM log.
 
-Finally, all four of the counters (QSO, Kerchunks, Errors, and Warnings) are reset each time the user exits **pistar-lastqso** using Ctrl-C.  However, when the script auto-restarts itself, either at log rotation or when PI-STAR's services get cycled during the nightly PI-STAR update, the running counts for each counter are carried forward to the restarted session.
+Finally, all four of the counters (QSO, Kerchunks, Errors, and Warnings) are reset each time the user exits **pistar-lastqso** using Ctrl-C.  However, when the script pauses and resumes monitoring, either at log rotation or when PI-STAR's services get cycled during the nightly PI-STAR update, the running counts for each counter are carried forward when monitoring resumes.
 
 The commandline option "-e | --errors" will supress onscreen notification of errors during QSOs, but will NOT supress the more severe "warnings".  With or without that option, the total numbers of any errors or warnings detected, will be displayed at program exit.
 
@@ -410,8 +406,8 @@ The "ansi_shadow" font can be utilized by specifying "-f | --font 4" on the **pi
 
 Lastly, a 5th font *MAY* be available, depending upon the SSH client emulator, and your $TERM type.  This is *NOT* a figlet font, but is an
 alternate character set that *some* term types and emulators support.  It is based on the '\e'#3 and '\e'#4 ANSI Escape sequences.  If it
-works for you, you should see a line of text DOUBLE HIGH & DOUBLE WIDE.  If it does *NOT* work for you, you will see *TWO* single-width &
-single-height lines, that look like any other line of text on the screen.
+works for you, you should see a line of text DOUBLE HIGH & DOUBLE WIDE.  If it does *NOT* work for you, you will either see *TWO* single-width &
+single-height lines that look like any other line of text on the screen, or you will see unpredicatible results.
 
 The "emulator-dependent alternate charset" font can be tried by specifying "-f | --font 5" on the **pistar-lastqso** commandline.
 
@@ -421,7 +417,7 @@ The "emulator-dependent alternate charset" font can be tried by specifying "-f |
 
 If you specify an invalid numeric parameter for the "-f | --font" option, **pistar-lastqso** will display a usage screen showing valid options and parameters, and then exit.
 
-Note that for any given font you specify with the "-f | --font" option, figlet may decide it needs to line-wrap the output.  This can waste a lot of screen space if you force a too-large font on a too-small screen.  If that happens, try a lower-numbered parameter for the "-f | --font" option, to select a smaller font, or add the "-w | --wrap" option, to disable figlet's automatic line-wrapping.
+Note that for any given font you specify with the "-f | --font" option, figlet may decide it needs to line-wrap the output.  This can waste a lot of screen space if you force a too-large font on a too-small screen.  If that happens, try a lower-numbered parameter for the "-f | --font" option to select a smaller font, or add the "-w | --wrap" option, to disable figlet's automatic line-wrapping.
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
@@ -465,17 +461,16 @@ Key elements of the tool's operation include:
 - the background process, forked to monitor whether MMDVMHost has the logfile open
 - a trigger phrase written to the log by that fork, which signals the main loop to exit
 - skipping past the trigger phrase when the loop re-starts (to prevent subsequent false exits from the loop)
-- having the program re-launch itself when the current log has been closed/re-opened, or a new log started
-- passing any options supplied at runtime (other than "-c | --csv" or "-d | --dat"), to subsequent automatic restarts
+- automatically pause & resume monitoring when the current log has been closed/re-opened, or a new log started
 
-The rest of the program is mainly parsing the log entries, and presenting the data on-screen.
+The rest of the program is mainly parsing the log entries, mnaging the history and counters, and presenting the data on-screen.
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
 ## Getting Help
 
-**pistar-lastqso's operation is dependent upon a fully operational PI-STAR configuration.  If your PI-STAR setup has problems, those problems cannot be solved here.  [Please visit the PI-STAR forums](https://forum.pistar.uk/) instead.  This program only reads the PI-STAR MMDVM log... What goes into that log is PI-STAR's doing.**
+**pistar-lastqso's operation is dependent upon a fully operational PI-STAR configuration.  If your PI-STAR setup has problems, those problems cannot be solved here.  [Please visit the PI-STAR forums](https://forum.pistar.uk/) instead.  pistar-lastqso only reads the PI-STAR MMDVM log... What goes into that log is PI-STAR's doing.**
 
 **Likewise, please don't expect the PI-STAR forums to offer any assistance with pistar-lastqso.  They did not write this script, and cannot be expected to know anything about it.**
 
@@ -500,6 +495,8 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 The **ansi_shadow** font pre-dates figlet.  It appears to have been created using an old DOS ANSI art package called "thedraw", and converted for figlet.  It's original creator is unknown.  It can be found at https://github.com/xero/figlet-fonts and from numerous other font collections on the Internet.
 
 **dxcc** (https://fkurz.net/ham/dxcc.html) is a small command line utility, written in perl, which determines the ARRL DXCC entity of a ham radio callsign.  It was written by Fabian Kurz, DJ1YFK and uses the **cty.dat** country file by Jim Reisert, AD1C (http://www.country-files.com/).
+
+**pistar-lastqso** itself was developed on a Raspberry Pi Zero W with eMMC (and backed up to USB storge), with Chinese MMDVM board (including both Duplex and Simplex models).  Development began with pi-star 4.1.4, and has continued through all pi-star updates to date.  Testing the output is performed on 1.) a Lenovo Thinkpad laptop running Windows 10 Pro via SSH with PuTTY and Xming (an X-server), and PuTTY running as term-type TERM=xterm, or 2.) direct HDMI connection from the Pi to a 40" flatscreen (TERM=linux).
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
