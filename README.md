@@ -463,7 +463,7 @@ Key elements of the tool's operation include:
 - skipping past the trigger phrase when the loop re-starts (to prevent subsequent false exits from the loop)
 - automatically pause & resume monitoring when the current log has been closed/re-opened, or a new log started
 
-The rest of the program is mainly parsing the log entries, mnaging the history and counters, and presenting the data on-screen.
+The rest of the program is mainly parsing the log entries, managing the history and counters, and presenting the data on-screen.
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
