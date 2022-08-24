@@ -6,7 +6,7 @@
 
 set -o allexport
 
-VERSION=2.27
+VERSION=2.28
 
 # For whatever reason, "umask 0077" isn't locking down permissions
 # on files written to /tmp, the way symbolically setting it does.
@@ -119,22 +119,28 @@ PS4='+\011\t ${LINENO}\011'
 # set -x
 
 #---------------
-# Defaults that can be overriden with cmdline options...
+# Defaults that can be overridden with cmdline options...
 #
 # Don't force immediate download of user.csv file.
-# Can be overriden with "-c|--csv" cmdline option
+# Can be overridden with "-c|--csv" cmdline option
 GET_CSV_NOW=0
 #
 # Don't force immediate download of cty.dat file.
-# Can be overriden with "-d|--dat" cmdline option
+# Can be overridden with "-d|--dat" cmdline option
 GET_DAT_NOW=0
 #
+# Call upon dxcc.pl to resolve YSF QTH country when
+# the callsign can't be found in either the DMR
+# user.csv or NXDN NXDN.csv files.  Can be overridden
+# with "-D|--DXCC" cmdline option.
+USE_DXCC=1
+#
 # Show errors as they appear in the MMDVM log.
-# Can be overriden with "-e|--errors" cmdline option
+# Can be overridden with "-e|--errors" cmdline option
 SHOW_LOG_ERRORS=1
 #
 # Display Callsigns & TGs/DG-IDs in large font.
-# Can be overriden with "-n|--nobig" cmdline option
+# Can be overridden with "-n|--nobig" cmdline option
 USE_BANNER=1
 #
 # Allow figlet to auto-wrap as needed.
@@ -165,6 +171,7 @@ BELOW_NOSCROLL=$((HIST_MAX + 7))
 # descriptions of each tput parameter used here.  (tput is much more
 # predictable across terminal types than cryptic ANSI escape sequences.)
 BELL="$(tput bel)"		# Sound a bell
+FLASH="$(tput flash)"		# Flash the screen
 
 # Not all term types (including the pi console's "TERM=linux") support
 # tput's alternate screen buffers.  If not, just clear the screen.
@@ -323,7 +330,10 @@ rm "${QSO_COUNT_FILE}" "${KERCHUNK_FILE}" "${ERROR_FILE}" "${WARNING_FILE}" "${H
 # python script alongside pistar-lastqso.  Everything needed
 # stays within the bash script.
 #
-# Note to self: My 40" 1080P screen is 61 lines x 228 columns
+# Note to self - My 40" 1080P screen is:
+# 61 lines x 228 columns - HDMI-connected to Pi
+# 45 lines x 157 columns - SSH (PuTTY Windowed-mode)
+# 49 lines x 160 columns - SSH (Putty Full Screen-mode)
 export LINES COLUMNS
 PY3_SCRIPT=$(cat <<'EOF'
 import os
@@ -848,10 +858,10 @@ fnUSAGE()
   echo "  USAGE:  Valid options and parameters include:
 
   Short Form:
-    [-c] [-d] [-e] [-f <1-5>] [-h] [-l] [-m] [-n] [-t [integer]] [-v] [-w]
+    [-c] [-d] [-D] [-e] [-f <1-5>] [-h] [-l] [-m] [-n] [-t [integer]] [-v] [-w]
 
   Long Form:
-    [--csv] [--dat] [--errors] [--font <1-5>] [--help]
+    [--csv] [--dat] [--DXCC] [--errors] [--font <1-5>] [--help]
     [--logo] [--mono] [--nobig] [--top [integer]] [--version] [--wrap]
   " >&2
 }
@@ -912,8 +922,7 @@ fnPARSE_CMDLINE()
           INDEX=$((INDEX + 1))
         else
           # It is not, so show the usage text and exit.
-          tput flash
-          echo -en "${BELL}"
+          echo -en "${BELL}${FLASH}"
           echo -e "\n  ERROR:  The use of \"-f|--font\" requires an integer 1-5"
           fnUSAGE
           exit 1
@@ -949,6 +958,11 @@ fnPARSE_CMDLINE()
 
       -d|--dat)
         GET_DAT_NOW=1
+        continue
+        ;;
+
+      -D|--DXCC)
+        USE_DXCC=0
         continue
         ;;
 
@@ -1008,8 +1022,7 @@ fnPARSE_CMDLINE()
         ;;
 
       *)
-        tput flash
-        echo -en "${BELL}"
+        echo -en "${BELL}${FLASH}"
         echo -e "\n  ERROR:  \"${OPTION}\" is not a valid option."
         fnUSAGE
         exit 1
@@ -1070,6 +1083,35 @@ PISTAR-LASTQSO - HELP
       Download an updated cty.dat from country-files.com, rather than
       waiting for the presently installed copy to age 30 days before it
       updates automatically.
+
+  -D|--DXCC
+      When resolving QTH location for callsigns, pistar-lastqso first
+      gambles that the callsign might also be either a DMR or NXDN
+      user.  In which case, a quick check of the DMR user.csv and/or
+      NXDN NXDN.csv files will find their QTH data there.
+
+      If the callsign can't be found in those files, pistar-lastqso
+      calls upon dxcc.pl to determine the country that issued the call
+      sign.  This can potentially impact pistar-lastqso's ability to
+      "keep up" with log entries, as each call to dxcc.pl can take up
+      to 4 or 5 seconds to resolve.  When YSF traffic is more than a
+      few seconds, this is no problem, as the script normally just
+      sits there saying "QSO In Progress...".  But when the bulk of
+      traffic is "[[kerchunks]]", which pistar-lastqso considers any
+      traffic lasting less than 2 seconds, the kerchunks can out-pace
+      the ability of dxcc.pl to keep up.  A few kerchunks here and
+      there are generally not a problem.  But a large series of them
+      in quick succession can cause delays.  Effectively, you will be
+      listening to one callsign, but still seeing data on the screen
+      for QSOs logged many seconds ago.
+
+      This "-D|--DXCC" cmdline option can be used to disable calls
+      to the dxcc.pl script, if such delays become an issue for you.
+
+      This option has no affect on DMR traffic.  DMR and NXDN users
+      go through a registration process that results in their QTH data
+      being readily available in the user.csv and NXDN.csv files, thus
+      calls to the dxcc.pl script are never needed for DMR traffic.
 
   -e|--errors
       By default, pistar-lastqso will display any error messages found
@@ -1216,6 +1258,7 @@ fnNO_LOGO()
   echo "${BOLD}${WHI}PISTAR-LASTQSO v${VERSION}${SGR0}"
   echo "Copyright © 2022 Ken Cormack - KE8DPF"
   echo "${DIM}https://github.com/kencormack/pistar-lastqso${SGR0}"
+  echo
 }
 
 #----------
@@ -1937,11 +1980,26 @@ fnYSF_SHOW_CURRENT_CALL()
     COUNTRY=""
 
     # Last resort: Look up country based on callsign prefix
-    if echo "${FROM}" | cut -f1 -d"-" | cut -c1-3 | grep -q "[0-9]"
+    if [[ "${USE_DXCC}" = "1" ]]
     then
-      QTH_SRC="cty.dat"
-      DXCC_FROM="$(echo "${LOGREC_CALLSIGN}" | cut -f1 -d"/" | cut -f1 -d"-")"
-      COUNTRY="$(dxcc.pl "${DXCC_FROM}" | grep "^Country Name:" | awk '{ print substr($0, index($0,$3)) }')"
+      if echo "${FROM}" | cut -f1 -d"-" | cut -c1-3 | grep -q "[0-9]"
+      then
+        QTH_SRC="cty.dat"
+        DXCC_FROM="$(echo "${LOGREC_CALLSIGN}" | cut -f1 -d"/" | cut -f1 -d"-")"
+        #set -x
+        # NOTE: The average time to resolve, calling dxcc.pl,
+        # is 4-5 seconds on a Raspberry Pi Zero.  Largely
+        # because the dxcc.pl script has to be loaded into memory,
+        # and perl, then the cty.dat file needs to be read and
+        # parsed... That's a lot of overhead.
+        #
+        # Callsigns found in either user.csv or ndxn.csv
+        # can be resolved (and w/ greater detail) in fractions
+        # of a second, which is why dxcc.pl is my last resort
+        # to determine at least *some* QTH information.
+        COUNTRY="$(dxcc.pl "${DXCC_FROM}" | grep "^Country Name:" | awk '{ print substr($0, index($0,$3)) }')"
+        #set +x
+      fi
     fi
   fi
 
@@ -1953,7 +2011,12 @@ fnYSF_SHOW_CURRENT_CALL()
   # Show location details
   if [[ "${CITY}" = "n/a" ]] && [[ "${STATE}" = "n/a" ]] && [[ "${COUNTRY}" = "n/a" ]]
   then
-    echo "${MAG}${BOLD}Unable To Determine Location Data${SGR0}${WHI}${CLR_ED}"
+    if [[ "${USE_DXCC}" = "1" ]]
+    then
+      echo "${MAG}${BOLD}DXCC Is Unable To Determine Location Data${SGR0}${WHI}${CLR_ED}"
+    else
+      echo "${MAG}DXCC Lookups Disabled on Cmdline${SGR0}${WHI}${CLR_ED}"
+    fi
   else
     echo -en "${DIM}File:${SGR0} ${MAG}${BOLD}${QTH_SRC}${SGR0}${WHI}\r"
     tput cuf 18
@@ -2942,7 +3005,6 @@ then
   tput cup 22 2
 else
   fnNO_LOGO
-  tput cup 5 0
 fi
 
 # Fetch the version number from what's posted on github.
@@ -3089,5 +3151,4 @@ do
 
   echo -e "${GRE}LOG ACTIVITY HAS RESUMED USING $(basename "${WORKING_LOG}")...${WHI}${SGR0}"
   echo -e "${GRE}${DBL_LINE}${WHI}${SGR0}${CLR_EL}\n"
-  # Loop, with the same options as originally passed
 done

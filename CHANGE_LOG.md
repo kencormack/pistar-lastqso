@@ -1,4 +1,13 @@
 ```
+CHANGES: V2.28
+ 1. Added -D|--DXCC cmdline option to disable
+    use of dxcc.pl to determine a callsign's
+    country, when attempting to resolve QTH
+    for YSF contacts.  See the -h|--help text
+    for details.  (Note: I spotted this while
+    reviewing output of the profiling feature
+    added in v2.22)
+
 CHANGES: V2.27
  1. Corrected logfile name shown at bottom of
     the screen when log activity resumes after
