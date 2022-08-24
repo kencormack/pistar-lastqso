@@ -166,10 +166,10 @@ display of the callsigns, and activate the non-scrolling information section at 
   USAGE:  Valid options and parameters include:
 
   Short Form:
-    [-c] [-d] [-e] [-f <1-5>] [-h] [-l] [-m] [-n] [-t [integer]] [-v] [-w]
+    [-c] [-d] [-D] [-e] [-f <1-5>] [-h] [-l] [-m] [-n] [-t [integer]] [-v] [-w]
 
   Long Form:
-    [--csv] [--dat] [--errors] [--font <1-5>] [--help]
+    [--csv] [--dat] [--DXCC] [--errors] [--font <1-5>] [--help]
     [--logo] [--mono] [--nobig] [--top [integer]] [--version] [--wrap]
 ```
 
@@ -200,6 +200,35 @@ PISTAR-LASTQSO - HELP
       Download an updated cty.dat from country-files.com, rather than
       waiting for the presently installed copy to age 30 days before it
       updates automatically.
+
+  -D|--DXCC
+      When resolving QTH location for callsigns, pistar-lastqso first
+      gambles that the callsign might also be either a DMR or NXDN
+      user.  In which case, a quick check of the DMR user.csv and/or
+      NXDN NXDN.csv files will find their QTH data there.
+
+      If the callsign can't be found in those files, pistar-lastqso
+      calls upon dxcc.pl to determine the country that issued the call
+      sign.  This can potentially impact pistar-lastqso's ability to
+      "keep up" with log entries, as each call to dxcc.pl can take up
+      to 4 or 5 seconds to resolve.  When YSF traffic is more than a
+      few seconds, this is no problem, as the script normally just
+      sits there saying "QSO In Progress...".  But when the bulk of
+      traffic is "[[kerchunks]]", which pistar-lastqso considers any
+      traffic lasting less than 2 seconds, the kerchunks can out-pace
+      the ability of dxcc.pl to keep up.  A few kerchunks here and
+      there are generally not a problem.  But a large series of them
+      in quick succession can cause delays.  Effectively, you will be
+      listening to one callsign, but still seeing data on the screen
+      for QSOs logged many seconds ago.
+
+      This "-D|--DXCC" cmdline option can be used to disable calls
+      to the dxcc.pl script, if such delays become an issue for you.
+
+      This option has no affect on DMR traffic.  DMR and NXDN users
+      go through a registration process that results in their QTH data
+      being readily available in the user.csv and NXDN.csv files, thus
+      calls to the dxcc.pl script are never needed for DMR traffic.
 
   -e|--errors
       By default, pistar-lastqso will display any error messages found
