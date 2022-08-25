@@ -51,7 +51,7 @@
 - The contact's QTH (Determined with best effort, from several sources.)
 - Possibly, the contact's First Name (keep reading.)
 
-As YSF does not require that users be registered, there is no single source for QTH or First Name data, for YSF callsigns.  On the chance that the callsign owner also has either a registered DMR ID or NXDN ID number, pistar-lastqso will search the DMR user.csv file and/or pi-star's NXDN.csv file.  If the callsign is present in either of those files, the name and QTH data are retrieved from there.  As these data sources generally contain City, State, and Country info, they are tried first.  If the callsign is not found in either file, the script calls upon the perl script dxcc.pl and it's cty.dat file to determine the country, based on the callsign's prefix.  The callsign's First Name however, will remain unresolved and not displayed.  (Lookups with dxcc.pl can be disabled if needed, with the "-D|--DXCC" options - see the help text for details.)
+As YSF does not require that users be registered, there is no single source for QTH or First Name data, for YSF Callsigns.  On the chance that the Callsign owner also has either a registered DMR ID or NXDN ID number, pistar-lastqso will search the DMR user.csv file and/or pi-star's NXDN.csv file.  If the Callsign is present in either of those files, the name and QTH data are retrieved from there.  As these data sources generally contain City, State, and Country info, they are tried first.  If the Callsign is not found in either file, the script calls upon the perl script dxcc.pl and it's cty.dat file to determine the country, based on the Callsign's prefix.  The Callsign's First Name however, will remain unresolved and not displayed.  (Lookups with dxcc.pl can be disabled if needed, with the "-D|--DXCC" options - see the help text for details.)
 
 **Note #1:**
 *Talker Alias data is shown, only if present and complete.  Kerchunkers don't stick around long enough for TA data to be gathered.  Partial TA data (or that which is received as empty/null) is not shown.*
@@ -64,7 +64,7 @@ As YSF does not require that users be registered, there is no single source for 
 
 *But there's a small problem with that approach...*
 
-*In the early days of DMR, some users were registering for multiple IDs (one for each radio, one for each hotspot, etc.)  The prefered method of identifying hotspots today is by adding a two-digit suffix to the user's normal 7-digit ID, for example.  However, those earlier cases of multiple ID numbers mapped to the same Callsign still exist in the file.  Each DMR ID links to only one Callsign, but not every Callsign links to just one ID.  (I saw one callsign that has EIGHT consecutive DMR ID numbers associated with it.)  With no guarantee that I'm picking the correct ID linked to a given Callsign, I just arbitrarily pick the first number, on the assumption that that's the one that represents the user, not one of their hotspots, etc.  I wish MMDVMHost would log both Callsign and ID#.  But it's one or the other, not both.  For the vast (VAST!) majority of cases, my "lesser of two evils" approach will serve well enough.*
+*In the early days of DMR, some users were registering for multiple IDs (one for each radio, one for each hotspot, etc.)  The prefered method of identifying hotspots today is by adding a two-digit suffix to the user's normal 7-digit ID, for example.  However, those earlier cases of multiple ID numbers mapped to the same Callsign still exist in the file.  Each DMR ID links to only one Callsign, but not every Callsign links to just one ID.  (I saw one Callsign that has EIGHT consecutive DMR ID numbers associated with it.)  With no guarantee that I'm picking the correct ID linked to a given Callsign, I just arbitrarily pick the first number, on the assumption that that's the one that represents the user, not one of their hotspots, etc.  I wish MMDVMHost would log both Callsign and ID#.  But it's one or the other, not both.  For the vast (VAST!) majority of cases, my "lesser of two evils" approach will serve well enough.*
 
 *If the Callsign maps to multiple ID#'s, I indicate that the ID shown is just a "guess", by displaying an asterisk, immediately after the ID#.*
 
@@ -140,14 +140,14 @@ Upon first run, **pistar-lastqso** will download the latest version of the user.
 
 If the user.csv file is already present on your hotspot, but is older than 7 days, **pistar-lastqso** will update the file to it's latest version automatically.  You can also force an update to the latest version at any time, using the "-c | --csv" commandline option.
 
-**pistar-lastqso** uses the user.csv file to display the "City", "State", and "Country" data related to the callsign.
+**pistar-lastqso** uses the user.csv file to display the "City", "State", and "Country" data related to the Callsign.
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
 ## City, State, Country Lookups for Callsigns (YSF only)
 
-As YSF does not require that users be registered, there is no single source for QTH data for YSF users.  The script therefore assumes that the callsign owner may also have either a registered DMR ID or NXDN ID number.  On the chance that they do, pistar-lastqso first attempts to find QTH info in the DMR user.csv file, then pi-star's NXDN.csv file.  If the callsign is not found in either of those files, as a last resort, it then calls upon the perl script dxcc.pl and it's cty.dat file.  As the first two data sources generally contain City, State, and Country info, they are tried first.  The dxcc.pl script, and it's cty.dat file, can only determine the Country that issued the callsign. based on the callsign's prefix.  (Lookups with dxcc.pl can be disabled if needed, with the "-D|--DXCC" options - see the help te
+As YSF does not require that users be registered, there is no single source for QTH data for YSF users.  The script therefore assumes that the Callsign owner may also have either a registered DMR ID or NXDN ID number.  On the chance that they do, pistar-lastqso first attempts to find QTH info in the DMR user.csv file, then pi-star's NXDN.csv file.  If the Callsign is not found in either of those files, as a last resort, it then calls upon the perl script dxcc.pl and it's cty.dat file.  As the first two data sources generally contain City, State, and Country info, they are tried first.  The dxcc.pl script, and it's cty.dat file, can only determine the Country that issued the Callsign. based on the Callsign's prefix.  (Lookups with dxcc.pl can be disabled if needed, with the "-D|--DXCC" options - see the help te
 xt for details.)
 
 Upon first run, **pistar-lastqso** will download the latest version of the cty.dat file from https://www.country-files.com/category/big-cty/
@@ -160,7 +160,7 @@ If the cty.dat file is already present on your hotspot, but is older than 30 day
 ## Commandline Options
 
 **pistar-lastqso** supports a number of commandline options, as shown in the Usage and Help screens, below.  Multiple options can be specified at the same time.  For example, specifying "-c -n -t" (or "--csv --nobig --top") will download the latest updated user.csv file, disable the large font
-display of the callsigns, and activate the non-scrolling information section at the top of the screen.
+display of the Callsigns, and activate the non-scrolling information section at the top of the screen.
 
 **Valid Options and Parameters...**
 ```
@@ -455,7 +455,7 @@ Note that for any given font you specify with the "-f | --font" option, figlet m
 ## Sample Screenshots
 **Sample Screenshot:**
 
-With "-t | --top" option, for the large font display of the callsign...
+With "-t | --top" option, for the large font display of the Callsign...
 
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/with-figlet.jpg)
 
@@ -524,7 +524,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 The **ansi_shadow** font pre-dates figlet.  It appears to have been created using an old DOS ANSI art package called "thedraw", and converted for figlet.  It's original creator is unknown.  It can be found at https://github.com/xero/figlet-fonts and from numerous other font collections on the Internet.
 
-**dxcc** (https://fkurz.net/ham/dxcc.html) is a small command line utility, written in perl, which determines the ARRL DXCC entity of a ham radio callsign.  It was written by Fabian Kurz, DJ1YFK and uses the **cty.dat** country file by Jim Reisert, AD1C (http://www.country-files.com/).
+**dxcc** (https://fkurz.net/ham/dxcc.html) is a small command line utility, written in perl, which determines the ARRL DXCC entity of a ham radio Callsign.  It was written by Fabian Kurz, DJ1YFK and uses the **cty.dat** country file by Jim Reisert, AD1C (http://www.country-files.com/).
 
 **pistar-lastqso** itself was developed on a Raspberry Pi Zero WH with eMMC (backed up to USB storge), with generic Chinese MMDVM boards (including Duplex and Simplex models).  Development began with pi-star 4.1.4, and has continued through all pi-star updates to date.  Testing the output is performed on 1.) a Lenovo Thinkpad laptop running Windows 10 Pro via SSH with PuTTY and Xming (an X-server), and PuTTY running as term-type TERM=xterm, or 2.) direct HDMI connection from the Pi to a 40" flatscreen (TERM=linux).
 
