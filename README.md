@@ -51,7 +51,7 @@
 - The contact's QTH (Determined with best effort, from several sources.)
 - Possibly, the contact's First Name (keep reading.)
 
-As YSF does not require that users be registered, there is no single source for QTH or First Name data, for YSF Callsigns.  On the chance that the Callsign owner also has either a registered DMR ID or NXDN ID number, pistar-lastqso will search the DMR user.csv file and/or pi-star's NXDN.csv file.  If the Callsign is present in either of those files, the name and QTH data are retrieved from there.  As these data sources generally contain City, State, and Country info, they are tried first.  If the Callsign is not found in either file, the script calls upon the perl script dxcc.pl and it's cty.dat file to determine the country, based on the Callsign's prefix.  The Callsign's First Name however, will remain unresolved and not displayed.  (Lookups with dxcc.pl can be disabled if needed, with the "-D|--DXCC" options - see the help text for details.)
+As YSF does not require that users be registered, there is no single source for QTH or First Name data, for YSF Callsigns.  On the chance that the Callsign owner also has either a registered DMR ID or NXDN ID number, pistar-lastqso will search the DMR user.csv file and/or PI-STAR's NXDN.csv file.  If the Callsign is present in either of those files, the name and QTH data are retrieved from there.  As these data sources generally contain City, State, and Country info, they are tried first.  If the Callsign is not found in either file, the script calls upon the perl script dxcc.pl and it's cty.dat file to determine the country, based on the Callsign's prefix.  The Callsign's First Name however, will remain unresolved and not displayed.  (Lookups with dxcc.pl can be disabled if needed, with the "-D|--DXCC" options - see the help text for details.)
 
 **Note #1:**
 *Talker Alias data is shown, only if present and complete.  Kerchunkers don't stick around long enough for TA data to be gathered.  Partial TA data (or that which is received as empty/null) is not shown.*
@@ -147,7 +147,7 @@ If the user.csv file is already present on your hotspot, but is older than 7 day
 -------------------------------------------------------------------
 ## City, State, Country Lookups for Callsigns (YSF only)
 
-As YSF does not require that users be registered, there is no single source for QTH data for YSF users.  The script therefore assumes that the Callsign owner may also have either a registered DMR ID or NXDN ID number.  On the chance that they do, pistar-lastqso first attempts to find QTH info in the DMR user.csv file, then pi-star's NXDN.csv file.  If the Callsign is not found in either of those files, as a last resort, it then calls upon the perl script dxcc.pl and it's cty.dat file.  As the first two data sources generally contain City, State, and Country info, they are tried first.  The dxcc.pl script, and it's cty.dat file, can only determine the Country that issued the Callsign. based on the Callsign's prefix.  (Lookups with dxcc.pl can be disabled if needed, with the "-D|--DXCC" options - see the help te
+As YSF does not require that users be registered, there is no single source for QTH data for YSF users.  The script therefore assumes that the Callsign owner may also have either a registered DMR ID or NXDN ID number.  On the chance that they do, pistar-lastqso first attempts to find QTH info in the DMR user.csv file, then PI-STAR's NXDN.csv file.  If the Callsign is not found in either of those files, as a last resort, it then calls upon the perl script dxcc.pl and it's cty.dat file.  As the first two data sources generally contain City, State, and Country info, they are tried first.  The dxcc.pl script, and it's cty.dat file, can only determine the Country that issued the Callsign. based on the Callsign's prefix.  (Lookups with dxcc.pl can be disabled if needed, with the "-D|--DXCC" options - see the help te
 xt for details.)
 
 Upon first run, **pistar-lastqso** will download the latest version of the cty.dat file from https://www.country-files.com/category/big-cty/
@@ -236,13 +236,13 @@ PISTAR-LASTQSO - HELP
       in the MMDVM log, as they occur.  It ia NOT unusual to see an
       occasional, or sporadic message, such as a queue overflow.  But
       if these or other errors are frequent or persist, you may need
-      to get help from the pi-star forums.  In the meantime, you can use
+      to get help from the PI-STAR forums.  In the meantime, you can use
       the "-e" or "--error" option to suppress the onscreen reporting
       of these errors.  The errors will however still be counted for
       the current session, and the count will still be reported on the
       exit screen.  It is your responsibility to investigate any cause.
 
-      Use of this option DOES NOT FIX THE ERRORS coming from pi-star.
+      Use of this option DOES NOT FIX THE ERRORS coming from PI-STAR.
       It only stops telling you that they are happening.
 
       NOTE: The script also displays and tallies any WARNINGS that may
@@ -278,9 +278,7 @@ PISTAR-LASTQSO - HELP
       Display this help screen, then exit.
 
   -l|--logo
-      Disables the animated logo at startup.  Automatically applied
-      when the program restarts at service bounce, or when the log
-      is rotated.  Optional, when launching from the cmdline.
+      Disables the animated logo at startup.
 
   -m|--mono
       For monochrome displays, this option suppresses all color codes.
@@ -477,6 +475,10 @@ These are the 3 basic fonts supplied with the basic "figlet" package, along with
 
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/font-samples.jpg)
 
+*IF* your terminal emulator and $TERM setting support it, this is an example of what the "emulator-dependent alternate charset" should look like, on your screen.
+
+![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/font-5.jpg)
+
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
@@ -526,7 +528,7 @@ The **ansi_shadow** font pre-dates figlet.  It appears to have been created usin
 
 **dxcc** (https://fkurz.net/ham/dxcc.html) is a small command line utility, written in perl, which determines the ARRL DXCC entity of a ham radio Callsign.  It was written by Fabian Kurz, DJ1YFK and uses the **cty.dat** country file by Jim Reisert, AD1C (http://www.country-files.com/).
 
-**pistar-lastqso** itself was developed on a Raspberry Pi Zero WH with eMMC (backed up to USB storge), with generic Chinese MMDVM boards (including Duplex and Simplex models).  Development began with pi-star 4.1.4, and has continued through all pi-star updates to date.  Testing the output is performed on 1.) a Lenovo Thinkpad laptop running Windows 10 Pro via SSH with PuTTY and Xming (an X-server), and PuTTY running as term-type TERM=xterm, or 2.) direct HDMI connection from the Pi to a 40" flatscreen (TERM=linux).
+**pistar-lastqso** itself was developed on a Raspberry Pi Zero WH with eMMC (backed up to USB storge), with generic Chinese MMDVM boards (including Duplex and Simplex models).  Development began with PI-STAR 4.1.4, and has continued through all PI-STAR updates to date.  Testing the output is performed on 1.) a Lenovo Thinkpad laptop running Windows 10 Pro via SSH with PuTTY and Xming (an X-server), and PuTTY running as term-type TERM=xterm, or 2.) direct HDMI connection from the Pi to a 40" flatscreen (TERM=linux).
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
