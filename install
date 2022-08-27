@@ -7,7 +7,7 @@ RED="$(tput setaf 1)"
 clear
 echo -en "${WHI}"
 cat <<'EOF'
-PISTAR-LASTQSO INSTALLAION:
+PISTAR-LASTQSO INSTALLATION:
 
 This install script will perform the
 following operations...
@@ -24,7 +24,7 @@ following operations...
 
 4.) install the package "figlet" from
     the standard repositories using
-    "apt-get -y install figlet"
+    "sudo apt-get -y install figlet"
 
 5.) copy the supplemental "ansi_shadow.flf"
     font file to /usr/share/figlet
