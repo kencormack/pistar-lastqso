@@ -51,7 +51,7 @@
 - The contact's QTH (Determined with best effort, from several sources.)
 - Possibly, the contact's First Name (keep reading.)
 
-As YSF does not require that users be registered, there is no single source for QTH or First Name data, for YSF Callsigns.  On the chance that the Callsign owner also has either a registered DMR ID or NXDN ID number, pistar-lastqso will search the DMR user.csv file and/or PI-STAR's NXDN.csv file.  If the Callsign is present in either of those files, the name and QTH data are retrieved from there.  As these data sources generally contain City, State, and Country info, they are tried first.  If the Callsign is not found in either file, the script calls upon the perl script dxcc.pl and it's cty.dat file to determine the country, based on the Callsign's prefix.  The Callsign's First Name however, will remain unresolved and not displayed.  (Lookups with dxcc.pl can be disabled if needed, with the "-D|--DXCC" options - see the help text for details.)
+As YSF does not require that users be registered, there is no single source for QTH or First Name data, for YSF Callsigns.  On the chance that the Callsign owner also has either a registered DMR ID or NXDN ID number, pistar-lastqso will search the DMR user.csv file and/or PI-STAR's NXDN.csv file.  If the Callsign is present in either of those files, the name and QTH data are retrieved from there.  As these data sources generally contain City, State, and Country info, they are tried first.  If the Callsign is not found in either file, the script calls upon the perl script ##dxcc.pl## and it's ##cty.dat## file to determine the country, based on the Callsign's prefix.  The Callsign's First Name however, will remain unresolved and not displayed.  (Lookups with ##dxcc.pl## can be disabled if needed, with the "-D|--DXCC" options - see the help text for details.)
 
 **Note #1:**
 *Talker Alias data is shown, only if present and complete.  Kerchunkers don't stick around long enough for TA data to be gathered.  Partial TA data (or that which is received as empty/null) is not shown.*
@@ -138,7 +138,7 @@ If figlet is disabled (see the "Commandline options" section, below), the large 
 
 Upon first run, **pistar-lastqso** will download the latest version of the user.csv file from https://database.radioid.net/static/user.csv
 
-If the user.csv file is already present on your hotspot, but is older than 7 days, **pistar-lastqso** will update the file to it's latest version automatically.  You can also force an update to the latest version at any time, using the "-c | --csv" commandline option.
+If the user.csv file is already present on your hotspot, but is older than 7 days, **pistar-lastqso** will update the file to it's latest version automatically.  You can also force an update to the latest version at any time, using the "-c|--csv" commandline option.
 
 **pistar-lastqso** uses the user.csv file to display the "City", "State", and "Country" data related to the Callsign.
 
@@ -147,12 +147,11 @@ If the user.csv file is already present on your hotspot, but is older than 7 day
 -------------------------------------------------------------------
 ## City, State, Country Lookups for Callsigns (YSF only)
 
-As YSF does not require that users be registered, there is no single source for QTH data for YSF users.  The script therefore assumes that the Callsign owner may also have either a registered DMR ID or NXDN ID number.  On the chance that they do, pistar-lastqso first attempts to find QTH info in the DMR user.csv file, then PI-STAR's NXDN.csv file.  If the Callsign is not found in either of those files, as a last resort, it then calls upon the perl script dxcc.pl and it's cty.dat file.  As the first two data sources generally contain City, State, and Country info, they are tried first.  The dxcc.pl script, and it's cty.dat file, can only determine the Country that issued the Callsign. based on the Callsign's prefix.  (Lookups with dxcc.pl can be disabled if needed, with the "-D|--DXCC" options - see the help te
-xt for details.)
+As YSF does not require that users be registered, there is no single source for QTH data for YSF users.  The script therefore assumes that the Callsign owner may also have either a registered DMR ID or NXDN ID number.  On the chance that they do, pistar-lastqso first attempts to find QTH info in the DMR user.csv file, then PI-STAR's NXDN.csv file.  If the Callsign is not found in either of those files, as a last resort, it then calls upon the perl script ##dxcc.pl## and it's ##cty.dat## file.  As the first two data sources generally contain City, State, and Country info, they are tried first.  The ##dxcc.pl## script, and it's ##cty.dat## file, can only determine the Country that issued the Callsign. based on the Callsign's prefix.  (Lookups with ##dxcc.pl## can be disabled if needed, with the "-D|--DXCC" options - see the help text for details.)
 
-Upon first run, **pistar-lastqso** will download the latest version of the cty.dat file from https://www.country-files.com/category/big-cty/
+Upon first run, **pistar-lastqso** will download the latest version of the ##cty.dat## file from https://www.country-files.com/category/big-cty/
 
-If the cty.dat file is already present on your hotspot, but is older than 30 days, **pistar-lastqso** will update the file to it's latest version automatically.  You can also force an update to the latest version at any time, using the "-d | --dat" commandline option.
+If the ##cty.dat## file is already present on your hotspot, but is older than 30 days, **pistar-lastqso** will update the file to it's latest version automatically.  You can also force an update to the latest version at any time, using the "-d|--dat" commandline option.
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
@@ -394,7 +393,7 @@ Don't panic if you see a single transient occurrance of something like a "queue 
 
 Finally, all four of the counters (QSO, Kerchunks, Errors, and Warnings) are reset each time the user exits **pistar-lastqso** using Ctrl-C.  However, when the script pauses and resumes monitoring, either at log rotation or when PI-STAR's services get cycled during the nightly PI-STAR update, the running counts for each counter are carried forward when monitoring resumes.
 
-The commandline option "-e | --errors" will supress onscreen notification of errors during QSOs, but will NOT supress the more severe "warnings".  With or without that option, the total numbers of any errors or warnings detected, will be displayed at program exit.
+The commandline option "-e|--errors" will supress onscreen notification of errors during QSOs, but will NOT supress the more severe "warnings".  With or without that option, the total numbers of any errors or warnings detected, will be displayed at program exit.
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
@@ -409,9 +408,9 @@ By default, **pistar-lastqso** will use one of three basic large fonts to displa
   > 120 chars... "big" font
 ```
 
-**pistar-lastqso** supports a "-f | --font <number>" commandline option to override auto-selection, and force a given font regardless of screen-width.  If the -f option is omitted, **pistar-lastqso** will auto-select an appropriately sized font as just described above.  If passed an invalid parameter, the usage screen will be displayed.
+**pistar-lastqso** supports a "-f|--font <number>" commandline option to override auto-selection, and force a given font regardless of screen-width.  If the -f option is omitted, **pistar-lastqso** will auto-select an appropriately sized font as just described above.  If passed an invalid parameter, the usage screen will be displayed.
 
-The "-f | --font" commandline option requires a numeric parameter to select between the fonts:
+The "-f|--font" commandline option requires a numeric parameter to select between the fonts:
 
 ```
   "-f 1" or "--font 1" will force figlet's "small" font
@@ -426,26 +425,27 @@ The "-f | --font" commandline option requires a numeric parameter to select betw
 
 In addition to the above fonts, which come with the base figlet package, the "install" script adds an additional supplemental "ansi_shadow" font.
 
-The "ansi_shadow" font can be utilized by specifying "-f | --font 4" on the **pistar-lastqso** commandline.
+The "ansi_shadow" font can be utilized by specifying "-f|--font 4" on the **pistar-lastqso** commandline.
 
 ```
   "-f 4" or "--font 4" will force the "ansi_shadow" font.
 ```
 
+Note that for any given figlet font you specify with the "-f|--font" option, figlet may decide it needs to line-wrap the output.  This can waste a lot of screen space if you force a too-large font on a too-small screen.  If that happens, try a lower-numbered parameter for the "-f|--font" option to select a smaller font, or add the "-w|--wrap" option, to disable figlet's automatic line-wrapping.
+
 Lastly, a 5th font *MAY* be available, depending upon the SSH client emulator, and your $TERM type.  This is *NOT* a figlet font, but is an
 alternate character set that *some* term types and emulators support.  It is based on the '\e'#3 and '\e'#4 ANSI Escape sequences.  If it
-works for you, you should see a line of text DOUBLE HIGH & DOUBLE WIDE.  If it does *NOT* work for you, you will either see *TWO* single-width &
-single-height lines that look like any other line of text on the screen, or you will see unpredicatible results.
+works for you, you should see a line of text ##DOUBLE HIGH & DOUBLE WIDE##.  If it does *NOT* work for you, you will either see *TWO* single-width &
+single-height lines that look like any other line of text on the screen, or you will see unpredicatible results.  ##The Raspberry Pi HDMI console
+and it's TERM=linux term-type do NOT support this 5th font.##
 
-The "emulator-dependent alternate charset" font can be tried by specifying "-f | --font 5" on the **pistar-lastqso** commandline.
+The "emulator-dependent alternate charset" font can be tried by specifying "-f|--font 5" on the **pistar-lastqso** commandline.
 
 ```
   "-f 5" or "--font 5" will force the "emulator-dependent alternate charset" font.
 ```
 
-If you specify an invalid numeric parameter for the "-f | --font" option, **pistar-lastqso** will display a usage screen showing valid options and parameters, and then exit.
-
-Note that for any given font you specify with the "-f | --font" option, figlet may decide it needs to line-wrap the output.  This can waste a lot of screen space if you force a too-large font on a too-small screen.  If that happens, try a lower-numbered parameter for the "-f | --font" option to select a smaller font, or add the "-w | --wrap" option, to disable figlet's automatic line-wrapping.
+If you specify an invalid numeric parameter for the "-f|--font" option, **pistar-lastqso** will display a usage screen showing valid options and parameters, and then exit.
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
@@ -453,13 +453,13 @@ Note that for any given font you specify with the "-f | --font" option, figlet m
 ## Sample Screenshots
 **Sample Screenshot:**
 
-With "-t | --top" option, for the large font display of the Callsign...
+With "-t|--top" option, for the large font display of the Callsign...
 
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/with-figlet.jpg)
 
 **Sample Screenshot:**
 
-With "-t | --top" option, when the "-n | --nobig" option is also used...
+With "-t|--top" option, when the "-n|--nobig" option is also used...
 
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/without-figlet.jpg)
 
@@ -526,7 +526,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 The **ansi_shadow** font pre-dates figlet.  It appears to have been created using an old DOS ANSI art package called "thedraw", and converted for figlet.  It's original creator is unknown.  It can be found at https://github.com/xero/figlet-fonts and from numerous other font collections on the Internet.
 
-**dxcc** (https://fkurz.net/ham/dxcc.html) is a small command line utility, written in perl, which determines the ARRL DXCC entity of a ham radio Callsign.  It was written by Fabian Kurz, DJ1YFK and uses the **cty.dat** country file by Jim Reisert, AD1C (http://www.country-files.com/).
+**dxcc** (https://fkurz.net/ham/dxcc.html) is a small command line utility, written in perl, which determines the ARRL DXCC entity of a ham radio Callsign.  It was written by Fabian Kurz, DJ1YFK and uses the ##cty.dat## country file by Jim Reisert, AD1C (http://www.country-files.com/).
 
 **pistar-lastqso** itself was developed on a Raspberry Pi Zero WH with eMMC (backed up to USB storge), with generic Chinese MMDVM boards (including Duplex and Simplex models).  Development began with PI-STAR 4.1.4, and has continued through all PI-STAR updates to date.  Testing the output is performed on 1.) a Lenovo Thinkpad laptop running Windows 10 Pro via SSH with PuTTY and Xming (an X-server), with PuTTY running as term-type TERM=xterm, or 2.) direct HDMI connection from the Pi to a 40" flatscreen (TERM=linux).
 
