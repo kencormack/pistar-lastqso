@@ -348,9 +348,9 @@ When **pistar-lastqso** is launched, it searches for the most recent MMDVM log i
 -------------------------------------------------------------------
 ## User-Custom Talkgroup List (DMR only)
 
-In order to display the name of a Talkgroup, **pistar-lastqso** consults the PI-STAR file "/usr/local/etc/TGList_BM.txt".  This file is updated automatically by PI-STAR, but does NOT include talkgroup names that include characters with umlauts, or those found in German and other languages (ä ö ü ß), etc.  To compensate, this program allows the user to build their own custom file containing any missing talkgroup (or "private" contact ID) names the user wishes to display.
+In order to display the name of a Talkgroup, **pistar-lastqso** consults the PI-STAR file **"/usr/local/etc/TGList_BM.txt"**.  This file is updated automatically by PI-STAR, but does NOT include talkgroup names that include UTF8 characters such as umlauts, like those found in German and other languages (ä ö ü ß), etc.  To compensate, this program allows the user to build their own custom file containing any missing talkgroup (or "private" contact ID) names the user wishes to display.
 
-Create the file "/usr/local/etc/MY_LIST.txt".  Records in that file must appear in the same format as PI-STAR's TGList_BM.txt file.
+Create the file **"/usr/local/etc/MY_LIST.txt"**.  Records in that file must appear in the same format as PI-STAR's **TGList_BM.txt** file.
 
 Examples should look like the following:
 ```
@@ -364,7 +364,7 @@ Examples should look like the following:
 262277;0;KIEL-GRUPPE;TG262277
 ```
 
-You can also add certain 'private contact' IDs here that may not be listed.  Note the "PC", rather than "TG" references, in the last field of each line.  Users who take advantage of PI-STAR's "remote commands" can include references to those in their MY_LIST.txt file, if desired:
+You can also add certain 'private contact' IDs here that may not be listed.  Note the "PC", rather than "TG" references, in the last field of each line.  Users who take advantage of PI-STAR's "remote commands" can include references to those in their **MY_LIST.txt** file, if desired:
 ```
 9990;0;PARROT;PC9990
 262993;0;GPS-WX;PC262993
