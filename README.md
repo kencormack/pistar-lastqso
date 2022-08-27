@@ -387,7 +387,7 @@ The program also watches the MMDVM log for any errors, or more severe warnings, 
 
 **It is the user's responsibility to judge the severity, and find the fix, for any MMDVM log errors or warnings reported by pistar-lastqso.  These MMDVM log errors and warnings are not caused, controlled, or solveable, by pistar-lastqso.  The script only reports what gets logged by the MMDVMhost daemon.  Pistar-lastqso does not create, diagnose, or eliminate the logged errors or warnings.**
 
-Don't panic if you see a single transient occurrance of something like a "queue overflow" error.  Things like that may show up occasionally.  But if you see dozens (or hundreds!) of them, you will want to look into it.  Other types of errors may require more research on your part.  If you need to investigate any errors, search your **/var/log/pi-star/MMDVM-YYYY-MM-DD.log** for any lines beginning with "E:".  Warnings are more severe.  Those can be found in the log, on lines beginning with "W:".
+Don't panic if you see a single transient occurrance of something like a "queue overflow" error.  Things like that may show up occasionally, and are harmless.  But if you see dozens (or hundreds!) of them, you will want to look into it.  Other types of errors may require more research on your part.  If you need to investigate any errors, search your **/var/log/pi-star/MMDVM-YYYY-MM-DD.log** for any lines beginning with "E:".  Warnings are more severe.  Those can be found in the log, on lines beginning with "W:".
 
 **[Please visit the PI-STAR forums](https://forum.pistar.uk/)**, if you need help diagnosing any errors found in the MMDVM log.
 
