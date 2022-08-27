@@ -41,8 +41,8 @@
 - Any MMDVM errors or warnings appearing in the log while the tool is monitoring
 
 **For each DMR (Only) QSO, the program displays the following data beyond what the PI-STAR dashboard can show:**
-- The contact's Name (from PI-STAR's DMRIds.dat file)
-- The contact's QTH (from the downloaded user.csv file)
+- The contact's Name (from PI-STAR's **DMRIds.dat** file)
+- The contact's QTH (from the downloaded **user.csv** file)
 - The contact's Talker Alias (Note #1, below)
 - The talkgroup's Name (Note #2, below)
 - The contact's DMR ID# (Note #3, below)
@@ -51,7 +51,7 @@
 - The contact's QTH (Determined with best effort, from several sources.)
 - Possibly, the contact's First Name (keep reading.)
 
-As YSF does not require that users be registered, there is no single source for QTH or First Name data, for YSF Callsigns.  On the chance that the Callsign owner also has either a registered DMR ID or NXDN ID number, pistar-lastqso will search the DMR user.csv file and/or PI-STAR's NXDN.csv file.  If the Callsign is present in either of those files, the name and QTH data are retrieved from there.  As these data sources generally contain City, State, and Country info, they are tried first.  If the Callsign is not found in either file, the script calls upon the perl script **dxcc.pl** and it's **cty.dat** file to determine the country, based on the Callsign's prefix.  The Callsign's First Name however, will remain unresolved and not displayed.  (Lookups with **dxcc.pl** can be disabled if needed, with the "-D|--DXCC" options - see the help text for details.)
+As YSF does not require that users be registered, there is no single source for QTH or First Name data, for YSF Callsigns.  On the chance that the Callsign owner also has either a registered DMR ID or NXDN ID number, pistar-lastqso will search the DMR **user.csv** file and/or PI-STAR's **NXDN.csv** file.  If the Callsign is present in either of those files, the name and QTH data are retrieved from there.  As these data sources generally contain City, State, and Country info, they are tried first.  If the Callsign is not found in either file, the script calls upon the perl script **dxcc.pl** and it's **cty.dat** file to determine the country, based on the Callsign's prefix.  The Callsign's First Name however, will remain unresolved and not displayed.  (Lookups with **dxcc.pl** can be disabled if needed, with the "-D|--DXCC" options - see the help text for details.)
 
 **Note #1:**
 *Talker Alias data is shown, only if present and complete.  Kerchunkers don't stick around long enough for TA data to be gathered.  Partial TA data (or that which is received as empty/null) is not shown.*
@@ -60,7 +60,7 @@ As YSF does not require that users be registered, there is no single source for 
 *See the "User-Custom Talkgroup List" section below, for more info.*
 
 **Note #3:**
-*The MMDVMHost daemon internally knows the actual DMR ID# of the user, and does ID number to Callsign lookups from DMRIds.dat.  However, in the logfile, you end up with the Callsign, and lose the ID number.  Disabling this lookup gains you the ID numbers in the logfile, but loses the Callsigns.  If I were to disable the lookups for the MMDVMHost process, I could quite easily perform an ID to Callsign lookup within the program, but the PI-STAR web interface would suffer the loss of the Callsign.  Pi-star web-based Dashboard users wouldn't appreciate that at all.  So, I work backwords, taking the Callsign that MMDVMHost writes to the logs, and looking up the ID in the DMRIds.dat file.*
+*The MMDVMHost daemon internally knows the actual DMR ID# of the user, and does ID number to Callsign lookups from **DMRIds.dat**.  However, in the logfile, you end up with the Callsign, and lose the ID number.  Disabling this lookup gains you the ID numbers in the logfile, but loses the Callsigns.  If I were to disable the lookups for the MMDVMHost process, I could quite easily perform an ID to Callsign lookup within the program, but the PI-STAR web interface would suffer the loss of the Callsign.  Pi-star web-based Dashboard users wouldn't appreciate that at all.  So, I work backwords, taking the Callsign that MMDVMHost writes to the logs, and looking up the ID in the **DMRIds.dat** file.*
 
 *But there's a small problem with that approach...*
 
@@ -136,18 +136,18 @@ If figlet is disabled (see the "Commandline options" section, below), the large 
 -------------------------------------------------------------------
 ## City, State, Country Lookups for Callsigns (DMR only)
 
-Upon first run, **pistar-lastqso** will download the latest version of the user.csv file from https://database.radioid.net/static/user.csv
+Upon first run, **pistar-lastqso** will download the latest version of the **user.csv** file from https://database.radioid.net/static/user.csv
 
-If the user.csv file is already present on your hotspot, but is older than 7 days, **pistar-lastqso** will update the file to it's latest version automatically.  You can also force an update to the latest version at any time, using the "-c|--csv" commandline option.
+If the **user.csv** file is already present on your hotspot, but is older than 7 days, **pistar-lastqso** will update the file to it's latest version automatically.  You can also force an update to the latest version at any time, using the "-c|--csv" commandline option.
 
-**pistar-lastqso** uses the user.csv file to display the "City", "State", and "Country" data related to the Callsign.
+**pistar-lastqso** uses the **user.csv** file to display the "City", "State", and "Country" data related to the Callsign.
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
 ## City, State, Country Lookups for Callsigns (YSF only)
 
-As YSF does not require that users be registered, there is no single source for QTH data for YSF users.  The script therefore assumes that the Callsign owner may also have either a registered DMR ID or NXDN ID number.  On the chance that they do, pistar-lastqso first attempts to find QTH info in the DMR user.csv file, then PI-STAR's NXDN.csv file.  If the Callsign is not found in either of those files, as a last resort, it then calls upon the perl script **dxcc.pl** and it's **cty.dat** file.  As the first two data sources generally contain City, State, and Country info, they are tried first.  The **dxcc.pl** script, and it's **cty.dat** file, can only determine the Country that issued the Callsign. based on the Callsign's prefix.  (Lookups with **dxcc.pl** can be disabled if needed, with the "-D|--DXCC" options - see the help text for details.)
+As YSF does not require that users be registered, there is no single source for QTH data for YSF users.  The script therefore assumes that the Callsign owner may also have either a registered DMR ID or NXDN ID number.  On the chance that they do, pistar-lastqso first attempts to find QTH info in the DMR **user.csv** file, then PI-STAR's **NXDN.csv** file.  If the Callsign is not found in either of those files, as a last resort, it then calls upon the perl script **dxcc.pl** and it's **cty.dat** file.  As the first two data sources generally contain City, State, and Country info, they are tried first.  The **dxcc.pl** script, and it's **cty.dat** file, can only determine the Country that issued the Callsign. based on the Callsign's prefix.  (Lookups with **dxcc.pl** can be disabled if needed, with the "-D|--DXCC" options - see the help text for details.)
 
 Upon first run, **pistar-lastqso** will download the latest version of the **cty.dat** file from https://www.country-files.com/category/big-cty/
 
@@ -158,7 +158,7 @@ If the **cty.dat** file is already present on your hotspot, but is older than 30
 -------------------------------------------------------------------
 ## Commandline Options
 
-**pistar-lastqso** supports a number of commandline options, as shown in the Usage and Help screens, below.  Multiple options can be specified at the same time.  For example, specifying "-c -n -t" (or "--csv --nobig --top") will download the latest updated user.csv file, disable the large font
+**pistar-lastqso** supports a number of commandline options, as shown in the Usage and Help screens, below.  Multiple options can be specified at the same time.  For example, specifying "-c -n -t" (or "--csv --nobig --top") will download the latest updated **user.csv** file, disable the large font
 display of the Callsigns, and activate the non-scrolling information section at the top of the screen.
 
 **Valid Options and Parameters...**
