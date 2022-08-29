@@ -6,7 +6,17 @@
 
 set -o allexport
 
-VERSION=2.28
+if [[ "${EUID}" -eq 0 ]]
+then
+  echo
+  echo "ERROR:"
+  echo "  Execution directly by \"root\" not permitted."
+  echo "  Please run with the normal \"pi-star\" userid."
+  echo
+  exit
+fi
+
+VERSION=2.29
 
 # For whatever reason, "umask 0077" isn't locking down permissions
 # on files written to /tmp, the way symbolically setting it does.
@@ -24,7 +34,8 @@ MY_CMDLINE="${*}"
 # Strip any "=" signs separating an option and it's parameter...
 MY_CMDLINE="${*//=/ }"
 # Place the groomed elements into an array
-ARG_LIST=(${MY_CMDLINE})
+#ARG_LIST=(${MY_CMDLINE})
+read -r -a ARG_LIST <<< "${MY_CMDLINE}"
 ARG_LIST_LENGTH=${#ARG_LIST[@]}
 
 # NOTE #1: Originally written for pi-star >= 4.1.4, for DMR mode ONLY.
@@ -55,6 +66,7 @@ ARG_LIST_LENGTH=${#ARG_LIST[@]}
 ###########################################################
 
 # Get the full path to this script
+# shellcheck disable=SC2034
 SCRIPT="$(readlink -f "${0}")"
 
 # Get the terminal we're using.  Tmp files will be suffixed to keep
@@ -81,7 +93,7 @@ set -E -o functrace
 ###### SET UP DEBUGGING AND PROFILING LOGS
 # DEBUG FILE DESCRIPTOR
 # If it doesn't already exist, setup the file descriptor for debugging
-[ -e /proc/self/fd/3 ] || exec 3> /dev/null
+[[ -e /proc/self/fd/3 ]] || exec 3> /dev/null
 # If no redirection has been applied by the user, "${DEBUG_LOG}" will be "/dev/null".
 # But if the user has redirected fd 3 to a file, then "${DEBUG_LOG}" will contain the
 # name (with full path), to the file.
@@ -100,7 +112,7 @@ trap 'echo -e "leave: ${FUNCNAME} -> back to ${FUNCNAME[1]}\n" >&3' RETURN
 #---------------
 # PROFILING FILE DESCRIPTOR
 # For a rough profiling of this script
-[ -e /proc/self/fd/4 ] || exec 4> /dev/null
+[[ -e /proc/self/fd/4 ]] || exec 4> /dev/null
 # If no redirection has been applied by the user, "${PROFILING_LOG}" will be "/dev/null".
 # But if the user has redirected fd 4 to a file, then "${PROFILING_LOG}" will contain the
 # name (with full path), to the file.
@@ -250,6 +262,7 @@ TERM_RESET="$(echo -ne "${ESC}[0m" 2>/dev/null)"
 #
 # Wide character set
 # 6 sets line double-width, with normal height
+# shellcheck disable=SC2034
 WIDE_FONT="$(echo -n "${ESC}"#6 2>/dev/null)"
 # 5 sets line single-width (lines are set this way when cleared by ESC [ J)
 NORM_FONT="$(echo -n "${ESC}"#5 2>/dev/null)"
@@ -305,6 +318,7 @@ CTYDAT=/usr/local/etc/cty.dat
 # Find the latest log
 LOGDIR="$(grep -A 4 "^\[Log\]" /etc/mmdvmhost | grep "^FilePath=" | cut -f2 -d"=")"
 LOGROOT="$(grep -A 4 "^\[Log\]" /etc/mmdvmhost | grep "^FileRoot=" | cut -f2 -d"=")"
+# shellcheck disable=SC2012
 WORKING_LOG="$(ls -1tr "${LOGDIR}/${LOGROOT}"*.log | tail -1)"
 
 #---------------
@@ -897,7 +911,7 @@ fnPARSE_CMDLINE()
   #   GNU's getopt does.
   #     (Think "--help" vs "-h")
   #
-  # The method I use can do both - it handle empty arguments (such as
+  # The method I use can do both - it handles empty arguments (such as
   # the "-t|-top" option when no optional number of history lines is
   # given), and can easliy accomodate long-form options.  It is also,
   # frankly, easier to understand, and more portable, than either
@@ -1041,23 +1055,6 @@ fnPARSE_CMDLINE()
     fnYSF_DOWNLOAD_CTYDAT
     GET_DAT_NOW=0
   fi
-
-  # In normal operation, this script restarts itself any time the
-  # MMDVMHost service is interupted (eg: during pi-star's nightly
-  # update), or when the service rotates to a new day's log file.
-  # When it re-launches itself, it passes the same parameters to the
-  # new instance that were given to the initial instance (eg: "-t").
-  # To prevent the script from repeatedly downloading the user.csv
-  # and/or cty.dat each time it restarts, we'll remove any "-c",
-  # "--csv", "-d", or "--dat" that was passed initially, so that
-  # they don't get passed to subsequent restarts.
-  #
-  # If the user also provided the "-l|--logo" option, to skip the
-  # animated logo screen at startup, we strip that too.  The script
-  # will automatically invoke that option during auto-restart.
-  # Stripping the user-provided option prevents it from appearing
-  # twice on the auto-restarted instance of the script.
-  MY_CMDLINE="$(echo "${MY_CMDLINE}" | sed 's/ --csv// ; s/ -c// ; s/ --dat// ; s/ -d// ; s/ --logo// ; s/ -l//')"
 }
 
 #----------
@@ -1115,7 +1112,7 @@ PISTAR-LASTQSO - HELP
 
   -e|--errors
       By default, pistar-lastqso will display any error messages found
-      in the MMDVM log, as they occur.  It ia NOT unusual to see an
+      in the MMDVM log, as they occur.  It is NOT unusual to see an
       occasional, or sporadic message, such as a queue overflow.  But
       if these or other errors are frequent or persist, you may need
       to get help from the pi-star forums.  In the meantime, you can use
@@ -1160,9 +1157,7 @@ PISTAR-LASTQSO - HELP
       Display this help screen, then exit.
 
   -l|--logo
-      Disables the animated logo at startup.  Automatically applied
-      when the program restarts at service bounce, or when the log
-      is rotated.  Optional, when launching from the cmdline.
+      Disables the animated logo at startup.
 
   -m|--mono
       For monochrome displays, this option suppresses all color codes.
@@ -1800,7 +1795,6 @@ fnBANNER()
     # Font #5 is not a figlet font.  Do what we need to
     # do, and get out.
     fnLARGE_FONT "${BOLD}${BANNER_COLOR}${FROM} ... ${TO}"
-    fnNOSCROLL_ZONE
     return
   fi
 
@@ -1845,7 +1839,6 @@ fnBANNER()
   fi
 
   BANNER="$(figlet -t -w "${OUTPUT_WIDTH}" -f "${FONT}" "${FROM} ... ${TO}")"
-
   echo "${BOLD}${BANNER_COLOR}${BANNER}${SGR0}"
 
   # Tighten up the leading with these two fonts.
@@ -1859,7 +1852,6 @@ fnBANNER()
       ;;
   esac
   echo -n "${CLR_ED}"
-  fnNOSCROLL_ZONE
 }
 
 #----------
@@ -1914,7 +1906,6 @@ fnYSF_END_NETWORK_TRAFFIC()
   fi
 
   fnBUILD_HISTORY
-  fnNOSCROLL_ZONE
   echo -en "${MAG}"
   fnSEPARATOR
   fnLISTENING
@@ -2676,7 +2667,6 @@ fnMAIN_LOOP()
         echo -n "${CLR_ED}"
 
         fnBUILD_HISTORY
-        fnNOSCROLL_ZONE
         echo -en "${MAG}"
         fnSEPARATOR
         fnLISTENING
@@ -2742,7 +2732,6 @@ fnMAIN_LOOP()
         fi
 
         fnBUILD_HISTORY
-        fnNOSCROLL_ZONE
         echo -en "${MAG}"
         fnSEPARATOR
         fnLISTENING
@@ -2848,7 +2837,6 @@ fnMAIN_LOOP()
         fi
 
         fnBUILD_HISTORY
-        fnNOSCROLL_ZONE
         echo -en "${BLU}"
         fnSEPARATOR
         fnLISTENING
@@ -2967,20 +2955,6 @@ then
   fnPARSE_CMDLINE
 fi
 
-# If FD redirection was used on the commandline, bash doesn't save it as
-# part of the original commandline.  So, if it was used when first launched,
-# we tack it on after "${MY_CMDLINE}" before exec'ing the script.
-OPTIONAL_DEBUGGING=""
-if [ "${DEBUG_LOG}" != "/dev/null" ]
-then
-  OPTIONAL_DEBUGGING=" 3> ${DEBUG_LOG}"
-fi
-OPTIONAL_PROFILING=""
-if [ "${PROFILING_LOG}" != "/dev/null" ]
-then
-  OPTIONAL_PROFILING=" 4> ${PROFILING_LOG}"
-fi
-
 # Ensure that...
 # MMDVMHost is running, and that it is writing to the log.
 if [[ "$(pgrep -f "/usr/local/bin/MMDVMHost /etc/mmdvmhost")" = "" ]]
@@ -3094,8 +3068,8 @@ do
     /bin/bash -c fnMMDVMLOG_FUSER > /dev/null 2>&1 &
   fi
 
-  # If we've auto-restarted, get our stored QSO, kerchunk, and error counts
-  # else, start each of those counters at zero.
+  # If we've auto-restarted, get our stored QSO, kerchunk, error and
+  # warning counts, else, start each of those counters at zero.
   if [[ -f "${QSO_COUNT_FILE}" ]]
   then
     QSO_COUNT=$(< "${QSO_COUNT_FILE}")
@@ -3145,6 +3119,7 @@ do
   do
     sleep 2
     # Make sure we're working with latest log.
+    # shellcheck disable=SC2012
     WORKING_LOG="$(ls -1tr "${LOGDIR}/${LOGROOT}"*.log | tail -1)"
   done
   echo

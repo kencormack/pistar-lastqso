@@ -1,4 +1,23 @@
 ```
+CHANGES: V2.29
+ 1. Removed a remnant of code meant to pass
+    FD redirections to the old exec'd restarts.
+ 2. Removed several redundant re-paints of the
+    information zone at the top of the screen
+    when -t|--top is used.
+ 3. Added a simple check to prevent launching
+    as root (just use the normal "pi-star"
+    login id.  Execution as root is not needed.)
+ 4. Use read to place commandline options and
+    arguments into the array.
+ 5. Minor cleanups suggested by shellcheck.
+
+ Minor updates to README.md to reflect the
+ changes at log rotation and pi-star nightly
+ updates, addition of new "-D|-DXCC" option,
+ and example screenshot of "-f|--font 5" for
+ terminals/emulators that support it.
+
 CHANGES: V2.28
  1. Added -D|--DXCC cmdline option to disable
     use of dxcc.pl to determine a callsign's
