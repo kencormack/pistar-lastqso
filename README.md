@@ -51,7 +51,7 @@
 - The contact's QTH (Determined with best effort, from several sources.)
 - Possibly, the contact's First Name (keep reading.)
 
-As YSF does not require that users be registered, there is no single source for QTH or First Name data, for YSF Callsigns.  On the chance that the Callsign owner also has either a registered DMR ID or NXDN ID number, pistar-lastqso will search the DMR **user.csv** file and/or PI-STAR's **NXDN.csv** file.  If the Callsign is present in either of those files, the name and QTH data are retrieved from there.  As these data sources generally contain City, State, and Country info, they are tried first.  If the Callsign is not found in either file, the script calls upon the perl script **dxcc.pl** and it's **cty.dat** file to determine the country, based on the Callsign's prefix.  The Callsign's First Name however, will remain unresolved and not displayed.  (Lookups with **dxcc.pl** can be disabled if needed, with the "-D|--DXCC" options - see the help text for details.)
+As YSF does not require that users be registered, there is no single source for First Name data, for YSF Callsigns.  On the chance that the Callsign owner also has either a registered DMR ID or NXDN ID number, pistar-lastqso will search the DMR **user.csv** file and/or PI-STAR's **NXDN.csv** file.  If the Callsign is present in either of those files, the name is retrieved from there.
 
 **Note #1:**
 *Talker Alias data is shown, only if present and complete.  Kerchunkers don't stick around long enough for TA data to be gathered.  Partial TA data (or that which is received as empty/null) is not shown.*
