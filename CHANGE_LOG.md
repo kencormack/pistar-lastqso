@@ -1,4 +1,84 @@
 ```
+CHANGES: V2.30
+ 1. Added "Elapsed Time" to the goodbye screen
+    showing days, hours, minutes, and seconds
+    that the script ran since last launched.
+    Given the increased stability of the script,
+    without screen redraw snafus/corruption, it
+    is now possible to leave the script running
+    for days at a time.
+
+ 2. Added count of log restarts observed during
+    session, to goodbye screen.  If the script
+    is left running for several days, one can
+    expect at least two log pauses each day;
+    One when the log rolls to a new date at
+    UTC midnight, and another when the nightly
+    update bounces the pi-star services.
+
+ 3. Raised error and warning counters to %05d
+
+ 4. Improved the test for UTF-8 char support.
+
+ 5. A new "-i|--info" cmdline option has been
+    added.  THREE THINGS MUST BE TRUE for this
+    to be of any use to anyone...
+
+    A.) You MUST specify the "-i|--info" option.
+    B.) Your display MUST be at least 120 chars
+        wide.
+    C.) You MUST also activate the non-scrolling
+        information region at the top of the
+        screen using the "-t|--top" option (the
+        number of lines of history, if any, is
+        irrelevant.)
+
+    If either B or C above is false, then A is
+    useless.  If all three conditions are met,
+    a small block of information, largely only
+    helpful to those looking to modify the
+    script, is shown in the top-right corner of
+    the screen.  An example looks like this:
+
+    Options & Parameters: -t 10 -f 4 -i -l
+    Elapsed: 0 Days 07 Hrs 19 Mins 55 Secs
+                 Debugging (3>): /dev/null
+                 Profiling (4>): /dev/null
+                     Screen Size: 49 x 160
+                           Log Restarts: 1
+
+    The first line shows the options and
+    parameters that were passed to the script
+    when launched.
+
+    The second line (and frankly the only line
+    potentially of any value to a user not
+    looking to modify the script in any way),
+    shows a rough elapsed time since the script
+    was launched.
+
+    The third and fourth lines give any
+    target logfiles specified for the debugging
+    and profiling log features described
+    in the ABOUT_DEBUGGING and ABOUT_PROFILING
+    files.
+
+    The fifth line shows the size of the
+    screen/window in rows and columns (useful
+    to those who want to modify the script, as
+    there is so much cursor management stuff
+    going on).
+
+    The sixth line simply shows how many times
+    log activity has paused/resumed since launch.
+    Expect typically two events per day... log
+    rotation to a new day's logfile at midnight
+    UTC, and when pi-star bounces it's services
+    when performing it's nightly updates.
+
+ 6. Added URL of my QRZ page, to comments at
+    top of script.
+
 CHANGES: V2.29
  1. Removed a remnant of code meant to pass
     FD redirections to the old exec'd restarts.

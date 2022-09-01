@@ -1,22 +1,23 @@
 #!/bin/bash
 # pistar-lastqso
-# Written by:   Ken Cormack, KE8DPF, unixken@yahoo.com
+# Written by:   Ken Cormack (KE8DPF), unixken@yahoo.com
 # Copyright © 2022, Ken Cormack
 # github:       https://github.com/kencormack/pistar-lastqso
+# QRZ page:     https://www.qrz.com/db/KE8DPF
 
 set -o allexport
+
+VERSION=2.30
 
 if [[ "${EUID}" -eq 0 ]]
 then
   echo
   echo "ERROR:"
-  echo "  Execution directly by \"root\" not permitted."
+  echo "  Execution directly by \"root\" not required."
   echo "  Please run with the normal \"pi-star\" userid."
   echo
   exit
 fi
-
-VERSION=2.29
 
 # For whatever reason, "umask 0077" isn't locking down permissions
 # on files written to /tmp, the way symbolically setting it does.
@@ -24,6 +25,8 @@ VERSION=2.29
 umask u=rw,g=,o=
 
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
+SECONDS=0
+LOG_RESTARTS=0
 
 # Any equal signs passed on the cmdline are replaced w/ spaces,
 # so that an option, and it's parameter (if any), are two separate
@@ -151,6 +154,14 @@ USE_DXCC=1
 # Can be overridden with "-e|--errors" cmdline option
 SHOW_LOG_ERRORS=1
 #
+# *IF* your display is greater than 120 columns wide,
+# *AND* you use the "-t|--top" option, *AND* you add
+# the "-i|--info" option, a few helpful details are
+# added to the top-right corner of the display.  This
+# is helpful if you are modifying this script.  Other
+# than that, it serves little use.
+SHOW_DEV_INFO=0
+#
 # Display Callsigns & TGs/DG-IDs in large font.
 # Can be overridden with "-n|--nobig" cmdline option
 USE_BANNER=1
@@ -265,6 +276,7 @@ TERM_RESET="$(echo -ne "${ESC}[0m" 2>/dev/null)"
 # shellcheck disable=SC2034
 WIDE_FONT="$(echo -n "${ESC}"#6 2>/dev/null)"
 # 5 sets line single-width (lines are set this way when cleared by ESC [ J)
+# shellcheck disable=SC2034
 NORM_FONT="$(echo -n "${ESC}"#5 2>/dev/null)"
 #
 # Double-height, double-width character set.
@@ -375,7 +387,6 @@ fnLARGE_FONT()
     5)
       echo "${LARGE_TOP}${*}"
       echo "${LARGE_BOT}${*}"
-      echo -n "${NORM_FONT}"
       ;;
     *)
       echo "${*}"
@@ -430,7 +441,8 @@ fnDEFINE_BOXCHARS()
   # U+258x  ▀           ▄           █           ▌
   # U+259x  ▐  ░  ▒  ▓
 
-  HAS_UTF8="$(echo "${LANG}" | grep "UTF-8")"
+# HAS_UTF8="$(echo "${LC_ALL}${LC_CTYPE}${LANG}" | grep "UTF-8")"
+  HAS_UTF8="$(locale charmap | grep "UTF-8")"
   if [[ -n "${HAS_UTF8}" ]]
   then
     # UTF-8 single-line box-drawing characters
@@ -736,10 +748,71 @@ fnTOP_DATA()
   then
     STATIC_LIST="$(fnDMR_BM_STATIC_TGS | tail -1 | awk '{ print $1" "$2" "$3" "$4" "$5}')"
     STATIC_COUNT="$(grep -c . "${STATIC_TG_FILE}")"
-    STATIC_LINE="${CYA}STATIC TGs (${WHI}${BOLD}${STATIC_COUNT}${SGR0} ${CYA}Found, ${WHI}${BOLD}5${SGR0} ${CYA}Max Shown): ${SGR0}${WHI}${BOLD}${STATIC_LIST}${SGR0}${CLR_EL}"
+    STATIC_LINE="${CYA}STATIC TGs (${WHI}${BOLD}${STATIC_COUNT}${SGR0} ${CYA}Found, ${WHI}${BOLD}5${SGR0} ${CYA}Max Shown): ${SGR0}${WHI}${BOLD}${STATIC_LIST}${SGR0}"
   else
-    STATIC_LINE="${CYA}Network is not BrandMeister - No API available to retrieve any Static TGs${SGR0}${CLR_EL}"
+    STATIC_LINE="${CYA}Network is not BrandMeister - No API available to retrieve any Static TGs${SGR0}"
   fi
+}
+
+#KPC
+#----------
+fnDEV_INFO()
+{
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
+  # If testing on my big screen, this prints some info in the
+  # top-right corner of the screen, on the non-scrolling lines,
+  # when -t|--top is used.
+  #
+  # Notes to self:
+  # My 40" 1080P screen is...
+  # 61 lines x 228 columns - HDMI-connected to Pi
+  # 45 lines x 157 columns - SSH (PuTTY Max'd Windowed-mode)
+  # 49 lines x 160 columns - SSH (Putty Full Screen-mode)
+  # My Windows laptop screen with PuTTY is...
+  # 44 lines x 168 columns - SSH (PuTTY Max'd Windowed Mode)
+  # 48 lines x 170 columns - SSH (Putty Full Screen-mode)
+  if [[ ${COLUMNS} -lt 120 ]] || [[ "${SHOW_DEV_INFO}" = "0" ]]
+  then
+    return
+  fi
+
+# # A simple ruler to check tput column positions...
+# tput cup 0 80
+# echo -en "${DIM}${CYA}                    1         1         1         1         1         1${SGR0}"
+# tput cup 1 80
+# echo -en "${DIM}${CYA}8         9         0         1         2         3         4         5${SGR0}"
+# tput cup 2 80
+# echo -en "${DIM}${CYA}01234567890123456789012345678901234567890123456789012345678901234567890${SGR0}"
+
+  # shellcheck disable=SC2016
+  ELAPSED=$(eval "echo $(date -ud "@${SECONDS}" +'$((%s/3600/24)) Days %H Hrs %M Mins %S Secs')")
+
+  DEV_STRING[1]="Options & Parameters: ${MY_CMDLINE}"
+  DEV_STRING[2]="Elapsed: ${ELAPSED}"
+  DEV_STRING[3]="Debugging (3>): ${DEBUG_LOG}"
+  DEV_STRING[4]="Profiling (4>): ${PROFILING_LOG}"
+  DEV_STRING[5]="Screen Size: ${LINES} x ${COLUMNS}"
+  DEV_STRING[6]="Log Restarts: ${LOG_RESTARTS}"
+
+  DEV_INDEX=1
+  until [[ ${DEV_INDEX} -gt 6 ]]
+  do
+    # tput references lines, beginning at 0.  The array begins
+    # at 1.  So we subtract 1 from the array index, to get the
+    # line number needed for tput.
+    X=$(( "${DEV_INDEX}" - 1 ))
+
+    # Subtract the length of the string from the width of the
+    # screen, to find the column at which to begin printing.
+    Y=$(( ("${COLUMNS}" - ${#DEV_STRING[DEV_INDEX]}) - 1 ))
+
+    # Print each line, flush right, at right edge of screen.
+    tput cup "${X}" "${Y}"
+    echo -en "${DIM}${CYA}${DEV_STRING[DEV_INDEX]}${SGR0}"
+
+    DEV_INDEX="$((DEV_INDEX + 1))"
+  done
 }
 
 #----------
@@ -772,7 +845,7 @@ fnNOSCROLL_ZONE()
   tput cuf 32
   echo -en "${CYA}CSV:${SGR0} ${WHI}${BOLD}${CSV_DATE}${SGR0}\r"
   tput cuf 48
-  echo -e "${CYA}LOG:${SGR0} ${WHI}${BOLD}${MY_LOG}${SGR0}${CLR_EL}"
+  echo -e "${CYA}LOG:${SGR0} ${WHI}${BOLD}${MY_LOG}${SGR0}"
 
   # Print line 1
   echo -en "${CYA}TX:${SGR0} ${WHI}${BOLD}${TX}${SGR0}\r"
@@ -781,7 +854,7 @@ fnNOSCROLL_ZONE()
   tput cuf 32
   echo -en "${CYA}TCXO:${SGR0} ${WHI}${BOLD}${TCXO}${SGR0}\r"
   tput cuf 48
-  echo -e "${CYA}FW:${SGR0} ${WHI}${BOLD}${FW}${SGR0}${CLR_EL}"
+  echo -e "${CYA}FW:${SGR0} ${WHI}${BOLD}${FW}${SGR0}"
 
   # Print line 2
   CPU_TEMP="$(vcgencmd measure_temp | cut -f2 -d"=" | sed s/\'/°/)"
@@ -809,21 +882,21 @@ fnNOSCROLL_ZONE()
   tput cuf 16
   echo -en "${CYA}Port:${SGR0} ${WHI}${BOLD}${MODEM_PORT}${SGR0}\r"
   tput cuf 32
-  echo -e "${CYA}Platform:${SGR0} ${WHI}${BOLD}${PLATFORM}${SGR0}${CLR_EL}"
+  echo -e "${CYA}Platform:${SGR0} ${WHI}${BOLD}${PLATFORM}${SGR0}"
 
   # Print line 3
   echo -en "${CYA}YSF MASTER:${SGR0} ${WHI}${BOLD}${YSF_MASTER}${SGR0}\r"
   tput cuf 32
-  echo -e "${CYA}DMR MASTER:${SGR0} ${WHI}${BOLD}${DMR_MASTER_NAME}${SGR0}${CLR_EL}"
+  echo -e "${CYA}DMR MASTER:${SGR0} ${WHI}${BOLD}${DMR_MASTER_NAME}${SGR0}"
 
   # Print static talkgroups and clear the remainder of the line
-  echo -e "${STATIC_LINE}${CLR_EL}"
+  echo -e "${STATIC_LINE}"
 
   if [[ ${HIST_MAX} -gt 0 ]]
   then
-    echo -e "${CLR_EL}${REV}${CYA}Previous ${SBOX_VL} From       ${SBOX_VL} To         ${SBOX_VL}  Secs ${SBOX_VL}  BER% ${SBOX_VL} Src ${SBOX_VL} Loss% or S-Meter ${SGR0}${WHI}"
+    echo -e "${REV}${CYA}Previous ${SBOX_VL} From       ${SBOX_VL} To         ${SBOX_VL}  Secs ${SBOX_VL}  BER% ${SBOX_VL} Src ${SBOX_VL} Loss% or S-Meter ${SGR0}${WHI}"
   else
-    echo -e "${CLR_EL}${REV}${CYA}          History not enabled - 0 lines specified on the commandline        ${SGR0}${WHI}"
+    echo -e "${REV}${CYA}          History not enabled - 0 lines specified on the commandline        ${SGR0}${WHI}"
   fi
 
   # Print the QSO history lines... newest through oldest
@@ -839,6 +912,12 @@ fnNOSCROLL_ZONE()
 
   # Print red line and clear the remainder of the line
   echo -e "${RED}${DBL_LINE}${WHI}${SGR0}${CLR_EL}"
+
+#KPC
+  if [[ "${SHOW_DEV_INFO}" = "1" ]]
+  then
+    fnDEV_INFO
+  fi
 
   # Now return the cursor back to where it was, and turn it back on
   echo -en "${CUR_RC}${CUR_ON}"
@@ -872,10 +951,11 @@ fnUSAGE()
   echo "  USAGE:  Valid options and parameters include:
 
   Short Form:
-    [-c] [-d] [-D] [-e] [-f <1-5>] [-h] [-l] [-m] [-n] [-t [integer]] [-v] [-w]
+    [-c] [-d] [-D] [-e] [-f <1-5>] [-h] [-i]
+    [-l] [-m] [-n] [-t [integer]] [-v] [-w]
 
   Long Form:
-    [--csv] [--dat] [--DXCC] [--errors] [--font <1-5>] [--help]
+    [--csv] [--dat] [--DXCC] [--errors] [--font <1-5>] [--help] [--info]
     [--logo] [--mono] [--nobig] [--top [integer]] [--version] [--wrap]
   " >&2
 }
@@ -990,6 +1070,11 @@ fnPARSE_CMDLINE()
         exit
         ;;
 
+      -i|--info)
+        SHOW_DEV_INFO=1
+        continue
+        ;;
+ 
       -l|--logo)
         LOGO=0
         continue
@@ -1057,6 +1142,7 @@ fnPARSE_CMDLINE()
   fi
 }
 
+#KPC
 #----------
 fnGET_HELP()
 {
@@ -1129,8 +1215,8 @@ PISTAR-LASTQSO - HELP
       display of ERRORS, it will NOT supress display of WARNINGS.
 
   -f|--font <1-5>
-      The [-f|--font] option forces use of the selected font, regardless of
-      screen-width.
+      The [-f|--font] option forces use of the selected font, regardless
+      of screen-width.
 
       Valid options are 1, 2, 3, 4, or 5
         1 = "small"
@@ -1155,6 +1241,55 @@ PISTAR-LASTQSO - HELP
 
   -h|--help
       Display this help screen, then exit.
+
+  -i|--info
+      Shows a little info in the top-right corner of the screen, when
+      the following THREE CONDITIONS apply...
+
+      A.) You MUST specify the "-i|--info" option.
+      B.) Your display MUST be at least 120 chars wide.
+      C.) You MUST also activate the non-scrolling information zone
+          at the top of the screen using the "-t|--top" option (the
+          number of lines of history, if any, is irrelevant).
+
+      If either B or C above is false, then A is useless.  If all
+      three conditions are met, a small block of information, largely
+      helpful only to those looking to modify the script, is shown
+      in the top-right corner of the screen.  An example looks like
+      this:
+
+              Options & Parameters: -t 10 -f 4 -i -l
+              Elapsed: 0 Days 07 Hrs 19 Mins 55 Secs
+                           Debugging (3>): /dev/null
+                           Profiling (4>): /dev/null
+                               Screen Size: 49 x 160
+                                     Log Restarts: 1
+
+      The first line shows the options and parameters passed to the
+      script when launched.
+
+      The second line (and frankly the only line potentially of value
+      to someone not looking to modify the script in any way), shows
+      the approximate elapsed time since the script was launched.
+      The Elapsed Time display only updates when there is traffic, as
+      the screen doesn't update when simply waiting for a log entry
+      to process.  (The actual timer keeps going, behind the scenes.)
+
+      The third and fourth lines indicate any target logfiles specified
+      for the debugging and profiling log features described in the
+      ABOUT_DEBUGGING.md and ABOUT_PROFILING.md files.
+
+      The fifth line shows the size of the screen/window in rows and
+      columns (useful to those who want to modify the script, as there
+      is so much cursor management stuff going on).
+
+      The sixth line simply shows how many times log activity has
+      paused/resumed since launch.  Expect typically two such events
+      per day... log rotation to a new day's logfile at midnight UTC,
+      and when pi-star bounces it's services when performing it's
+      nightly updates.  (Note: Any changes you make to pi-star's
+      configuration, while pistar-lstqso is running, will also cycle
+      log activity.)
 
   -l|--logo
       Disables the animated logo at startup.
@@ -1214,6 +1349,10 @@ PISTAR-LASTQSO - HELP
       disappear off the right edge of the screen.  You sacrifice what-
       ever information was off the edge of the screen, but without
       wasting so much vertical screen space to line-wrap.
+
+                            END OF HELP
+
+(Cursor Up/Down keys to scroll, Page Up/Dn to page, Q to quit help.)
 
 EOF
 }
@@ -1397,43 +1536,57 @@ fnGOODBYE_BOX()
 {
   echo -e "\nenter: ${FUNCNAME[*]}" >&3
 
-  # Usage: fnDRAW_BOX BOX_TOP BOX_LEFT BOX_HEIGHT BOX_WIDTH BOX_STYLE BOX_FILL BOX_SHADOW
   echo -en "${SGR0}${BLU}"
 # tput cup 11 18
 # for ((I=17; I<=59; I++))
 # do
 #   printf "${DBOX_HL}%0.s"
 # done
+# Usage: fnDRAW_BOX BOX_TOP BOX_LEFT BOX_HEIGHT BOX_WIDTH BOX_STYLE BOX_FILL BOX_SHADOW
 # fnDRAW_BOX 10 18 2 41 2 1 1
 # fnDRAW_BOX 9 17 4 43 2 1 1
-  fnDRAW_BOX 8 16 6 45 2 1 1
-  #fnDRAW_BOX 7 15 8 47 2 1 1
+# fnDRAW_BOX 8 16 6 45 2 1 1
+# fnDRAW_BOX 6 15 8 47 2 1 1
+  fnDRAW_BOX 4 15 10 47 2 1 1
 
-  tput cup 10 19
+  tput cup 6 19
   echo -e "${BOLD}${WHI}THANK YOU FOR USING PISTAR-LASTQSO v${VERSION}${SGR0}${DEF}"
+
+  tput cup 8 20
+  # shellcheck disable=SC2016
+  ELAPSED=$(eval "echo $(date -ud "@${SECONDS}" +'$((%s/3600/24)) Days %H Hrs %M Mins %S Secs')")
+  echo -en "${DIM}${CYA}Elapsed: ${ELAPSED}"
+
+  tput cup 9 31
+  echo -en "${DIM}${CYA}Log Restarts: "
+  printf %02d "${LOG_RESTARTS}"
 
   if [[ -f "${QSO_COUNT_FILE}" ]]
   then
     QSO_COUNT=$(< "${QSO_COUNT_FILE}")
-    tput cup 11 23
-    echo -n "${DIM}${WHI}QSOs Observed This Session: ${SGR0}${YEL}"
-    printf %05d "${QSO_COUNT}"
+  else
+    QSO_COUNT=0
   fi
+  tput cup 11 23
+  echo -n "${DIM}${WHI}QSOs Observed This Session: ${SGR0}${YEL}"
+  printf %05d "${QSO_COUNT}"
 
   if [[ -f "${KERCHUNK_FILE}" ]]
   then
     KERCHUNK_COUNT=$(< "${KERCHUNK_FILE}")
-    tput cup 12 23
-    if [[ ${QSO_COUNT} -gt 0 ]]
-    then
-      if [[ ${KERCHUNK_COUNT} -gt ${QSO_COUNT} ]]
-      then
-        KERCHUNK_COUNT="${QSO_COUNT}"
-      fi
-      PERCENTAGE="$(awk -v KERCHUNK_COUNT="${KERCHUNK_COUNT}" -v QSO_COUNT="${QSO_COUNT}" 'BEGIN {print (KERCHUNK_COUNT / QSO_COUNT * 100)}')"
-    fi
-    echo -n "${DIM}${WHI}Includes ${SGR0}${YEL}$(printf %05d "${KERCHUNK_COUNT}")${DIM}${WHI} Kerchunks (${SGR0}${YEL}$(printf %.2f "${PERCENTAGE}")%${DIM}${WHI})${SGR0}"
+  else
+    KERCHUNK_COUNT=0
   fi
+  tput cup 12 23
+  if [[ ${QSO_COUNT} -gt 0 ]]
+  then
+    if [[ ${KERCHUNK_COUNT} -gt ${QSO_COUNT} ]]
+    then
+      KERCHUNK_COUNT="${QSO_COUNT}"
+    fi
+    PERCENTAGE="$(awk -v KERCHUNK_COUNT="${KERCHUNK_COUNT}" -v QSO_COUNT="${QSO_COUNT}" 'BEGIN {print (KERCHUNK_COUNT / QSO_COUNT * 100)}')"
+  fi
+  echo -n "${DIM}${WHI}Includes ${SGR0}${YEL}$(printf %05d "${KERCHUNK_COUNT}")${DIM}${WHI} Kerchunks (${SGR0}${YEL}$(printf %.2f "${PERCENTAGE}")%${DIM}${WHI})${SGR0}"
 
   if [[ -f "${ERROR_FILE}" ]] || [[ -f "${WARNING_FILE}" ]]
   then
@@ -1456,9 +1609,9 @@ fnGOODBYE_BOX()
       echo -en "${SGR0}${RED}"
       fnDRAW_BOX 13 24 3 30 2 1 1
       tput cup 14 27
-      echo -n "${SGR0}${DIM}${WHI}${ERROR_COUNT_COLOR}MMDVM Log ERR MSGS: $(printf %04d "${ERROR_COUNT}")${SGR0}"
+      echo -n "${SGR0}${DIM}${WHI}${ERROR_COUNT_COLOR}MMDVM Log ERR MSGS: $(printf %05d "${ERROR_COUNT}")${SGR0}"
       tput cup 15 27
-      echo -n "${SGR0}${DIM}${WHI}${WARNING_COUNT_COLOR}MMDVM Log WARNINGS: $(printf %04d "${WARNING_COUNT}")${SGR0}"
+      echo -n "${SGR0}${DIM}${WHI}${WARNING_COUNT_COLOR}MMDVM Log WARNINGS: $(printf %05d "${WARNING_COUNT}")${SGR0}"
     fi
   fi
 }
@@ -1899,7 +2052,7 @@ fnYSF_END_NETWORK_TRAFFIC()
   then
     KERCHUNK_COUNT=$((KERCHUNK_COUNT + 1))
     echo "${KERCHUNK_COUNT}" > "${KERCHUNK_FILE}"
-    tput cuf 57
+    tput cuf 64
     echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
   else
     echo
@@ -1944,7 +2097,7 @@ fnYSF_SHOW_CURRENT_CALL()
     echo "${DIM} To..:${SGR0} ${BOLD}${LOGREC_DG_ID} ${LOGREC_DG_ID_NUM}${SGR0}${WHI}${CLR_ED}"
   fi
 
-  echo -en "${DIM}Mode:${SGR0} ${BOLD}${CYA}System Fusion${SGR0}${WHI}\r"
+  echo -en "${DIM}Mode:${SGR0} ${BOLD}${CYA}YSF${SGR0}${WHI}\r"
   tput cuf 32
   echo -e "${DIM}Src.:${SGR0} ${BOLD}${CYA}${SOURCE}${SGR0}${WHI}${CLR_ED}"
 
@@ -2453,8 +2606,8 @@ fnTALLY_ERRORS()
     fnSEPARATOR
 
     echo -en "${BOLD}${RED}ERROR: ${WHI}${ERROR_MSG}\r"
-    tput cuf 64
-    echo -e "${BOLD}${RED} Count: $(printf %04d "${ERROR_COUNT}")"
+    tput cuf 63
+    echo -e "${BOLD}${RED} Count: $(printf %05d "${ERROR_COUNT}")"
 
     echo -en "${SGR0}${YEL}"
     fnSEPARATOR
@@ -2480,8 +2633,8 @@ fnTALLY_WARNINGS()
   fnSEPARATOR
 
   echo -en "${BOLD}${RED}WARNING: ${WHI}${WARNING_MSG}\r"
-  tput cuf 64
-  echo -e "${BOLD}${RED} Count: $(printf %04d "${WARNING_COUNT}")"
+  tput cuf 63
+  echo -e "${BOLD}${RED} Count: $(printf %05d "${WARNING_COUNT}")"
 
   echo -en "${SGR0}${RED}"
   fnSEPARATOR
@@ -2659,7 +2812,7 @@ fnMAIN_LOOP()
         then
           KERCHUNK_COUNT=$((KERCHUNK_COUNT + 1))
           echo "${KERCHUNK_COUNT}" > "${KERCHUNK_FILE}"
-          tput cuf 57
+          tput cuf 64
           echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
         else
           echo
@@ -2725,7 +2878,7 @@ fnMAIN_LOOP()
         then
           KERCHUNK_COUNT=$((KERCHUNK_COUNT + 1))
           echo "${KERCHUNK_COUNT}" > "${KERCHUNK_FILE}"
-          tput cuf 57
+          tput cuf 64
           echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
         else
           echo
@@ -2815,7 +2968,7 @@ fnMAIN_LOOP()
           then
             KERCHUNK_COUNT=$((KERCHUNK_COUNT + 1))
             echo "${KERCHUNK_COUNT}" > "${KERCHUNK_FILE}"
-            tput cuf 57
+            tput cuf 64
             echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
           else
             echo
@@ -2903,8 +3056,8 @@ fnWINCH()
 
   # Get the screensize.  We'll be needing the number of lines.
   read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
-  clear
   tput csr 0 $((LINES - 1))
+  clear
 
   if [[ ${TOP} -eq 1 ]]
   then
@@ -3126,4 +3279,6 @@ do
 
   echo -e "${GRE}LOG ACTIVITY HAS RESUMED USING $(basename "${WORKING_LOG}")...${WHI}${SGR0}"
   echo -e "${GRE}${DBL_LINE}${WHI}${SGR0}${CLR_EL}\n"
+
+  LOG_RESTARTS=$((LOG_RESTARTS + 1))
 done
