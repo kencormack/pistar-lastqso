@@ -166,10 +166,11 @@ display of the Callsigns, and activate the non-scrolling information section at 
   USAGE:  Valid options and parameters include:
 
   Short Form:
-    [-c] [-d] [-D] [-e] [-f <1-5>] [-h] [-l] [-m] [-n] [-t [integer]] [-v] [-w]
+    [-c] [-d] [-D] [-e] [-f <1-5>] [-h] [-i]
+    [-l] [-m] [-n] [-t [integer]] [-v] [-w]
 
   Long Form:
-    [--csv] [--dat] [--DXCC] [--errors] [--font <1-5>] [--help]
+    [--csv] [--dat] [--DXCC] [--errors] [--font <1-5>] [--help] [--info]
     [--logo] [--mono] [--nobig] [--top [integer]] [--version] [--wrap]
 ```
 
@@ -275,6 +276,55 @@ PISTAR-LASTQSO - HELP
 
   -h|--help
       Display this help screen, then exit.
+
+  -i|--info
+      Shows a little info in the top-right corner of the screen, when
+      the following THREE CONDITIONS apply...
+
+      A.) You MUST specify the "-i|--info" option.
+      B.) Your display MUST be at least 120 chars wide.
+      C.) You MUST also activate the non-scrolling information zone
+          at the top of the screen using the "-t|--top" option (the
+          number of lines of history, if any, is irrelevant).
+
+      If either B or C above is false, then A is useless.  If all
+      three conditions are met, a small block of information, largely
+      helpful only to those looking to modify the script, is shown
+      in the top-right corner of the screen.  An example looks like
+      this:
+
+              Options & Parameters: -t 10 -f 4 -i -l
+              Elapsed: 0 Days 07 Hrs 19 Mins 55 Secs
+                           Debugging (3>): /dev/null
+                           Profiling (4>): /dev/null
+                               Screen Size: 49 x 160
+                                     Log Restarts: 1
+
+      The first line shows the options and parameters passed to the
+      script when launched.
+
+      The second line (and frankly the only line potentially of value
+      to someone not looking to modify the script in any way), shows
+      the approximate elapsed time since the script was launched.
+      The Elapsed Time display only updates when there is traffic, as
+      the screen doesn't update when simply waiting for a log entry
+      to process.  (The actual timer keeps going, behind the scenes.)
+
+      The third and fourth lines indicate any target logfiles specified
+      for the debugging and profiling log features described in the
+      ABOUT_DEBUGGING.md and ABOUT_PROFILING.md files.
+
+      The fifth line shows the size of the screen/window in rows and
+      columns (useful to those who want to modify the script, as there
+      is so much cursor management stuff going on).
+
+      The sixth line simply shows how many times log activity has
+      paused/resumed since launch.  Expect typically two such events
+      per day... log rotation to a new day's logfile at midnight UTC,
+      and when pi-star bounces it's services when performing it's
+      nightly updates.  (Note: Any changes you make to pi-star's
+      configuration, while pistar-lstqso is running, will also cycle
+      log activity.)
 
   -l|--logo
       Disables the animated logo at startup.
