@@ -1,5 +1,5 @@
 # PISTAR-LASTQSO's BUILT-IN PROFILING MECHANISM
-## Facilitating debug and profile logs, using file descriptors, traps, and other bash built-ins
+## Facilitating a performance profiling log, using file descriptors, traps, and other bash built-ins
 
 # About
 
