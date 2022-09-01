@@ -323,7 +323,7 @@ PISTAR-LASTQSO - HELP
       per day... log rotation to a new day's logfile at midnight UTC,
       and when pi-star bounces it's services when performing it's
       nightly updates.  (Note: Any changes you make to pi-star's
-      configuration, while pistar-lstqso is running, will also cycle
+      configuration, while pistar-lastqso is running, will also cycle
       log activity.)
 
   -l|--logo
