@@ -299,7 +299,6 @@ PISTAR-LASTQSO - HELP
            Display=49x160  TTY=pts0  PID=10711  BG_PID=10658
         DMR=782 YSF=67 KERCHUNK=473 ERROR=0 WARN=0 RESTART=1
 
-
       The first line shows the options and parameters passed to the
       script when launched.
 
@@ -320,11 +319,7 @@ PISTAR-LASTQSO - HELP
       the script, and the PID of the background task that watches for
       log activity (daily log rotations and pi-star nightly updates).
 
-      The fifth line shows the size of the screen/window in rows and
-      columns (useful to those who want to modify the script, as there
-      is so much cursor management stuff going on).
-
-      The sixth line shows a number of counters.  The letters repre-
+      The sixth line shows a number of counters.  The counters repre-
       sent the following: DMR traffic, YSF traffic, Kerchunks, Errors,
       Warnings, and Restarts since program launch.  Regarding the
       restarts, expect typically two such events per day... rotation
