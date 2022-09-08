@@ -287,28 +287,27 @@ PISTAR-LASTQSO - HELP
           at the top of the screen using the "-t|--top" option (the
           number of lines of history, if any, is irrelevant).
 
-      If either B or C above is false, then A is useless.  If all
+      If either B or C above is false, then A has no effect.  If all
       three conditions are met, a small block of information, largely
       helpful only to those looking to modify the script, is shown
       in the top-right corner of the screen.  An example looks like
       this:
+                      Options & Parameters: -t 10 -f 4 -i -l
+                      Elapsed: 0 Days 06 Hrs 31 Mins 28 Secs
+                                      Debugging: 3>/dev/null
+                                      Profiling: 4>/dev/null
+           Display=49x160  TTY=pts0  PID=10711  BG_PID=10658
+        DMR=782 YSF=67 KERCHUNK=473 ERROR=0 WARN=0 RESTART=1
 
-              Options & Parameters: -t 10 -f 4 -i -l
-              Elapsed: 0 Days 07 Hrs 19 Mins 55 Secs
-                           Debugging (3>): /dev/null
-                           Profiling (4>): /dev/null
-                               Screen Size: 49 x 160
-                                     Log Restarts: 1
 
       The first line shows the options and parameters passed to the
       script when launched.
 
-      The second line (and frankly the only line potentially of value
-      to someone not looking to modify the script in any way), shows
-      the approximate elapsed time since the script was launched.
-      The Elapsed Time display only updates when there is traffic, as
-      the screen doesn't update when simply waiting for a log entry
-      to process.  (The actual timer keeps going, behind the scenes.)
+      The second line shows the approximate elapsed time since the
+      script was launched.  The Elapsed Time display only updates when
+      there is traffic (the screen doesn't update when simply waiting
+      for a log entry to process).  The actual timer keeps going,
+      behind the scenes.
 
       The third and fourth lines indicate any target logfiles specified
       for the debugging and profiling log features described in the
@@ -316,15 +315,23 @@ PISTAR-LASTQSO - HELP
 
       The fifth line shows the size of the screen/window in rows and
       columns (useful to those who want to modify the script, as there
+      is so much cursor management stuff going on).  Also shown are the
+      TTY of the terminal/session the script is running on, the PID of
+      the script, and the PID of the background task that watches for
+      log activity (daily log rotations and pi-star nightly updates).
+
+      The fifth line shows the size of the screen/window in rows and
+      columns (useful to those who want to modify the script, as there
       is so much cursor management stuff going on).
 
-      The sixth line simply shows how many times log activity has
-      paused/resumed since launch.  Expect typically two such events
-      per day... log rotation to a new day's logfile at midnight UTC,
-      and when pi-star bounces it's services when performing it's
-      nightly updates.  (Note: Any changes you make to pi-star's
-      configuration, while pistar-lastqso is running, will also cycle
-      log activity.)
+      The sixth line shows a number of counters.  The letters repre-
+      sent the following: DMR traffic, YSF traffic, Kerchunks, Errors,
+      Warnings, and Restarts since program launch.  Regarding the
+      restarts, expect typically two such events per day... rotation
+      to a new day's log at midnight UTC, and again each night during
+      pi-star's nightly update, when services are bounced.  Note too
+      that any changes you make to pi-star's config via the GUI will
+      also bounce the services, when your changes are saved.
 
   -l|--logo
       Disables the animated logo at startup.
