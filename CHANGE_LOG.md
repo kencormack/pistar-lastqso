@@ -1,4 +1,53 @@
 ```
+CHANGES: V2.31
+This round of updates focused on performance
+improvements.  Dozens of calls to external tools
+have been replaced with bash builtin features,
+eliminating a great deal of overhead.  The
+Raspberry Pi Zero, which I wager makes up the
+bulk of PI-STAR based hotspots, will see the
+greatest benefit.
+
+ 1. Replaced over 60 calls to cut, sed, and grep,
+    with bash built-in variable expansions.
+    Each call to these external commands was a
+    subprocess that required a lot of overhead,
+    and slowed processing.  Parsing log entries
+    is now signigicantly faster.  This helps a
+    Raspberry Pi Zero to keep up/catch up, to an
+    active log.
+
+ 2. Cleanup/re-org to the handling of counters
+    (QSOs, Errors & Warnings, Log Restarts).
+    Added two new counters (DMR and YSF traffic
+    types) to the -i|--info display, and goodbye
+    box.
+
+ 3. The PID of the script itself, and the PID of
+    the background task that monitors log activity,
+    are added to the -i|--info data....  Help
+    screen and README updated accordingly.
+
+ 4. Fixed a bug, displaying horizontal lines when
+    hyphens (-) are used instead of UTF-8's
+    horizontal line-drawing character (─).
+    ("printf" was interpreting the hyphen to mean
+    that a printf option was to follow.)
+
+ 5. Removed the "(0)" Timeslot indicators, and
+    the "5 Max" limit, on static TGs listed in
+    the non-scrolling region at top of screen
+    (when "-t|--top" is used).  The script now
+    shows as many TGs as it can, until it runs
+    flush with the width of the rest of the non-
+    scrolling region.  Currently, this allows for
+    about 61 chars worth of digits and spaces,
+    in the line beginning with "STATIC TGs(nn):".
+    (This change will require updates to some of
+    the screenshots, and the animation that
+    appear on the github page - I'll get to those
+    eventually.)
+
 CHANGES: V2.30
  1. Added "Elapsed Time" to the goodbye screen
     showing days, hours, minutes, and seconds
