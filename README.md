@@ -546,7 +546,7 @@ Key elements of the tool's operation include:
 - a trigger phrase written to the log by that fork, which signals the main loop to exit
 - automatically pause & resume monitoring when the current log has been closed/re-opened, or a new log started
 - the parsing of each log entry, and branching to the appropriate functions
-- all the display management stuff - the single most-used command in the script is "tput"
+- all the display management stuff - the most-used commands in the script are "tput" and "echo"
 
 The rest of the program is mainly parsing the log entries, managing the history and counters, and presenting the data on-screen.
 
