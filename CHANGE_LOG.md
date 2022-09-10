@@ -1,4 +1,26 @@
 ```
+CHANGES: V2.32
+ 1. More changes to the -i|--info area.  It now
+    shows which of the following modes are enabled
+    in pi-star: YSF, DMR, YSF2DMR, DMR2YSF
+ 2. When logging is interrupted, the program now
+    tells you if it was due to daily log rotation
+    that occurs at 00:00 UTC, or if it was due
+    to a service restart (nightly pi-star update,
+    user-initiated config changes, or other stop/
+    start of the services that might occur.  This
+    is reflected both at the bottom of the screen
+    when the interruption occurs, and in the marker
+    shown in the history.
+ 3. Removed a couple more unnecessary greps.
+ 4. Moved all occurances of closure of FDs 3 and 4
+    (debug and profile log file descriptors) to
+    their own function.
+ 5. For YSF traffic, when dxcc.pl is needed to
+    resolve a callsign's prefix to the country that
+    issued the callsign, the time required for
+    dxcc.pl to resolve is now also displayed.
+
 CHANGES: V2.31
 This round of updates focused on performance
 improvements.  Dozens of calls to external tools

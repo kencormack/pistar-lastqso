@@ -7,7 +7,7 @@
 
 set -o allexport
 
-VERSION=2.31
+VERSION=2.32
 
 if [[ "${EUID}" -eq 0 ]]
 then
@@ -45,6 +45,9 @@ PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 # Start the Elapsed Time clock
 SECONDS=0
 MY_PID="$(pgrep -o -f "/bin/bash /usr/local/sbin/pistar-lastqso")"
+
+# For bash's built-in "time" command
+TIMEFORMAT='%R'
 
 # Any equal signs passed on the cmdline are replaced w/ spaces,
 # so that an option, and it's parameter (if any), are two separate
@@ -299,20 +302,15 @@ GTAB=$'\t'
 #MY_CALLSIGN="$(grep -A 8 "^\[General\]" /etc/mmdvmhost | grep "^Enable")"
 #MY_CALLSIGN="${MY_CALLSIGN#*=}"
 
-#KPC - eliminate "cut"
-#DMR_ENABLED="$(grep -A 2 "^\[DMR\]" /etc/mmdvmhost | grep "^Enable" | cut -f2 -d"=")"
 DMR_ENABLED="$(grep -A 2 "^\[DMR\]" /etc/mmdvmhost | grep "^Enable")"
 DMR_ENABLED="${DMR_ENABLED#*=}"
-
-#KPC - eliminate "cut"
-#YSF_ENABLED="$(grep -A 2 "^\[System Fusion\]" /etc/mmdvmhost | grep "^Enable" | cut -f2 -d"=")"
 YSF_ENABLED="$(grep -A 2 "^\[System Fusion\]" /etc/mmdvmhost | grep "^Enable")"
 YSF_ENABLED="${YSF_ENABLED#*=}"
+DMR2YSF_ENABLED="$(grep -A 1 "^\[Enabled\]" /etc/dmr2ysf | grep "^Enable")"
+DMR2YSF_ENABLED="${DMR2YSF_ENABLED#*=}"
+YSF2DMR_ENABLED="$(grep -A 1 "^\[Enabled\]" /etc/ysf2dmr | grep "^Enable")"
+YSF2DMR_ENABLED="${YSF2DMR_ENABLED#*=}"
 
-#DMR2YSF_ENABLED="$(grep -A 1 "^\[Enabled\]" /etc/dmr2ysf | grep "^Enable")"
-#DMR2YSF_ENABLED="${DMR2YSF_ENABLED#*=}"
-#YSF2DMR_ENABLED="$(grep -A 1 "^\[Enabled\]" /etc/ysf2dmr | grep "^Enable")"
-#YSF2DMR_ENABLED="${YSF2DMR_ENABLED#*=}"
 #DSTAR_ENABLED="$(grep -A 2 "^\[D-Star\]" /etc/mmdvmhost | grep "^Enable")"
 #DSTAR_ENABLED="${DSTAR_ENABLED#*=}"
 #P25_ENABLED="$(grep -A 2 "^\[P25\]" /etc/mmdvmhost | grep "^Enable")"
@@ -324,13 +322,10 @@ YSF_ENABLED="${YSF_ENABLED#*=}"
 
 # Some DMR-related files we'll be consulting...
 # These are supplied with, and updated by, pistar
-#KPC - eliminate "cut"
 #DMRIDS="$(grep -A 2 "^\[DMR Id Lookup\]" /etc/mmdvmhost | grep "^File" | cut -f2 -d"=")"
 DMRIDS="$(grep -A 2 "^\[DMR Id Lookup\]" /etc/mmdvmhost | grep "^File")"
 DMRIDS="${DMRIDS#*=}"
 
-#KPC - eliminate "cut"
-#TGLIST="$(grep "^TGLISTBM=" /usr/local/sbin/HostFilesUpdate.sh | cut -f2 -d"=")"
 TGLIST="$(grep "^TGLISTBM=" /usr/local/sbin/HostFilesUpdate.sh)"
 TGLIST="${TGLIST#*=}"
 
@@ -359,13 +354,9 @@ NXDNCSV=/usr/local/etc/NXDN.csv
 CTYDAT=/usr/local/etc/cty.dat
 
 # Find the latest log
-#KPC - eliminate "cut"
-#LOGDIR="$(grep -A 4 "^\[Log\]" /etc/mmdvmhost | grep "^FilePath=" | cut -f2 -d"=")"
 LOGDIR="$(grep -A 4 "^\[Log\]" /etc/mmdvmhost | grep "^FilePath=")"
 LOGDIR="${LOGDIR#*=}"
 
-#KPC - eliminate "cut"
-#LOGROOT="$(grep -A 4 "^\[Log\]" /etc/mmdvmhost | grep "^FileRoot=" | cut -f2 -d"=")"
 LOGROOT="$(grep -A 4 "^\[Log\]" /etc/mmdvmhost | grep "^FileRoot=")"
 LOGROOT="${LOGROOT#*=}"
 
@@ -385,8 +376,6 @@ WORKING_LOG="${NEWEST}"
 # APIKEY="$(grep "^apikey=" /etc/bmapi.key 2>/dev/null | cut -f2 -d"=")"
 # APIKEY="$(grep "^apikey=" /etc/bmapi.key 2>/dev/null)"
 # APIKEY="${APIKEY#*=}"
-#KPC - eliminate "cut"
-#HOTSPOT_ID="$(grep -A 13 "^\[DMR\]" /etc/mmdvmhost | grep "^Id=" | cut -f2 -d"=")"
 HOTSPOT_ID="$(grep -A 13 "^\[DMR\]" /etc/mmdvmhost | grep "^Id=")"
 HOTSPOT_ID="${HOTSPOT_ID#*=}"
 
@@ -466,10 +455,8 @@ then
 else
 #KPC - eliminate "grep"
 # if [[ "$(sudo fuser -v "${WORKING_LOG}" 2>&1 | grep "MMDVMHost")" = "" ]]
-  if [[ "$(sudo fuser -v "${WORKING_LOG}" 2>&1)" =~ "MMDVMHost" ]]
+  if [[ ! "$(sudo fuser -v "${WORKING_LOG}" 2>&1)" =~ "MMDVMHost" ]]
   then
-    :
-  else
     echo -e "\n  ${YEL}MMDVMHost is running, but is NOT writing to $(basename "${WORKING_LOG}").${SGR0}"
     echo -e "  Check status in the pi-star GUI and try again.\n"
     exit
@@ -493,6 +480,17 @@ fnCLEANUP()
   "${ERROR_COUNT_FILE}" \
   "${WARNING_COUNT_FILE}" \
   "${HISTORY_FILE}" 2>/dev/null || :
+}
+
+#----------
+fnCLOSE_FDS()
+{
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
+  # Close the debugging and profiling file descriptors
+  exec 3>&- 2>/dev/null
+  set +x 2>/dev/null
+  exec 4>&- 2>/dev/null
 }
 
 #----------
@@ -561,8 +559,6 @@ fnDEFINE_BOXCHARS()
   # U+259x  ▐  ░  ▒  ▓
 
   # HAS_UTF8="$(echo "${LC_ALL}${LC_CTYPE}${LANG}" | grep "UTF-8")"
-#KPC - eliminate "grep"
-# if [[ -n "$(locale charmap | grep "UTF-8")" ]]
   if [[ "$(locale charmap)" =~ "UTF-8" ]]
   then
     # UTF-8 single-line box-drawing characters
@@ -805,13 +801,22 @@ fnTOP_DATA()
   MY_VER="${MY_VER:0:7}"
 
   # Datestamp of the user.csv file
-  CSV_DATE="$(stat /usr/local/etc/user.csv 2>/dev/null | grep "^Modify" | awk '{ print $2 }')"
+#KPC2
+# CSV_DATE="$(stat /usr/local/etc/user.csv 2>/dev/null | grep "^Modify" | awk '{ print $2 }')"
+  CSV_DATE="$(stat --print=%y /usr/local/etc/user.csv 2>/dev/null)"
+  IFS=' '; CUT_ARRAY=(${CSV_DATE}); unset IFS;
+  CSV_DATE="${CUT_ARRAY[0]}"
+  unset CUT_ARRAY
   # Pad, and truncate to fit
   CSV_DATE="${CSV_DATE}${TOP_PAD}"
   CSV_DATE="${CSV_DATE:0:11}"
 
   # Datestamp of the cty.dat file
-  DAT_DATE="$(stat /usr/local/etc/cty.dat 2>/dev/null | grep "^Modify" | awk '{ print $2 }')"
+#KPC2
+  DAT_DATE="$(stat --print=%y /usr/local/etc/cty.dat 2>/dev/null)"
+  IFS=' '; CUT_ARRAY=(${CSV_DATE}); unset IFS;
+  DAT_DATE="${CUT_ARRAY[0]}"
+  unset CUT_ARRAY
   # Pad, and truncate to fit
   DAT_DATE="${DAT_DATE}${TOP_PAD}"
   DAT_DATE="${DAT_DATE:0:11}"
@@ -849,15 +854,11 @@ fnTOP_DATA()
   # GATHER LINE 2 DATA...
   if [[ "${YSF_ENABLED}" = "1" ]]
   then
-#KPC - eliminate "cut"
-#   YSF_MASTER="$(grep -A 5 "^\[Network\]" /etc/ysfgateway | grep "^Startup" | cut -f2 -d"=")"
     YSF_MASTER="$(grep -A 5 "^\[Network\]" /etc/ysfgateway | grep "^Startup")"
     YSF_MASTER="${YSF_MASTER#*=}"
   else
     if systemctl status dmr2ysf | grep -q "active (running)"
     then
-#KPC - eliminate "cut"
-#     YSF_MASTER="YSF2DMR ($(grep -A 5 "^\[Network\]" /etc/ysfgateway | grep "^Startup" | cut -f2 -d"="))"
       YSF_MASTER="YSF2DMR ($(grep -A 5 "^\[Network\]" /etc/ysfgateway | grep "^Startup"))"
       YSF_MASTER="${YSF_MASTER#*=}"
     else
@@ -870,8 +871,6 @@ fnTOP_DATA()
 
   if [[ "${DMR_ENABLED}" = "1" ]]
   then
-#KPC - eliminate "cut"
-#   DMR_MASTER="$(grep -A 10 "^\[DMR Network\]" /etc/mmdvmhost | grep "^Address" | cut -f2 -d"=")"
     DMR_MASTER="$(grep -A 10 "^\[DMR Network\]" /etc/mmdvmhost | grep "^Address")"
     DMR_MASTER="${DMR_MASTER#*=}"
 
@@ -879,8 +878,6 @@ fnTOP_DATA()
   else
     if systemctl status ysf2dmr | grep -q "active (running)"
     then
-#KPC - eliminate "cut"
-#     DMR_MASTER="DMR2YSF ($(grep -A 5 "^\[DMR Network 3\]" /etc/dmrgateway | grep "^Name" | cut -f2 -d"="))"
       DMR_MASTER="DMR2YSF ($(grep -A 5 "^\[DMR Network 3\]" /etc/dmrgateway | grep "^Name"))"
       DMR_MASTER="${DMR_MASTER#*=}"
     else
@@ -894,8 +891,6 @@ fnTOP_DATA()
   # GATHER LINE 3 DATA...
   # CPU_TEMP is fetched in fnNOSCROLL_ZONE, where it can be updated frequently,
   # rather than here in this function, which is called only once.
-#KPC - eliminate "cut"
-# MODEM_PORT="$(grep -A 25 "^\[Modem\]" /etc/mmdvmhost | grep "^Port" | cut -f3 -d"/")"
   MODEM_PORT="$(grep -A 25 "^\[Modem\]" /etc/mmdvmhost | grep "^Port")"
   IFS='/'; CUT_ARRAY=(${MODEM_PORT}); unset IFS;
   MODEM_PORT="${CUT_ARRAY[2]}"
@@ -967,9 +962,9 @@ fnDEV_INFO()
 
   DEV_STRING[1]="Options & Parameters: ${MY_CMDLINE}"
   DEV_STRING[2]="Elapsed: ${ELAPSED}"
-  DEV_STRING[3]="Debugging: 3>${DEBUG_LOG}"
-  DEV_STRING[4]="Profiling: 4>${PROFILING_LOG}"
-  DEV_STRING[5]="Display=${LINES}x${COLUMNS}  TTY=${MY_TTY}  PID=${MY_PID}  BG_PID=${BG_PID}"
+  DEV_STRING[3]="Debugging: 3>${DEBUG_LOG}  Profiling: 4>${PROFILING_LOG}"
+  DEV_STRING[4]="Display=${LINES}x${COLUMNS}  TTY=${MY_TTY}  PID=${MY_PID}  BG_PID=${BG_PID}"
+  DEV_STRING[5]="Enabled Modes: YSF=${YSF_ENABLED} DMR=${DMR_ENABLED} YSF2DMR=${YSF2DMR_ENABLED} DMR2YSF=${DMR2YSF_ENABLED}"
   DEV_STRING[6]="DMR=${DMR_COUNT} YSF=${YSF_COUNT} KERCHUNK=${KERCHUNK_COUNT} ERROR=${ERROR_COUNT} WARN=${WARNING_COUNT} RESTART=${LOG_RESTARTS}"
 
   DEV_INDEX=1
@@ -1040,8 +1035,6 @@ fnNOSCROLL_ZONE()
   CPU_TEMP="${CPU_TEMP#*=}"
   CPU_TEMP="${CPU_TEMP/\'/°}"
 
-#KPC - eliminate "cut"
-# CPU_TEMP_INT="$(echo "${CPU_TEMP}" | cut -f1 -d".")"
   CPU_TEMP_INT="${CPU_TEMP%.*}"
 
   if [[ "${CPU_TEMP_INT}" -lt 50 ]]
@@ -1451,12 +1444,12 @@ PISTAR-LASTQSO - HELP
       helpful only to those looking to modify the script, is shown
       in the top-right corner of the screen.  An example looks like
       this:
-                      Options & Parameters: -t 10 -f 4 -i -l
-                      Elapsed: 0 Days 06 Hrs 31 Mins 28 Secs
-                                      Debugging: 3>/dev/null
-                                      Profiling: 4>/dev/null
-           Display=49x160  TTY=pts0  PID=10711  BG_PID=10658
-        DMR=782 YSF=67 KERCHUNK=473 ERROR=0 WARN=0 RESTART=1
+                        Options & Parameters: -t 10 -f 4 -i -l
+                        Elapsed: 0 Days 06 Hrs 31 Mins 28 Secs
+                Debugging: 3>/dev/null  Profiling: 4>/dev/null
+             Display=49x160  TTY=pts0  PID=10711  BG_PID=10658
+                Enabled Modes: YSF=1 DMR=1 YSF2DMR=0 DMR2YSF=0
+          DMR=782 YSF=67 KERCHUNK=473 ERROR=0 WARN=0 RESTART=1
 
       The first line shows the options and parameters passed to the
       script when launched.
@@ -1467,18 +1460,22 @@ PISTAR-LASTQSO - HELP
       for a log entry to process).  The actual timer keeps going,
       behind the scenes.
 
-      The third and fourth lines indicate any target logfiles specified
-      for the debugging and profiling log features described in the
-      ABOUT_DEBUGGING.md and ABOUT_PROFILING.md files.
+      The third line indicates any target logfiles specified for the
+      debugging and profiling logs described in ABOUT_DEBUGGING.md
+      and ABOUT_PROFILING.md.
 
-      The fifth line shows the size of the screen/window in rows and
+      The fourth line shows the size of the screen/window in rows and
       columns (useful to those who want to modify the script, as there
       is so much cursor management stuff going on).  Also shown are the
       TTY of the terminal/session the script is running on, the PID of
       the script, and the PID of the background task that watches for
       log activity (daily log rotations and pi-star nightly updates).
 
-      The sixth line shows a number of counters.  The letters repre-
+      The fifth line shows which of the following modes and/or cross-
+      modes are enabled in your pi-star: YSF, DMR, YSF2DMR or DMR2YSF.
+      If enabled, the mode will show a "1".  Disabled will show a "0".
+
+      The sixth line shows a number of counters.  The counters repre-
       sent the following: DMR traffic, YSF traffic, Kerchunks, Errors,
       Warnings, and Restarts since program launch.  Regarding the
       restarts, expect typically two such events per day... rotation
@@ -1702,10 +1699,7 @@ fnCHECK_MODES_ENABLED()
     tput cup 22 2
     echo -e "${CUR_ON}Aborting... "
 
-    # Close the debugging and profiling file descriptors
-    exec 3>&- 2>/dev/null
-    set +x 2>/dev/null
-    exec 4>&- 2>/dev/null
+    fnCLOSE_FDS
     # If debugging and/or profiling was used, show the names of the logs, at exit
     if [[ "${DEBUG_LOG}" != "/dev/null" ]] || [[ "${PROFILING_LOG}" != "/dev/null" ]]
     then
@@ -1843,8 +1837,6 @@ fnMMDVMLOG_FUSER()
 
     # If MMDVMHost has let go of the log, add a marker for the main script's
     # "while read" loop to detect.
-#KPC - eliminate "grep"
-#   if [[ "$(sudo fuser -v "${WORKING_LOG}" 2>&1 | grep "MMDVMHost")" = "" ]]
     if [[ ! "$(sudo fuser -v "${WORKING_LOG}" 2>&1)" =~ "MMDVMHost" ]]
     then
       echo -e "MMDVMHOST-STOP\n" | sudo tee -a "${WORKING_LOG}"
@@ -1922,7 +1914,7 @@ fnDMR_CSV_SEARCH()
 
   if [[ "${CSV_RECORD}" != "" ]]
   then
-#KPC - eliminate "cut"
+#KPC - eliminate "cut" for multiple fields
 #   CITY="$(echo "${CSV_RECORD}" | cut -f1 -d",")"
 #   STATE="$(echo "${CSV_RECORD}" | cut -f2 -d",")"
 #   COUNTRY="$(echo "${CSV_RECORD}" | cut -f3 -d",")"
@@ -1958,10 +1950,6 @@ fnNXDN_CSV_SEARCH()
 
   if [[ "${CSV_RECORD}" != "" ]]
   then
-#KPC - eliminate "cut"
-#   CITY="$(echo "${CSV_RECORD}" | cut -f1 -d",")"
-#   STATE="$(echo "${CSV_RECORD}" | cut -f2 -d",")"
-#   COUNTRY="$(echo "${CSV_RECORD}" | cut -f3 -d",")"
     IFS=','; CUT_ARRAY=(${CSV_RECORD}); unset IFS;
     CITY="${CUT_ARRAY[0]}"
     STATE="${CUT_ARRAY[1]}"
@@ -2002,8 +1990,6 @@ fnDMR_PAD_ABSENT_TG()
   # lines will inject a bogus "PC" (private contact) place-holder to
   # substitute for the missing "TG", so as not to skew positional fields
   # used by awk.  A hack, for sure, but a useful one.
-#KPC - eliminate "grep"
-# if echo "${RECORD}" | grep -q -E -i "voice header|data header|end of voice"
   if [[ "${RECORD}" =~ "voice header" ]] || [[ "${RECORD}" =~ "data header" ]] || [[ "${RECORD}" =~ "end of voice" ]]
   then
     IS_TG="$(echo "${RECORD}" | grep " TG ")"
@@ -2051,8 +2037,6 @@ fnDMR_GET_FROM()
   if [[ "${FROM_NAME}" = "" ]]
   then
     # If not, then see if it is a talkgroup
-#KPC - eliminate "cut"
-#   FROM_NAME="$(grep "^${FROM};" "${TGLIST}" | cut -f3 -d";")"
     FROM_NAME="$(grep "^${FROM};" "${TGLIST}")"
     IFS=';'; CUT_ARRAY=(${FROM_NAME}); unset IFS;
     FROM_NAME="${CUT_ARRAY[2]}"
@@ -2061,8 +2045,6 @@ fnDMR_GET_FROM()
     # If that came back empty, see if it's in MY_LIST.txt
     if [[ "${FROM_NAME}" = "" ]] && [[ -f "${MY_LIST}" ]]
     then
-#KPC - eliminate "cut"
-#     FROM_NAME="$(grep "^${FROM};" "${MY_LIST}" | cut -f3 -d";")"
       FROM_NAME="$(grep "^${FROM};" "${MY_LIST}")"
       IFS=';'; CUT_ARRAY=(${FROM_NAME}); unset IFS;
       FROM_NAME="${CUT_ARRAY[2]}"
@@ -2086,8 +2068,6 @@ fnDMR_GET_TO()
 
   trap fnWINCH WINCH
 
-#KPC - eliminate "cut"
-# TO="$(echo "${RECORD}" | awk '{ print $15 }' | cut -f1 -d",")"
   TO="$(echo "${RECORD}" | awk '{ print $15 }')"
   TO="${TO%,*}"
 
@@ -2096,8 +2076,6 @@ fnDMR_GET_TO()
   # If not, see if it is a talkgroup
   if [[ "${TO_NAME}" = "" ]]
   then
-#KPC - eliminate "cut"
-#   TO_NAME="$(grep "^${TO};" "${TGLIST}" | cut -f3 -d";")"
     TO_NAME="$(grep "^${TO};" "${TGLIST}")"
     IFS=';'; CUT_ARRAY=(${TO_NAME}); unset IFS;
     TO_NAME="${CUT_ARRAY[2]}"
@@ -2142,8 +2120,6 @@ fnDMR_GET_TO()
     #
     if [[ "${TO_NAME}" = "" ]] && [[ -f "${MY_LIST}" ]]
     then
-#KPC - eliminate "cut"
-#     TO_NAME="$(grep "^${TO};" "${MY_LIST}" | cut -f3 -d";")"
       TO_NAME="$(grep "^${TO};" "${MY_LIST}")"
       IFS=';'; CUT_ARRAY=(${TO_NAME}); unset IFS;
       TO_NAME="${CUT_ARRAY[2]}"
@@ -2274,14 +2250,10 @@ fnYSF_END_NETWORK_TRAFFIC()
 
   # Fields to pass to the history...
   SECS="${LOGREC_SECS}"
-#KPC - eliminate "cut"
-# BER="$(echo "${LOGREC_BER}" | cut -f1 -d"%")"
   IFS='%'; CUT_ARRAY=(${LOGREC_BER}); unset IFS;
   BER="${CUT_ARRAY[0]}"
   unset CUT_ARRAY
 
-#KPC - eliminate "cut"
-# LOSS="$(echo "${LOGREC_LOSS}" | cut -f1 -d"%")"
   IFS='%'; CUT_ARRAY=(${LOGREC_LOSS}); unset IFS;
   LOSS="${CUT_ARRAY[0]}"
   unset CUT_ARRAY
@@ -2329,8 +2301,6 @@ fnYSF_SHOW_CURRENT_CALL()
   printf %05d "${QSO_COUNT}"
   echo "${SGR0}${WHI}${CLR_ED}"
 
-#KPC - eliminate "cut"
-# CSV_FROM="$(echo "${FROM}" | cut -f1 -d"/" | cut -f1 -d"-")"
   IFS='/'; CUT_ARRAY=(${FROM}); unset IFS;
   CSV_FROM="${CUT_ARRAY[0]}"
   unset CUT_ARRAY
@@ -2338,8 +2308,6 @@ fnYSF_SHOW_CURRENT_CALL()
   CSV_FROM="${CUT_ARRAY[0]}"
   unset CUT_ARRAY
 
-#KPC - eliminate "cut"
-# FROM_NAME="$(grep ",${CSV_FROM}," "${USERCSV}" "${NXDNCSV}" | tail -1 | cut -f3 -d",")"
   FROM_NAME="$(grep ",${CSV_FROM}," "${USERCSV}" "${NXDNCSV}" | tail -1)"
   IFS=','; CUT_ARRAY=(${FROM_NAME}); unset IFS;
   FROM_NAME="${CUT_ARRAY[2]}"
@@ -2367,8 +2335,6 @@ fnYSF_SHOW_CURRENT_CALL()
   tput cuf 32
   echo -e "${DIM}Src.:${SGR0} ${BOLD}${CYA}${SOURCE}${SGR0}${WHI}${CLR_ED}"
 
-#KPC - eliminate "cut"
-# CSV_CALLSIGN="$(echo "${FROM}" | cut -f1 -d"/" | cut -f1 -d"-")"
   CSV_CALLSIGN="${FROM}"
   IFS='/'; CUT_ARRAY=(${CSV_CALLSIGN}); unset IFS;
   CSV_CALLSIGN="${CUT_ARRAY[0]}"
@@ -2389,10 +2355,6 @@ fnYSF_SHOW_CURRENT_CALL()
   if [[ "${CSV_RECORD}" != "" ]]
   then
     # Callsign was found in one or the other csv file
-#KPC - eliminate "cut"
-#   CITY="$(echo "${CSV_RECORD}" | cut -f1 -d",")"
-#   STATE="$(echo "${CSV_RECORD}" | cut -f2 -d",")"
-#   COUNTRY="$(echo "${CSV_RECORD}" | cut -f3 -d",")"
     IFS=','; CUT_ARRAY=(${CSV_RECORD}); unset IFS;
     CITY="${CUT_ARRAY[0]}"
     STATE="${CUT_ARRAY[1]}"
@@ -2410,8 +2372,6 @@ fnYSF_SHOW_CURRENT_CALL()
       if echo "${FROM}" | cut -f1 -d"-" | cut -c1-3 | grep -q "[0-9]"
       then
         QTH_SRC="cty.dat"
-#KPC - eliminate "cut"
-#       DXCC_FROM="$(echo "${LOGREC_CALLSIGN}" | cut -f1 -d"/" | cut -f1 -d"-")"
         IFS='/'; CUT_ARRAY=(${LOGREC_CALLSIGN}); unset IFS;
         DXCC_FROM="${CUT_ARRAY[0]}"
         unset CUT_ARRAY
@@ -2420,17 +2380,22 @@ fnYSF_SHOW_CURRENT_CALL()
         unset CUT_ARRAY
 
         # NOTE: The average time to resolve, calling dxcc.pl,
-        # is 4-5 seconds on a Raspberry Pi Zero.  Largely
-        # because the dxcc.pl script has to be loaded into memory,
-        # and perl, then the cty.dat file needs to be read and
-        # parsed... That's a lot of overhead.
+        # is 4-5 seconds on a Raspberry Pi Zero.  Loading
+        # the script creates a lot of overhead.
         #
         # Callsigns found in either user.csv or ndxn.csv
         # can be resolved (and w/ greater detail) in fractions
         # of a second, which is why dxcc.pl is my last resort
         # to determine at least *some* QTH information.
+#KPC2
+        # Capture both the "Country" resolved by dxcc.pl, AND the time it took to resolve.
         #set -x
-        COUNTRY="$(dxcc.pl "${DXCC_FROM}" | grep "^Country Name:" | awk '{ print substr($0, index($0,$3)) }')"
+        {
+          IFS=$'\n' read -r -d '' CAPTURED_STDERR;
+          IFS=$'\n' read -r -d '' CAPTURED_STDOUT;
+        } < <((printf '\0%s\0' "$(time dxcc.pl "${DXCC_FROM}" | grep "^Country Name:" | awk '{ print substr($0, index($0,$3)) }')" 1>&2) 2>&1)
+        DXCC_TIME="${CAPTURED_STDERR}"
+        COUNTRY="${CAPTURED_STDOUT}"
         #set +x
       fi
     fi
@@ -2455,7 +2420,7 @@ fnYSF_SHOW_CURRENT_CALL()
     tput cuf 18
     if [[ "${QTH_SRC}" = "cty.dat" ]]
     then
-      echo -e "${DIM}QTH:${SGR0} ${MAG}${BOLD}${COUNTRY}${SGR0}${WHI}${CLR_ED}"
+      echo -e "${DIM}QTH:${SGR0} ${MAG}${BOLD}${COUNTRY} (DXCC: ${DXCC_TIME} secs)${SGR0}${WHI}${CLR_ED}"
     else
       echo -e "${DIM}QTH:${SGR0} ${MAG}${BOLD}${CITY}, ${STATE}, ${COUNTRY}${SGR0}${WHI}${CLR_ED}"
     fi
@@ -2536,8 +2501,6 @@ fnDMR_GET_NET_BER()
   trap fnWINCH WINCH
 
   # BER is in different positions, for network and RF log entries
-#KPC - eliminate "cut"
-# BER="$(echo "${RECORD}" | awk '{ print $NF }' | cut -f1 -d'%')"
   BER="$(echo "${RECORD}" | awk '{ print $NF }')"
   IFS='%'; CUT_ARRAY=(${BER}); unset IFS;
   BER="${CUT_ARRAY[0]}"
@@ -2552,8 +2515,6 @@ fnDMR_GET_RF_BER()
   trap fnWINCH WINCH
 
   # BER is in different positions, for network and RF log entries
-#KPC - eliminate "cut"
-# BER="$(echo "${RECORD}" | awk '{ print $21 }' | cut -f1 -d"," | cut -f1 -d'%')"
   BER="$(echo "${RECORD}" | awk '{ print $21 }')"
   IFS=','; CUT_ARRAY=(${BER}); unset IFS;
   BER="${CUT_ARRAY[0]}"
@@ -2627,8 +2588,6 @@ fnDMR_GET_RSSI()
 
   # Get the RSSI
   RSSI="$(echo "${RECORD}" | awk '{ print $23 }')"
-#KPC - eliminate "cut"
-# DBM="$(echo "${RSSI}" | cut -f1 -d"/" | cut -f2 -d"-")"
   IFS='/'; CUT_ARRAY=(${RSSI}); unset IFS;
   DBM="${CUT_ARRAY[0]}"
   unset CUT_ARRAY
@@ -2955,8 +2914,6 @@ fnMAIN_LOOP()
     | while read -r RECORD
   do
     # See if MMDVMHost has either shutdown, or transitioned to a new log.
-#KPC - eliminate "grep"
-#   if [[ "$(echo "${RECORD}" | grep -E "MMDVMHOST-STOP|exited on receipt of SIGTERM")" != "" ]]
     if [[ "${RECORD}" =~ "MMDVMHOST-STOP" ]] || [[ "${RECORD}" =~ "exited on receipt of SIGTERM" ]]
     then
       # If it did, it has triggered our exit from the loop.
@@ -2977,8 +2934,6 @@ fnMAIN_LOOP()
     # FYI: Debug messages are logged in records beginning with "D:".
     #
     # First, the errors...
-#KPC - eliminate "grep"
-#   if [[ "$(echo "${RECORD}" | grep "^E:")" != "" ]]
     if [[ "${RECORD:0:2}" = "E:" ]]
     then
       fnTALLY_ERRORS
@@ -2986,8 +2941,6 @@ fnMAIN_LOOP()
     fi
     #
     # Now, the warnings...
-#KPC - eliminate "grep"
-#   if [[ "$(echo "${RECORD}" | grep "^W:")" != "" ]]
     if [[ "${RECORD:0:2}" = "W:" ]]
     then
       fnTALLY_WARNINGS
@@ -2997,13 +2950,9 @@ fnMAIN_LOOP()
     # For any record beginning with "^M:", get the date and timestamps, and mode (DMR, YSF, etc.)
     # For records other than the loop exit trigger, "^E:", "^W:", or "^M:", do nothing, and loop
     # to watch for the next log entry.
-#KPC - eliminate "grep"
-#   if [[ "$(echo "${RECORD}" | grep "^M:")" != "" ]]
     if [[ "${RECORD:0:2}" = "M:" ]]
     then
       read -r LOGREC_DATE LOGREC_TIME LOGREC_MODE <<< "$(echo "${RECORD}" | awk '{ print $2 " " $3 " " $4 }')"
-#KPC - eliminate "cut"
-#     LOGREC_MODE="$(echo "${LOGREC_MODE}" | cut -f1 -d",")"
       LOGREC_MODE="${LOGREC_MODE%,*}"
       # Grab everything that follows the mode...
       read -r LOGREC_REMAINING_DATA <<< "$(echo "${RECORD}" | awk '{ print substr($0, index($0,$4)) }')"
@@ -3015,8 +2964,6 @@ fnMAIN_LOOP()
     if [[ "${LOGREC_MODE}" = "YSF" ]]
     then
       # Start of YSF network traffic
-#KPC - eliminate "grep"
-#     if echo "${LOGREC_REMAINING_DATA}" | grep -q "received network data from"
       if [[ "${LOGREC_REMAINING_DATA}" =~ "received network data from" ]]
       then
         fnCONVERT_DATE_TIME
@@ -3047,15 +2994,11 @@ fnMAIN_LOOP()
       fi
 
       # Start of YSF RF traffic
-#KPC - eliminate "grep"
-#     if echo "${LOGREC_REMAINING_DATA}" | grep -q -E "received RF header from|received RF late entry from"
       if [[ "${LOGREC_REMAINING_DATA}" =~ "received RF header from" ]] || [[ "${LOGREC_REMAINING_DATA}" =~ "received RF late entry from" ]]
       then
         fnCONVERT_DATE_TIME
         QSO_START_TIME="${TIME}"
 
-#KPC - eliminate "grep"
-#       if echo "${LOGREC_REMAINING_DATA}" | grep -q "received RF header from"
         if [[ "${LOGREC_REMAINING_DATA}" =~ "received RF header from" ]]
         then
           # Parse Recvd RF header...
@@ -3098,8 +3041,6 @@ fnMAIN_LOOP()
       # YSF RF traffic dropped
       # transmission lost from KE8DPF     to ALL       , 1.6 seconds, BER: 0.8%, RSSI: -58/-47/-47 dBm
       # similar to: "received RF end of transmission from KE8DPF     to DG-ID 0, 1.0 seconds, BER: 0.8%, RSSI: -55/-51/-52 dBm"
-#KPC - eliminate "grep"
-#     if echo "${LOGREC_REMAINING_DATA}" | grep -q "transmission lost from"
       if [[ "${LOGREC_REMAINING_DATA}" =~ "transmission lost from" ]]
       then
         read -r LOGREC_SECS  LOGREC_BER  LOGREC_RSSI \
@@ -3110,23 +3051,15 @@ fnMAIN_LOOP()
           LOGREC_BER="0.0%"
         fi
 
-#KPC - eliminate "cut"
-#       LOGREC_DG_ID_NUM="$(echo "${LOGREC_DG_ID_NUM}" | cut -f1 -d",")"
         LOGREC_DG_ID_NUM="${LOGREC_DG_ID_NUM%,*}"
 
-#KPC - eliminate "cut"
-#       LOGREC_BER="$(echo "${LOGREC_BER}" | cut -f1 -d",")"
         LOGREC_BER="${LOGREC_BER%,*}"
 
         # Fields to pass to the history...
         SECS="${LOGREC_SECS}"
-#KPC - eliminate "cut"
-#       BER="$(echo "${LOGREC_BER}" | cut -f1 -d"%")"
         BER="${BER%%*}"
 
         RSSI="${LOGREC_RSSI}"
-#KPC - eliminate "cut"
-#       DBM="$(echo "${RSSI}" | cut -f1 -d"/" | cut -f2 -d"-")"
         IFS='/'; CUT_ARRAY=(${RSSI}); unset IFS;
         DBM="${CUT_ARRAY[0]}"
         unset CUT_ARRAY
@@ -3165,8 +3098,6 @@ fnMAIN_LOOP()
       fi
 
       # End of YSF network traffic (Wires-X)
-#KPC - eliminate "grep"
-#     if echo "${LOGREC_REMAINING_DATA}" | grep -q "received network end of transmission from"
       if [[ "${LOGREC_REMAINING_DATA}" =~ "received network end of transmission from" ]]
       then
         read -r LOGREC_SECS  LOGREC_LOSS  LOGREC_BER \
@@ -3175,8 +3106,6 @@ fnMAIN_LOOP()
         continue
       fi
       # End of YSF network traffic (Normal traffic)
-#KPC - eliminate "grep"
-#     if echo "${LOGREC_REMAINING_DATA}" | grep -q "network watchdog has expired"
       if [[ "${LOGREC_REMAINING_DATA}" =~ "network watchdog has expired" ]]
       then
         read -r LOGREC_SECS  LOGREC_LOSS  LOGREC_BER \
@@ -3186,8 +3115,6 @@ fnMAIN_LOOP()
       fi
 
       # End of YSF RF traffic
-#KPC - eliminate "grep"
-#     if echo "${LOGREC_REMAINING_DATA}" | grep -q "received RF end of transmission from"
       if [[ "${LOGREC_REMAINING_DATA}" =~ "received RF end of transmission from" ]]
       then
         read -r LOGREC_SECS  LOGREC_BER  LOGREC_RSSI \
@@ -3198,23 +3125,15 @@ fnMAIN_LOOP()
           LOGREC_BER="0.0%"
         fi
 
-#KPC - eliminate "cut"
-#       LOGREC_DG_ID_NUM="$(echo "${LOGREC_DG_ID_NUM}" | cut -f1 -d",")"
         LOGREC_DG_ID_NUM="${LOGREC_DG_ID_NUM%,*}"
 
-#KPC - eliminate "cut"
-#       LOGREC_BER="$(echo "${LOGREC_BER}" | cut -f1 -d",")"
         LOGREC_BER="${LOGREC_BER%,*}"
 
         # Fields to pass to the history...
         SECS="${LOGREC_SECS}"
-#KPC - eliminate "cut"
-#       BER="$(echo "${LOGREC_BER}" | cut -f1 -d"%")"
         BER="${LOGREC_BER%%*}"
 
         RSSI="${LOGREC_RSSI}"
-#KPC - eliminate "cut"
-#       DBM="$(echo "${RSSI}" | cut -f1 -d"/" | cut -f2 -d"-")"
         IFS='/'; CUT_ARRAY=(${RSSI}); unset IFS;
         DBM="${CUT_ARRAY[0]}"
         unset CUT_ARRAY
@@ -3253,8 +3172,6 @@ fnMAIN_LOOP()
     # END YSF-SPECIFIC LOG RECORDS
 
     # BEGIN DMR-SPECIFIC LOG RECORDS
-#KPC - eliminate "grep"
-#   if echo "${LOGREC_REMAINING_DATA}" | grep -q "DMR Talker Alias"
     if [[ "${LOGREC_REMAINING_DATA}" =~ "DMR Talker Alias" ]]
     then
       fnDMR_TALKER_ALIAS
@@ -3262,21 +3179,15 @@ fnMAIN_LOOP()
       fnCONVERT_DATE_TIME
 
       # Determine DMR Time Slot, and RF or Network traffic
-#KPC - eliminate "cut"
-#     TIME_SLOT="$(echo "${RECORD}" | awk '{ print $6 }' | cut -f1 -d",")"
       TIME_SLOT="$(echo "${RECORD}" | awk '{ print $6 }')"
       TIME_SLOT="${TIME_SLOT%,*}"
 
-#KPC - eliminate "sed"
-#     SOURCE="$(echo "${RECORD}" | awk '{ print $8 }' | sed 's/network/NET/')"
       SOURCE="$(echo "${RECORD}" | awk '{ print $8 }')"
       SOURCE="${SOURCE//network/NET}"
 
       # Compensate for shifting fields between "group" and "private" ID numbers
       fnDMR_PAD_ABSENT_TG
 
-#KPC - eliminate "grep"
-#     if echo "${LOGREC_REMAINING_DATA}" | grep -q -E -i "voice header|data header"
       if [[ "${LOGREC_REMAINING_DATA}" =~ "voice header" ]] || [[ ${LOGREC_REMAINING_DATA} = "data header" ]]
       then
         ((QSO_COUNT++))
@@ -3294,8 +3205,6 @@ fnMAIN_LOOP()
       else
         # The QSO has ended.
         # If it was voice traffic...
-#KPC - eliminate "grep"
-#       if echo "${LOGREC_REMAINING_DATA}" | grep -q "end of voice"
         if [[ "${LOGREC_REMAINING_DATA}" =~ "end of voice" ]]
         then
           DATA=0
@@ -3304,8 +3213,6 @@ fnMAIN_LOOP()
           SECS="$(echo "${RECORD}" | awk '{ print $18 }')"
 
           # If it was network traffic...
-#KPC - eliminate "grep"
-#         if [[ "$(echo "${LOGREC_REMAINING_DATA}" | grep "RSSI:")" = "" ]]
           if [[ "${LOGREC_REMAINING_DATA}" =~ "RSSI:" ]]
           then
             # Else, for RF traffic...
@@ -3351,8 +3258,6 @@ fnMAIN_LOOP()
           # It was data traffic...
           DATA=1
 
-#KPC - eliminate "grep"
-#         if echo "${LOGREC_REMAINING_DATA}" | grep -E -q "ended network data|ended RF data"
           if [[ "${LOGREC_REMAINING_DATA}" =~ "ended network data" ]] || [[ "${LOGREC_REMAINING_DATA}" =~ "ended RF data" ]]
           then
             if [[ ${BLOCKS} -gt 1 ]]
@@ -3400,11 +3305,7 @@ fnABORT()
   tput cup "${LINES}" 0
 
   fnCLEANUP
-
-  # Close the debugging and profiling file descriptors
-  exec 3>&- 2>/dev/null
-  set +x 2>/dev/null
-  exec 4>&- 2>/dev/null
+  fnCLOSE_FDS
   # If debugging and/or profiling was used, show the names of the logs, at exit
   if [[ "${DEBUG_LOG}" != "/dev/null" ]] || [[ "${PROFILING_LOG}" != "/dev/null" ]]
   then
@@ -3463,7 +3364,7 @@ fnLOAD_HISTORY_FILE()
       ((HIST_COUNT--))
     done
     # Insert a restart marker as the most recent history entry
-    HISTORY[1]="${CYA}$(date +%H:%M:%S) ${SGR0}${WHI}${SBOX_VL} ---------- ${SBOX_VL} ---------- ${SBOX_VL} ----- ${SBOX_VL} ----- ${SBOX_VL} --- ${SBOX_VL}${CYA} - Watching Log - ${SGR0}${WHI}"
+    HISTORY[1]="${CYA}$(date +%H:%M:%S) ${SGR0}${WHI}${SBOX_VL} ---------- ${SBOX_VL} ---------- ${SBOX_VL} ----- ${SBOX_VL} ----- ${SBOX_VL} --- ${SBOX_VL}${CYA} ${BOUNCE_MSG} ${SGR0}${WHI}"
   fi
 }
 
@@ -3502,8 +3403,6 @@ fi
 # If github has a later version, tell the user.
 echo -en "\r${SGR0}${WHI}Performing version check... "
 VER_CHECK_COLOR="${WHI}${BOLD}"
-#KPC - eliminate "cut"
-#VER_CHECK="$(curl -s https://raw.githubusercontent.com/kencormack/pistar-lastqso/main/pistar-lastqso 2>/dev/null | grep "^VERSION=" | cut -f2 -d"=")"
 VER_CHECK="$(curl -s https://raw.githubusercontent.com/kencormack/pistar-lastqso/main/pistar-lastqso 2>/dev/null | grep "^VERSION=")"
 VER_CHECK="${VER_CHECK#*=}"
 
@@ -3609,14 +3508,11 @@ do
   echo -e "${RED}$(basename "${WORKING_LOG}") LOG ACTIVITY HAS STOPPED.${WHI}${SGR0}"
   echo -en "${YEL}WATCHING FOR NEW LOG ACTIVITY...${WHI}${SGR0} "
 
-#KPC - eliminate "grep"
-# while [[ "$(sudo fuser -v "${WORKING_LOG}" 2>&1 | grep "MMDVMHost")" = "" ]]
+  OLD_LOG="${WORKING_LOG}"
   while [[ ! "$(sudo fuser -v "${WORKING_LOG}" 2>&1)" =~ "MMDVMHost" ]]
   do
-    sleep 3
+    sleep 1
     # Make sure we're working with latest log.
-#KPC - eliminates "tail" (and, it's dangerous to parse "ls")
-#   WORKING_LOG="$(ls -1tr "${LOGDIR}/${LOGROOT}"*.log | tail -1)"
     CANDIDATE_FILES=("${LOGDIR}/${LOGROOT}"*.log) NEWEST=${CANDIDATE_FILES[0]}
     for F in "${CANDIDATE_FILES[@]}"
     do
@@ -3627,9 +3523,17 @@ do
     done
     WORKING_LOG="${NEWEST}"
   done
-  echo
+  echo -e "\n${GRE}LOG ACTIVITY HAS RESUMED USING $(basename "${WORKING_LOG}")...${WHI}${SGR0}"
 
-  echo -e "${GRE}LOG ACTIVITY HAS RESUMED USING $(basename "${WORKING_LOG}")...${WHI}${SGR0}"
+  if [[ "${OLD_LOG}" != "${WORKING_LOG}" ]]
+  then
+    echo -e "${GRE}${DIM}Daily MMDVM log rotation detected.${WHI}${SGR0}"
+    BOUNCE_MSG="- LOG ROTATION -"
+  else
+    echo -e "${GRE}${DIM}Service bounce detected (pi-star update, user reconfig, or other restart.)${WHI}${SGR0}"
+    BOUNCE_MSG="-SVCS RESTARTED-"
+  fi
+
   echo -e "${GRE}${DBL_LINE}${WHI}${SGR0}${CLR_EL}\n"
 
   ((LOG_RESTARTS++))
