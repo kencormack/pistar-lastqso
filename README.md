@@ -292,12 +292,12 @@ PISTAR-LASTQSO - HELP
       helpful only to those looking to modify the script, is shown
       in the top-right corner of the screen.  An example looks like
       this:
-                      Options & Parameters: -t 10 -f 4 -i -l
-                      Elapsed: 0 Days 06 Hrs 31 Mins 28 Secs
-                                      Debugging: 3>/dev/null
-                                      Profiling: 4>/dev/null
-           Display=49x160  TTY=pts0  PID=10711  BG_PID=10658
-        DMR=782 YSF=67 KERCHUNK=473 ERROR=0 WARN=0 RESTART=1
+                        Options & Parameters: -t 10 -f 4 -i -l
+                        Elapsed: 0 Days 06 Hrs 31 Mins 28 Secs
+                Debugging: 3>/dev/null  Profiling: 4>/dev/null
+             Display=49x160  TTY=pts0  PID=10711  BG_PID=10658
+                Enabled Modes: YSF=1 DMR=1 YSF2DMR=0 DMR2YSF=0
+          DMR=782 YSF=67 KERCHUNK=473 ERROR=0 WARN=0 RESTART=1
 
       The first line shows the options and parameters passed to the
       script when launched.
@@ -308,16 +308,20 @@ PISTAR-LASTQSO - HELP
       for a log entry to process).  The actual timer keeps going,
       behind the scenes.
 
-      The third and fourth lines indicate any target logfiles specified
-      for the debugging and profiling log features described in the
-      ABOUT_DEBUGGING.md and ABOUT_PROFILING.md files.
+      The third line indicates any target logfiles specified for the
+      debugging and profiling logs described in ABOUT_DEBUGGING.md
+      and ABOUT_PROFILING.md.
 
-      The fifth line shows the size of the screen/window in rows and
+      The fourth line shows the size of the screen/window in rows and
       columns (useful to those who want to modify the script, as there
       is so much cursor management stuff going on).  Also shown are the
       TTY of the terminal/session the script is running on, the PID of
       the script, and the PID of the background task that watches for
       log activity (daily log rotations and pi-star nightly updates).
+
+      The fifth line shows which of the following modes and/or cross-
+      modes are enabled in your pi-star: YSF, DMR, YSF2DMR or DMR2YSF.
+      If enabled, the mode will show a "1".  Disabled will show a "0".
 
       The sixth line shows a number of counters.  The counters repre-
       sent the following: DMR traffic, YSF traffic, Kerchunks, Errors,
