@@ -1,4 +1,52 @@
 ```
+CHANGES: V2.33
+Another big performance boost.  In YSF mode, if
+"dxcc.pl" is called upon to resolve a callsign's
+country of issuance based on it's prefix, the
+results of that query are now cached.  Upon
+subsequent lookup of the same callsign, the
+data is retrieved from cache.  As the original
+query can take between 3 and 5 seconds, and
+retrieval from the cache occurs in a fraction of
+a second, resovling the QTH Country of the call-
+sign is MUCH quicker.
+
+Examples of the benefit include a prolonged back-
+and-forth between two YSF callsigns.  Seeing the
+same callsign repeatedly, and performing a lookup
+via dxcc.pl with each appearance, is wasteful and
+slow.  The second and subsequent appearances will
+no longer have to incur that overhead.
+
+Note: The cache is only cleared upon hotspot reboot.
+If you stop the script and log out, then log back
+in later (with no reboot having occurred between
+logging out and back in), the cache from the
+previous session will still be available.  A
+reboot, however, deletes the previous cache, and
+the script will build a new cache with next run.
+
+ 1. In YSF traffic, show the time required for
+    dxcc.pl to resolve the country that issued
+    a callsign, based on it's prefix,, even when
+    that resolution fails.  (Such failures occur
+    when, for example, a remote operator's poor
+    setup makes them appear as "AMERIC", as in
+    "americalink", instead of a proper callsign,
+    in the MMDVM log.)
+ 2. Cache the results of a dxcc.pl lookup.  The
+    first time dxcc.pl is called to resolve a
+    callsign's country, the response is cached.
+    Subsequent lookups will be found in the
+    cache, saving 3-5 seconds each time dxcc.pl
+    would otherwise have been called to resolve
+    that callsign.  If the user exits the script,
+    the cache file will remain in place, should
+    the user again launch the script.  A reboot,
+    however, clears the cache.
+ 3. Eliminated a couple calls to "awk".
+ 4. Other minor tweaks.
+
 CHANGES: V2.32
  1. More changes to the -i|--info area.  It now
     shows which of the following modes are enabled

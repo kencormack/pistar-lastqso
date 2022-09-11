@@ -5,9 +5,13 @@
 # github:       https://github.com/kencormack/pistar-lastqso
 # QRZ page:     https://www.qrz.com/db/KE8DPF
 
+###########################################################
+# INITIALIZATION
+###########################################################
+
 set -o allexport
 
-VERSION=2.32
+VERSION=2.33
 
 if [[ "${EUID}" -eq 0 ]]
 then
@@ -82,10 +86,6 @@ ARG_LIST_LENGTH=${#ARG_LIST[@]}
 # At heart, I'm a KSH guy.  Consequently, you may find "old fashioned"
 # ksh-like syntax in here (out of habbit), where a "modern"(?) bash-ism
 # might exist, but that I simply forgot to use.
-
-###########################################################
-# INITIALIZATION
-###########################################################
 
 # Get the full path to this script
 # shellcheck disable=SC2034
@@ -360,8 +360,6 @@ LOGDIR="${LOGDIR#*=}"
 LOGROOT="$(grep -A 4 "^\[Log\]" /etc/mmdvmhost | grep "^FileRoot=")"
 LOGROOT="${LOGROOT#*=}"
 
-#KPC - eliminates "tail" (and, it's dangerous to parse "ls")
-#WORKING_LOG="$(ls -1tr "${LOGDIR}/${LOGROOT}"*.log | tail -1)"
 CANDIDATE_FILES=("${LOGDIR}/${LOGROOT}"*.log) NEWEST=${CANDIDATE_FILES[0]}
 for F in "${CANDIDATE_FILES[@]}"
 do
@@ -399,6 +397,7 @@ QSO_COUNT=$(< "${QSO_COUNT_FILE}")
 KERCHUNK_COUNT=$(< "${KERCHUNK_COUNT_FILE}")
 ERROR_COUNT=$(< "${ERROR_COUNT_FILE}")
 WARNING_COUNT=$(< "${WARNING_COUNT_FILE}")
+LOG_RESTARTS=0
 
 HISTORY_FILE="/tmp/lastqso-history-${MY_TTY}"
 
@@ -406,7 +405,20 @@ HISTORY_FILE="/tmp/lastqso-history-${MY_TTY}"
 # linked TGs, the findings are written to this tmpfile.
 STATIC_TG_FILE="/tmp/lastqso-static-${MY_TTY}"
 
-LOG_RESTARTS=0
+# When dxcc.pl is called to find the country that issued
+# a YSF callsign, the result will be stored in this cache
+# file.  Subsequent appearances of that callsign can then
+# quickly be recalled from cache, saving 3-5 seconds each
+# time that callsign appears.  Unlike the counter-tracking,
+# history, and talk-group temp files employed by this
+# script, this file will NOT be deleted upon program exit.
+# This makes an already populated file immediately available,
+# if the script is stopped by the user and then restarted.
+# As the file is written to the ram-based "/tmp" filesystem,
+# it is, however, volatile, and will be rebuilt from scratch
+# with every reboot.
+DXCC_CACHE_FILE="/tmp/lastqso-dxcc-cache-${MY_TTY}"
+touch "${DXCC_CACHE_FILE}" 
 
 #---------------
 # Finding a way to get the screen width of a window that can
@@ -423,10 +435,10 @@ LOG_RESTARTS=0
 # Note to self:
 # My 40" 1080P screen is...
 # 61 lines x 228 columns - HDMI-connected to Pi
-# 45 lines x 157 columns - SSH (PuTTY Max'd Windowed-mode)
+# 45 lines x 157 columns - SSH (PuTTY Max Windowed-mode)
 # 49 lines x 160 columns - SSH (Putty Full Screen-mode)
 # My Windows laptop screen with PuTTY is...
-# 44 lines x 168 columns - SSH (PuTTY Max'd Windowed Mode)
+# 44 lines x 168 columns - SSH (PuTTY Max Windowed Mode)
 # 48 lines x 170 columns - SSH (Putty Full Screen-mode)
 export LINES COLUMNS
 PY3_SCRIPT=$(cat <<'EOF'
@@ -444,24 +456,6 @@ read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
 # Prevents unexpectedly long fields from busting up the screen.
 # (There's one entry in user.csv that is over 170 characters long!)
 echo -en "${WRAP_OFF}"
-
-# Ensure that...
-# MMDVMHost is running, and that it is writing to the log.
-if [[ "$(pgrep -f "/usr/local/bin/MMDVMHost /etc/mmdvmhost")" = "" ]]
-then
-  echo -e "\n  ${RED}MMDVMHost is NOT RUNNING.${SGR0}"
-  echo -e "  Check status in the pi-star GUI and try again.\n"
-  exit
-else
-#KPC - eliminate "grep"
-# if [[ "$(sudo fuser -v "${WORKING_LOG}" 2>&1 | grep "MMDVMHost")" = "" ]]
-  if [[ ! "$(sudo fuser -v "${WORKING_LOG}" 2>&1)" =~ "MMDVMHost" ]]
-  then
-    echo -e "\n  ${YEL}MMDVMHost is running, but is NOT writing to $(basename "${WORKING_LOG}").${SGR0}"
-    echo -e "  Check status in the pi-star GUI and try again.\n"
-    exit
-  fi
-fi
 
 ###########################################################
 # FUNCTIONS
@@ -763,10 +757,12 @@ fnDMR_BM_STATIC_TGS()
 {
   echo -e "\nenter: ${FUNCNAME[*]}" >&3
 
+  # This retrieves the TGs, and returns them one per line.
   curl -s "https://api.brandmeister.network/v1.0/repeater/?action=profile&q=${HOTSPOT_ID}" \
     | sed 's/"talkgroup":/\n/g' | grep "${HOTSPOT_ID}" | cut -f1 -d"," \
     > "${STATIC_TG_FILE}"
 
+  # This takes the multiple lines, and puts them all on one line.
   STATIC_LIST=""
   while FS='' read -r TALKGROUP
   do
@@ -801,7 +797,6 @@ fnTOP_DATA()
   MY_VER="${MY_VER:0:7}"
 
   # Datestamp of the user.csv file
-#KPC2
 # CSV_DATE="$(stat /usr/local/etc/user.csv 2>/dev/null | grep "^Modify" | awk '{ print $2 }')"
   CSV_DATE="$(stat --print=%y /usr/local/etc/user.csv 2>/dev/null)"
   IFS=' '; CUT_ARRAY=(${CSV_DATE}); unset IFS;
@@ -812,7 +807,6 @@ fnTOP_DATA()
   CSV_DATE="${CSV_DATE:0:11}"
 
   # Datestamp of the cty.dat file
-#KPC2
   DAT_DATE="$(stat --print=%y /usr/local/etc/cty.dat 2>/dev/null)"
   IFS=' '; CUT_ARRAY=(${CSV_DATE}); unset IFS;
   DAT_DATE="${CUT_ARRAY[0]}"
@@ -1029,8 +1023,6 @@ fnNOSCROLL_ZONE()
   echo -e "${CYA}FW:${SGR0} ${WHI}${BOLD}${FW}${SGR0}"
 
   # Print line 2
-#KPC - eliminate "cut" and "sed"
-# CPU_TEMP="$(vcgencmd measure_temp | cut -f2 -d"=" | sed s/\'/°/)"
   CPU_TEMP="$(vcgencmd measure_temp)"
   CPU_TEMP="${CPU_TEMP#*=}"
   CPU_TEMP="${CPU_TEMP/\'/°}"
@@ -1914,10 +1906,6 @@ fnDMR_CSV_SEARCH()
 
   if [[ "${CSV_RECORD}" != "" ]]
   then
-#KPC - eliminate "cut" for multiple fields
-#   CITY="$(echo "${CSV_RECORD}" | cut -f1 -d",")"
-#   STATE="$(echo "${CSV_RECORD}" | cut -f2 -d",")"
-#   COUNTRY="$(echo "${CSV_RECORD}" | cut -f3 -d",")"
     IFS=','; CUT_ARRAY=(${CSV_RECORD}); unset IFS;
     CITY="${CUT_ARRAY[0]}"
     STATE="${CUT_ARRAY[1]}"
@@ -2387,16 +2375,28 @@ fnYSF_SHOW_CURRENT_CALL()
         # can be resolved (and w/ greater detail) in fractions
         # of a second, which is why dxcc.pl is my last resort
         # to determine at least *some* QTH information.
-#KPC2
-        # Capture both the "Country" resolved by dxcc.pl, AND the time it took to resolve.
-        #set -x
-        {
-          IFS=$'\n' read -r -d '' CAPTURED_STDERR;
-          IFS=$'\n' read -r -d '' CAPTURED_STDOUT;
-        } < <((printf '\0%s\0' "$(time dxcc.pl "${DXCC_FROM}" | grep "^Country Name:" | awk '{ print substr($0, index($0,$3)) }')" 1>&2) 2>&1)
-        DXCC_TIME="${CAPTURED_STDERR}"
-        COUNTRY="${CAPTURED_STDOUT}"
-        #set +x
+        #
+        # However, if I have to use dxcc.pl to resolve, I then
+        # cache the result so that next time that callsign
+        # appears, the country can be parsed from the cache
+        # to save time... A LOT of time!  (The cache persists
+        # until reboot.)
+        DXCC_CACHE_RECORD="$(grep "^${DXCC_FROM}:" "${DXCC_CACHE_FILE}")"
+        if [[ -n "${DXCC_CACHE_RECORD}" ]]
+        then
+          COUNTRY="${DXCC_CACHE_RECORD#*:}"
+          DXCC_TIME="Cached"
+        else
+          # Capture both the "Country" resolved by dxcc.pl, AND the time it took to resolve.
+          # This technique captures both STDOUT and STDERR, saving them in variablessaving them in variables
+          {
+            IFS=$'\n' read -r -d '' CAPTURED_STDERR;
+            IFS=$'\n' read -r -d '' CAPTURED_STDOUT;
+          } < <((printf '\0%s\0' "$(time dxcc.pl "${DXCC_FROM}" | grep "^Country Name:" | awk '{ print substr($0, index($0,$3)) }')" 1>&2) 2>&1)
+          COUNTRY="${CAPTURED_STDOUT}"
+          DXCC_TIME="${CAPTURED_STDERR} secs"
+          echo "${DXCC_FROM}:${COUNTRY}" >> "${DXCC_CACHE_FILE}"
+        fi
       fi
     fi
   fi
@@ -2411,7 +2411,7 @@ fnYSF_SHOW_CURRENT_CALL()
   then
     if [[ "${USE_DXCC}" = "1" ]]
     then
-      echo "${MAG}${BOLD}DXCC Is Unable To Determine Location Data${SGR0}${WHI}${CLR_ED}"
+      echo "${MAG}${BOLD}DXCC Is Unable To Determine Location Data (DXCC: ${DXCC_TIME})${SGR0}${WHI}${CLR_ED}"
     else
       echo "${MAG}DXCC Lookups Disabled on Cmdline${SGR0}${WHI}${CLR_ED}"
     fi
@@ -2420,7 +2420,7 @@ fnYSF_SHOW_CURRENT_CALL()
     tput cuf 18
     if [[ "${QTH_SRC}" = "cty.dat" ]]
     then
-      echo -e "${DIM}QTH:${SGR0} ${MAG}${BOLD}${COUNTRY} (DXCC: ${DXCC_TIME} secs)${SGR0}${WHI}${CLR_ED}"
+      echo -e "${DIM}QTH:${SGR0} ${MAG}${BOLD}${COUNTRY} (DXCC: ${DXCC_TIME})${SGR0}${WHI}${CLR_ED}"
     else
       echo -e "${DIM}QTH:${SGR0} ${MAG}${BOLD}${CITY}, ${STATE}, ${COUNTRY}${SGR0}${WHI}${CLR_ED}"
     fi
@@ -3398,10 +3398,28 @@ else
   fnNO_LOGO
 fi
 
+# Ensure that...
+# MMDVMHost is running, and that it is writing to the log.
+echo -en "\r${CLR_EL}${SGR0}${WHI}Checking MMDVMHost... "
+if [[ "$(pgrep -f "/usr/local/bin/MMDVMHost /etc/mmdvmhost")" = "" ]]
+then
+  echo -e "\n  ${RED}MMDVMHost is NOT RUNNING.${SGR0}"
+  echo -e "  Check status in the pi-star GUI and try again.\n"
+  exit
+else
+  if [[ ! "$(sudo fuser -v "${WORKING_LOG}" 2>&1)" =~ "MMDVMHost" ]]
+  then
+    echo -e "\n  ${YEL}MMDVMHost is running, but is NOT writing to $(basename "${WORKING_LOG}").${SGR0}"
+    echo -e "  Check status in the pi-star GUI and try again.\n"
+    exit
+  fi
+fi
+sleep .5
+
 # Fetch the version number from what's posted on github.
 # Compare that version number with what is currently running.
 # If github has a later version, tell the user.
-echo -en "\r${SGR0}${WHI}Performing version check... "
+echo -en "\r${CLR_EL}${SGR0}${WHI}Performing Version Check... "
 VER_CHECK_COLOR="${WHI}${BOLD}"
 VER_CHECK="$(curl -s https://raw.githubusercontent.com/kencormack/pistar-lastqso/main/pistar-lastqso 2>/dev/null | grep "^VERSION=")"
 VER_CHECK="${VER_CHECK#*=}"
@@ -3422,12 +3440,14 @@ then
   VER_CHECK_COLOR="${RED}"
   sleep 3
 fi
-# Clear current line
-echo -en "\r${CLR_EL}"
+sleep .5
 
+echo -en "\r${CLR_EL}${SGR0}${WHI}Checking Active Modes... "
 fnCHECK_MODES_ENABLED
+sleep .5
 
-echo -en "${WHI}Initializing... "
+echo -en "\r${CLR_EL}${SGR0}${WHI}Initializing... "
+sleep .5
 
 # These will store the history to be displayed, if the
 # no-scroll region is called upon.
