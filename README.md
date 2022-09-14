@@ -5,6 +5,8 @@
 
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/animation.gif)
 
+## NOTE: Some recent changes to the tool will require updates to a couple of the screenshots, and the animation, that appear on this README page.  Until I update them, the visual differences are minor, and everything you see below will adequately describe the program, even with the older screenshots in place.  I'll update the screenshots when I can get to it.
+
 -------------------------------------------------------------------
 ## Contents
 - **[About](https://github.com/kencormack/pistar-lastqso#about)**
@@ -292,38 +294,37 @@ PISTAR-LASTQSO - HELP
       helpful only to those looking to modify the script, is shown
       in the top-right corner of the screen.  An example looks like
       this:
-                        Options & Parameters: -t 10 -f 4 -i -l
-                        Elapsed: 0 Days 06 Hrs 31 Mins 28 Secs
-                Debugging: 3>/dev/null  Profiling: 4>/dev/null
-             Display=49x160  TTY=pts0  PID=10711  BG_PID=10658
-                Enabled Modes: YSF=1 DMR=1 YSF2DMR=0 DMR2YSF=0
-          DMR=782 YSF=67 KERCHUNK=473 ERROR=0 WARN=0 RESTART=1
+                         Options & Parameters: -t 14 -f 4 -w -i -l
+                    Debugging: 3>/dev/null  Profiling: 4>/dev/null
+                 Display=49x160  TTY=pts0  PID=13758  BG_PID=14050
+                           Modes: YSF=1 DMR=0 NXDN=0 DSTAR=0 P25=0
+       XModes: YSF2DMR=0 YSF2NXDN=0 YSF2P25=0 DMR2YSR=0 DMR2NXDN=0
+       -----------------------------------------------------------
+       Counters: DMR=0 YSF=24 KERCHUNK=20 ERROR=0 WARN=0 RESTART=0
 
       The first line shows the options and parameters passed to the
       script when launched.
 
-      The second line shows the approximate elapsed time since the
-      script was launched.  The Elapsed Time display only updates when
-      there is traffic (the screen doesn't update when simply waiting
-      for a log entry to process).  The actual timer keeps going,
-      behind the scenes.
+      The second line lists any targets specified for the debug or
+      profiling logs, as described in the ABOUT_DEBUGGING.md and
+      ABOUT_PROFILING.md files.
 
-      The third line indicates any target logfiles specified for the
-      debugging and profiling logs described in ABOUT_DEBUGGING.md
-      and ABOUT_PROFILING.md.
-
-      The fourth line shows the size of the screen/window in rows and
+      The third line shows the size of the screen/window in rows and
       columns (useful to those who want to modify the script, as there
       is so much cursor management stuff going on).  Also shown are the
       TTY of the terminal/session the script is running on, the PID of
       the script, and the PID of the background task that watches for
       log activity (daily log rotations and pi-star nightly updates).
 
-      The fifth line shows which of the following modes and/or cross-
-      modes are enabled in your pi-star: YSF, DMR, YSF2DMR or DMR2YSF.
+      The fourth line shows which of the following modes are enabled
+      in pi-star: YSF, DMR, NXDN, DDTAR or P25.  If enabled, the mode
+      will show a "1".  Disabled will show a "0".
+
+      The fifth line shows which of the following cross-modes are
+      enabled: YSF2DMR, YSF2NXDN, YSF2P25, DMR2YSR, and DMR2NXDN.
       If enabled, the mode will show a "1".  Disabled will show a "0".
 
-      The sixth line shows a number of counters.  The counters repre-
+      The last line shows a number of counters.  The counters repre-
       sent the following: DMR traffic, YSF traffic, Kerchunks, Errors,
       Warnings, and Restarts since program launch.  Regarding the
       restarts, expect typically two such events per day... rotation
