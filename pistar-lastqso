@@ -11,7 +11,7 @@
 
 set -o allexport
 
-VERSION=2.33
+VERSION=2.34
 
 if [[ "${EUID}" -eq 0 ]]
 then
@@ -302,24 +302,6 @@ GTAB=$'\t'
 #MY_CALLSIGN="$(grep -A 8 "^\[General\]" /etc/mmdvmhost | grep "^Enable")"
 #MY_CALLSIGN="${MY_CALLSIGN#*=}"
 
-DMR_ENABLED="$(grep -A 2 "^\[DMR\]" /etc/mmdvmhost | grep "^Enable")"
-DMR_ENABLED="${DMR_ENABLED#*=}"
-YSF_ENABLED="$(grep -A 2 "^\[System Fusion\]" /etc/mmdvmhost | grep "^Enable")"
-YSF_ENABLED="${YSF_ENABLED#*=}"
-DMR2YSF_ENABLED="$(grep -A 1 "^\[Enabled\]" /etc/dmr2ysf | grep "^Enable")"
-DMR2YSF_ENABLED="${DMR2YSF_ENABLED#*=}"
-YSF2DMR_ENABLED="$(grep -A 1 "^\[Enabled\]" /etc/ysf2dmr | grep "^Enable")"
-YSF2DMR_ENABLED="${YSF2DMR_ENABLED#*=}"
-
-#DSTAR_ENABLED="$(grep -A 2 "^\[D-Star\]" /etc/mmdvmhost | grep "^Enable")"
-#DSTAR_ENABLED="${DSTAR_ENABLED#*=}"
-#P25_ENABLED="$(grep -A 2 "^\[P25\]" /etc/mmdvmhost | grep "^Enable")"
-#P25_ENABLED="${P25_ENABLED#*=}"
-#NXDN_ENABLED="$(grep -A 2 "^\[NXDN\]" /etc/mmdvmhost | grep "^Enable")"
-#NXDN_ENABLED="${NXDN_ENABLED#*=}"
-#POCSAG_ENABLED="$(grep -A 2 "^\[POCSAG\]" /etc/mmdvmhost | grep "^Enable")"
-#POCSAG_ENABLED="${POCSAG_ENABLED#*=}"
-
 # Some DMR-related files we'll be consulting...
 # These are supplied with, and updated by, pistar
 #DMRIDS="$(grep -A 2 "^\[DMR Id Lookup\]" /etc/mmdvmhost | grep "^File" | cut -f2 -d"=")"
@@ -460,6 +442,38 @@ echo -en "${WRAP_OFF}"
 ###########################################################
 # FUNCTIONS
 ###########################################################
+
+#----------
+fnGET_MODES()
+{
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
+  # Primary modes
+  DMR_ENABLED="$(grep -A 2 "^\[DMR\]" /etc/mmdvmhost | grep "^Enable")"
+  DMR_ENABLED="${DMR_ENABLED#*=}"
+  YSF_ENABLED="$(grep -A 2 "^\[System Fusion\]" /etc/mmdvmhost | grep "^Enable")"
+  YSF_ENABLED="${YSF_ENABLED#*=}"
+  DSTAR_ENABLED="$(grep -A 2 "^\[D-Star\]" /etc/mmdvmhost | grep "^Enable")"
+  DSTAR_ENABLED="${DSTAR_ENABLED#*=}"
+  NXDN_ENABLED="$(grep -A 2 "^\[NXDN\]" /etc/mmdvmhost | grep "^Enable")"
+  NXDN_ENABLED="${NXDN_ENABLED#*=}"
+  P25_ENABLED="$(grep -A 2 "^\[P25\]" /etc/mmdvmhost | grep "^Enable")"
+  P25_ENABLED="${P25_ENABLED#*=}"
+  #POCSAG_ENABLED="$(grep -A 2 "^\[POCSAG\]" /etc/mmdvmhost | grep "^Enable")"
+  #POCSAG_ENABLED="${POCSAG_ENABLED#*=}"
+
+  # Cross-modes
+  DMR2YSF_ENABLED="$(grep -A 1 "^\[Enabled\]" /etc/dmr2ysf | grep "^Enable")"
+  DMR2YSF_ENABLED="${DMR2YSF_ENABLED#*=}"
+  DMR2NXDN_ENABLED="$(grep -A 1 "^\[Enabled\]" /etc/dmr2nxdn | grep "^Enable")"
+  DMR2NXDN_ENABLED="${DMR2YSF_ENABLED#*=}"
+  YSF2DMR_ENABLED="$(grep -A 1 "^\[Enabled\]" /etc/ysf2dmr | grep "^Enable")"
+  YSF2DMR_ENABLED="${YSF2DMR_ENABLED#*=}"
+  YSF2NXDN_ENABLED="$(grep -A 1 "^\[Enabled\]" /etc/ysf2nxdn | grep "^Enable")"
+  YSF2NXDN_ENABLED="${YSF2DMR_ENABLED#*=}"
+  YSF2P25_ENABLED="$(grep -A 1 "^\[Enabled\]" /etc/ysf2p25 | grep "^Enable")"
+  YSF2P25_ENABLED="${YSF2DMR_ENABLED#*=}"
+}
 
 #----------
 fnCLEANUP()
@@ -818,12 +832,14 @@ fnTOP_DATA()
   # GATHER LINE 1 DATA...
   # Hotspot TX & RX frequencies
   # <rant> I hate that bash can't do simple floating-point math without external help. </rant>
-  TX="$(printf %.4f "$(echo print "$(grep "TX Frequency:" /var/log/pi-star/MMDVM* 2>/dev/null | tail -1 | awk '{ print $6 }' | sed 's/Hz//')"/1000000 | perl)")"
+# TX="$(printf %.4f "$(echo print "$(grep "TX Frequency:" /var/log/pi-star/MMDVM* 2>/dev/null | tail -1 | awk '{ print $6 }' | sed 's/Hz//')"/1000000 | perl)")"
+  TX="$(printf %.4f "$(echo print "$(grep -A 9 "\[Info\]" /etc/mmdvmhost | grep "^TXFrequency=" 2>/dev/null | cut -f2 -d"=" | sed 's/Hz//')"/1000000 | perl)")"
   # Pad, and truncate to fit
   TX="${TX}${TOP_PAD}"
   TX="${TX:0:12}"
 
-  RX="$(printf %.4f "$(echo print "$(grep "RX Frequency:" /var/log/pi-star/MMDVM* 2>/dev/null | tail -1 | awk '{ print $6 }' | sed 's/Hz//')"/1000000 | perl)")"
+# RX="$(printf %.4f "$(echo print "$(grep "RX Frequency:" /var/log/pi-star/MMDVM* 2>/dev/null | tail -1 | awk '{ print $6 }' | sed 's/Hz//')"/1000000 | perl)")"
+  RX="$(printf %.4f "$(echo print "$(grep -A 9 "\[Info\]" /etc/mmdvmhost | grep "^RXFrequency=" 2>/dev/null | cut -f2 -d"=" | sed 's/Hz//')"/1000000 | perl)")"
   # Pad, and truncate to fit
   RX="${RX}${TOP_PAD}"
   RX="${RX:0:12}"
@@ -954,15 +970,16 @@ fnDEV_INFO()
   ELAPSED=$(eval "echo $(date -ud "@${SECONDS}" +'$((%s/3600/24)) Days %H Hrs %M Mins %S Secs')")
   BG_PID=${BG_PID:-'n/a'}
 
-  DEV_STRING[1]="Options & Parameters: ${MY_CMDLINE}"
-  DEV_STRING[2]="Elapsed: ${ELAPSED}"
-  DEV_STRING[3]="Debugging: 3>${DEBUG_LOG}  Profiling: 4>${PROFILING_LOG}"
-  DEV_STRING[4]="Display=${LINES}x${COLUMNS}  TTY=${MY_TTY}  PID=${MY_PID}  BG_PID=${BG_PID}"
-  DEV_STRING[5]="Enabled Modes: YSF=${YSF_ENABLED} DMR=${DMR_ENABLED} YSF2DMR=${YSF2DMR_ENABLED} DMR2YSF=${DMR2YSF_ENABLED}"
-  DEV_STRING[6]="DMR=${DMR_COUNT} YSF=${YSF_COUNT} KERCHUNK=${KERCHUNK_COUNT} ERROR=${ERROR_COUNT} WARN=${WARNING_COUNT} RESTART=${LOG_RESTARTS}"
+  DEV_STRING[1]="   Options & Parameters: ${MY_CMDLINE}"
+  DEV_STRING[2]="   Debugging: 3>${DEBUG_LOG}  Profiling: 4>${PROFILING_LOG}"
+  DEV_STRING[3]="   Display=${LINES}x${COLUMNS}  TTY=${MY_TTY}  PID=${MY_PID}  BG_PID=${BG_PID}"
+  DEV_STRING[4]="   Modes: YSF=${YSF_ENABLED} DMR=${DMR_ENABLED} NXDN=${NXDN_ENABLED} DSTAR=${DSTAR_ENABLED} P25=${P25_ENABLED}"
+  DEV_STRING[5]="   XModes: YSF2DMR=${YSF2DMR_ENABLED} YSF2NXDN=${YSF2NXDN_ENABLED} YSF2P25=${YSF2P25_ENABLED} DMR2YSR=${DMR2YSF_ENABLED} DMR2NXDN=${DMR2NXDN_ENABLED}"
+  DEV_STRING[6]="   ---------------------------------------------------------------------"
+  DEV_STRING[7]="   Counters: DMR=${DMR_COUNT} YSF=${YSF_COUNT} KERCHUNK=${KERCHUNK_COUNT} ERROR=${ERROR_COUNT} WARN=${WARNING_COUNT} RESTART=${LOG_RESTARTS}"
 
   DEV_INDEX=1
-  until [[ ${DEV_INDEX} -gt 6 ]]
+  until [[ ${DEV_INDEX} -gt 7 ]]
   do
     # tput references lines, beginning at 0.  The array begins
     # at 1.  So we subtract 1 from the array index, to get the
@@ -1058,6 +1075,21 @@ fnNOSCROLL_ZONE()
   echo -e "${CYA}Platform:${SGR0} ${WHI}${BOLD}${PLATFORM}${SGR0}"
 
   # Print line 3
+# ELAPSED=$(eval "echo $(date -ud "@${SECONDS}" +'$((%s/3600/24)) Days %H Hrs %M Mins %S Secs')")
+  ELAPSED=$(eval "echo $(date -ud "@${SECONDS}" +'$((%s/3600/24)) Days %H Hrs %M Mins')")
+  echo -en "${CYA}Elapsed:${SGR0} ${WHI}${BOLD}${ELAPSED}${SGR0}\r"
+
+  UPTIME="$(uptime)"
+  IFS=' '; CUT_ARRAY=(${UPTIME}); unset IFS;
+  MIN1="${CUT_ARRAY[7]}"
+  MIN5="${CUT_ARRAY[8]}"
+  MIN15="${CUT_ARRAY[9]}"
+  unset CUT_ARRAY
+
+  tput cuf 32
+  echo -e "${CYA}Load Avg (1,5,15 mins):${SGR0} ${WHI}${BOLD}${MIN1} ${MIN5} ${MIN15}${SGR0}"
+
+  # Print line 4
   echo -en "${CYA}YSF MASTER:${SGR0} ${WHI}${BOLD}${YSF_MASTER}${SGR0}\r"
   tput cuf 32
   echo -e "${CYA}DMR MASTER:${SGR0} ${WHI}${BOLD}${DMR_MASTER_NAME}${SGR0}"
@@ -1220,7 +1252,7 @@ fnPARSE_CMDLINE()
         # When "-t|--top" is used, with or without a history, this defines
         # the line number on which the scrolling region of the screen
         # (the part showing the QSO details) begins.
-        BELOW_NOSCROLL=$((HIST_MAX + 7))
+        BELOW_NOSCROLL=$((HIST_MAX + 8))
         continue
         ;;
 
@@ -1436,38 +1468,37 @@ PISTAR-LASTQSO - HELP
       helpful only to those looking to modify the script, is shown
       in the top-right corner of the screen.  An example looks like
       this:
-                        Options & Parameters: -t 10 -f 4 -i -l
-                        Elapsed: 0 Days 06 Hrs 31 Mins 28 Secs
-                Debugging: 3>/dev/null  Profiling: 4>/dev/null
-             Display=49x160  TTY=pts0  PID=10711  BG_PID=10658
-                Enabled Modes: YSF=1 DMR=1 YSF2DMR=0 DMR2YSF=0
-          DMR=782 YSF=67 KERCHUNK=473 ERROR=0 WARN=0 RESTART=1
+                         Options & Parameters: -t 14 -f 4 -w -i -l
+                    Debugging: 3>/dev/null  Profiling: 4>/dev/null
+                 Display=49x160  TTY=pts0  PID=13758  BG_PID=14050
+                           Modes: YSF=1 DMR=0 NXDN=0 DSTAR=0 P25=0
+       XModes: YSF2DMR=0 YSF2NXDN=0 YSF2P25=0 DMR2YSR=0 DMR2NXDN=0
+       -----------------------------------------------------------
+       Counters: DMR=0 YSF=24 KERCHUNK=20 ERROR=0 WARN=0 RESTART=0
 
       The first line shows the options and parameters passed to the
       script when launched.
 
-      The second line shows the approximate elapsed time since the
-      script was launched.  The Elapsed Time display only updates when
-      there is traffic (the screen doesn't update when simply waiting
-      for a log entry to process).  The actual timer keeps going,
-      behind the scenes.
+      The second line lists any targets specified for the debug or
+      profiling logs, as described in the ABOUT_DEBUGGING.md and
+      ABOUT_PROFILING.md files.
 
-      The third line indicates any target logfiles specified for the
-      debugging and profiling logs described in ABOUT_DEBUGGING.md
-      and ABOUT_PROFILING.md.
-
-      The fourth line shows the size of the screen/window in rows and
+      The third line shows the size of the screen/window in rows and
       columns (useful to those who want to modify the script, as there
       is so much cursor management stuff going on).  Also shown are the
       TTY of the terminal/session the script is running on, the PID of
       the script, and the PID of the background task that watches for
       log activity (daily log rotations and pi-star nightly updates).
 
-      The fifth line shows which of the following modes and/or cross-
-      modes are enabled in your pi-star: YSF, DMR, YSF2DMR or DMR2YSF.
+      The fourth line shows which of the following modes are enabled
+      in pi-star: YSF, DMR, NXDN, DDTAR or P25.  If enabled, the mode
+      will show a "1".  Disabled will show a "0".
+
+      The fifth line shows which of the following cross-modes are
+      enabled: YSF2DMR, YSF2NXDN, YSF2P25, DMR2YSR, and DMR2NXDN.
       If enabled, the mode will show a "1".  Disabled will show a "0".
 
-      The sixth line shows a number of counters.  The counters repre-
+      The last line shows a number of counters.  The counters repre-
       sent the following: DMR traffic, YSF traffic, Kerchunks, Errors,
       Warnings, and Restarts since program launch.  Regarding the
       restarts, expect typically two such events per day... rotation
@@ -2387,14 +2418,16 @@ fnYSF_SHOW_CURRENT_CALL()
           COUNTRY="${DXCC_CACHE_RECORD#*:}"
           DXCC_TIME="Cached"
         else
+          #KPC
           # Capture both the "Country" resolved by dxcc.pl, AND the time it took to resolve.
-          # This technique captures both STDOUT and STDERR, saving them in variablessaving them in variables
+          # This technique captures both STDOUT and STDERR, saving them in variables.
           {
             IFS=$'\n' read -r -d '' CAPTURED_STDERR;
             IFS=$'\n' read -r -d '' CAPTURED_STDOUT;
-          } < <((printf '\0%s\0' "$(time dxcc.pl "${DXCC_FROM}" | grep "^Country Name:" | awk '{ print substr($0, index($0,$3)) }')" 1>&2) 2>&1)
+          } < <( (printf '\0%s\0' "$(time dxcc.pl "${DXCC_FROM}" | grep "^Country Name:" | awk '{ print substr($0, index($0,$3)) }')" 1>&2) 2>&1)
           COUNTRY="${CAPTURED_STDOUT}"
           DXCC_TIME="${CAPTURED_STDERR} secs"
+
           echo "${DXCC_FROM}:${COUNTRY}" >> "${DXCC_CACHE_FILE}"
         fi
       fi
@@ -2909,10 +2942,11 @@ fnMAIN_LOOP()
 {
   echo -e "\nenter: ${FUNCNAME[*]}" >&3
 
-  tail -f -n 1 "${WORKING_LOG}" | grep -E --line-buffered " DMR | YSF, |MMDVMHOST-STOP|SIGTERM" \
+  tail -f -n 1 "${WORKING_LOG}" | grep -E --line-buffered " DMR | YSF, | NXDN |MMDVMHOST-STOP|SIGTERM" \
     | grep -v -E --line-buffered "^D:|^I:|0000:|Opening|Closing|Embedded Talker Alias" \
     | while read -r RECORD
   do
+    #--------------------------------
     # See if MMDVMHost has either shutdown, or transitioned to a new log.
     if [[ "${RECORD}" =~ "MMDVMHOST-STOP" ]] || [[ "${RECORD}" =~ "exited on receipt of SIGTERM" ]]
     then
@@ -2927,7 +2961,9 @@ fnMAIN_LOOP()
       kill "${TAIL_PID}" 2>/dev/null
       return
     fi
+    #--------------------------------
 
+    #--------------------------------
     # The MMDVMHost daemon logs any errors or warnings it encounters.
     # Errors are logged in records beginning with "E:".
     # Warnings are logged in records beginning with "W:".
@@ -2946,7 +2982,9 @@ fnMAIN_LOOP()
       fnTALLY_WARNINGS
       continue
     fi
+    #--------------------------------
 
+    #--------------------------------
     # For any record beginning with "^M:", get the date and timestamps, and mode (DMR, YSF, etc.)
     # For records other than the loop exit trigger, "^E:", "^W:", or "^M:", do nothing, and loop
     # to watch for the next log entry.
@@ -2959,10 +2997,13 @@ fnMAIN_LOOP()
     else
       continue
     fi
+    #--------------------------------
 
+    #--------------------------------
     # BEGIN YSF-SPECIFIC LOG RECORDS
     if [[ "${LOGREC_MODE}" = "YSF" ]]
     then
+      #------------
       # Start of YSF network traffic
       if [[ "${LOGREC_REMAINING_DATA}" =~ "received network data from" ]]
       then
@@ -2992,7 +3033,9 @@ fnMAIN_LOOP()
         fnYSF_SHOW_CURRENT_CALL
         continue
       fi
+      #------------
 
+      #------------
       # Start of YSF RF traffic
       if [[ "${LOGREC_REMAINING_DATA}" =~ "received RF header from" ]] || [[ "${LOGREC_REMAINING_DATA}" =~ "received RF late entry from" ]]
       then
@@ -3037,7 +3080,9 @@ fnMAIN_LOOP()
         fnYSF_SHOW_CURRENT_CALL
         continue
       fi
+      #------------
 
+      #------------
       # YSF RF traffic dropped
       # transmission lost from KE8DPF     to ALL       , 1.6 seconds, BER: 0.8%, RSSI: -58/-47/-47 dBm
       # similar to: "received RF end of transmission from KE8DPF     to DG-ID 0, 1.0 seconds, BER: 0.8%, RSSI: -55/-51/-52 dBm"
@@ -3057,7 +3102,8 @@ fnMAIN_LOOP()
 
         # Fields to pass to the history...
         SECS="${LOGREC_SECS}"
-        BER="${BER%%*}"
+#       BER="$(echo "${LOGREC_BER}" | cut -f1 -d"%")"
+        BER="${LOGREC_BER%"%"*}"
 
         RSSI="${LOGREC_RSSI}"
         IFS='/'; CUT_ARRAY=(${RSSI}); unset IFS;
@@ -3096,7 +3142,9 @@ fnMAIN_LOOP()
         fnLISTENING
         continue
       fi
+      #------------
 
+      #------------
       # End of YSF network traffic (Wires-X)
       if [[ "${LOGREC_REMAINING_DATA}" =~ "received network end of transmission from" ]]
       then
@@ -3113,7 +3161,9 @@ fnMAIN_LOOP()
         fnYSF_END_NETWORK_TRAFFIC
         continue
       fi
+      #------------
 
+      #------------
       # End of YSF RF traffic
       if [[ "${LOGREC_REMAINING_DATA}" =~ "received RF end of transmission from" ]]
       then
@@ -3131,7 +3181,8 @@ fnMAIN_LOOP()
 
         # Fields to pass to the history...
         SECS="${LOGREC_SECS}"
-        BER="${LOGREC_BER%%*}"
+#       BER="$(echo "${LOGREC_BER}" | cut -f1 -d"%")"
+        BER="${LOGREC_BER%"%"*}"
 
         RSSI="${LOGREC_RSSI}"
         IFS='/'; CUT_ARRAY=(${RSSI}); unset IFS;
@@ -3168,9 +3219,12 @@ fnMAIN_LOOP()
         fnLISTENING
         continue
       fi
+      #------------
     fi
     # END YSF-SPECIFIC LOG RECORDS
+    #--------------------------------
 
+    #--------------------------------
     # BEGIN DMR-SPECIFIC LOG RECORDS
     if [[ "${LOGREC_REMAINING_DATA}" =~ "DMR Talker Alias" ]]
     then
@@ -3277,6 +3331,52 @@ fnMAIN_LOOP()
       fi
     fi
     # END DMR-SPECIFIC LOG RECORDS
+    #--------------------------------
+
+#KPC - THIS "continue" BYPASSES THE STUB STANZAS BELOW
+    continue
+
+    #--------------------------------
+    # STUB - BEGIN NXDN-SPECIFIC LOG RECORDS
+    if [[ "${LOGREC_MODE}" = "NXDN" ]]
+    then
+      echo -en "${DIM}${WHI}"
+      fnSEPARATOR
+      echo "NXDN log entry..."
+      echo "${RECORD}"
+      fnSEPARATOR
+      continue
+    fi
+    # END NXDN-SPECIFIC LOG RECORDS
+    #--------------------------------
+
+    #--------------------------------
+    # STUB - BEGIN DSTAR-SPECIFIC LOG RECORDS
+    if [[ "${LOGREC_MODE}" = "D-Star" ]]
+    then
+      echo -en "${DIM}${WHI}"
+      fnSEPARATOR
+      echo "DSTAR log entry..."
+      echo "${RECORD}"
+      fnSEPARATOR
+      continue
+    fi
+    # END DSTAR-SPECIFIC LOG RECORDS
+    #--------------------------------
+
+    #--------------------------------
+    # STUB - BEGIN P25-SPECIFIC LOG RECORDS
+    if [[ "${LOGREC_MODE}" = "P25" ]]
+    then
+      echo -en "${DIM}${WHI}"
+      fnSEPARATOR
+      echo "P25 log entry..."
+      echo "${RECORD}"
+      fnSEPARATOR
+      continue
+    fi
+    # END P25-SPECIFIC LOG RECORDS
+    #--------------------------------
   done
 }
 
@@ -3443,6 +3543,7 @@ fi
 sleep .5
 
 echo -en "\r${CLR_EL}${SGR0}${WHI}Checking Active Modes... "
+fnGET_MODES
 fnCHECK_MODES_ENABLED
 sleep .5
 
@@ -3544,6 +3645,10 @@ do
     WORKING_LOG="${NEWEST}"
   done
   echo -e "\n${GRE}LOG ACTIVITY HAS RESUMED USING $(basename "${WORKING_LOG}")...${WHI}${SGR0}"
+
+  # Reexamine the activated modes, in case the log was bounced due to
+  # user configuration changes made in the GUI's "Configuration" page.
+  fnGET_MODES
 
   if [[ "${OLD_LOG}" != "${WORKING_LOG}" ]]
   then

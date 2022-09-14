@@ -1,4 +1,29 @@
 ```
+CHANGES: V2.34
+ 1. BUGFIX - Your own YSF transmissions, to the
+    hotspot, were not rolling up to the history.
+    This has been fixed.  The bug was introduced
+    when replacing a "cut", and forgetting to
+    quote the field delimiter for BER.
+ 2. TX and RX Frequencies are now fetched from
+    /etc/mmdvmhost, rather than from the working
+    MMDVM logfile.
+ 3. Elapsed Time and Average Load now appear in
+    the non-scrolling "-t|--top" block.
+ 4. Small changes to the -i|--info section.
+ 5. Active modes (DMR, YSF, etc.) are now checked
+    each time the log is bounced or cycled.  This
+    allows the -i|--info area to remain accurate
+    after service bounce, when a bounce is due to
+    modes being enabled/disabled in the pi-star
+    GUI's "Configuration" page.
+ 6. Staged a few underlying elements that may
+    be used as hooks to explore D-Star, NXDN,
+    and P25.  THIS DOES NOT MEAN YOU SHOULD
+    EXPECT THESE MODES SOON (UNLESS SOMEONE WANTS
+    TO GIFT ME APPROPRIATE RADIOS FOR CHRISTMAS.)
+    ::wink wink:: ::nudge nudge::
+
 CHANGES: V2.33
 Another big performance boost.  In YSF mode, if
 "dxcc.pl" is called upon to resolve a callsign's
@@ -8,7 +33,7 @@ subsequent lookup of the same callsign, the
 data is retrieved from cache.  As the original
 query can take between 3 and 5 seconds, and
 retrieval from the cache occurs in a fraction of
-a second, resovling the QTH Country of the call-
+a second, resolving the QTH Country of the call-
 sign is MUCH quicker.
 
 Examples of the benefit include a prolonged back-
@@ -30,8 +55,8 @@ the script will build a new cache with next run.
     dxcc.pl to resolve the country that issued
     a callsign, based on it's prefix,, even when
     that resolution fails.  (Such failures occur
-    when, for example, a remote operator's poor
-    setup makes them appear as "AMERIC", as in
+    when, for example, a remote operator's setup
+    makes them appear as "AMERIC", as in
     "americalink", instead of a proper callsign,
     in the MMDVM log.)
  2. Cache the results of a dxcc.pl lookup.  The
