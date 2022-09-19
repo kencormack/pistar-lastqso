@@ -15,7 +15,7 @@ following operations...
 1.) remount the rootfs as read-write
 
 2.) copy the "pistar-lastqso" script to
-    /usr/local/sbin and enable execute
+    /usr/local/bin and enable execute
     permission
 
 3.) copy the "dxcc.pl" script to
@@ -47,13 +47,17 @@ then
   echo -e "${RED}  Installation failed.\n${WHI}"
   exit
 else
-  if [ "$(sudo cp ./pistar-lastqso /usr/local/sbin 2> /dev/null)" ]
+  if [ -f /usr/local/sbin/pistar-lastqso ]
   then
-    echo -e "${RED}\n  Unable to copy script to /usr/local/sbin.${WHI}"
+    sudo rm /usr/local/sbin/pistar-lastqso 2> /dev/null
+  fi
+  if [ "$(sudo cp ./pistar-lastqso /usr/local/bin 2> /dev/null)" ]
+  then
+    echo -e "${RED}\n  Unable to copy script to /usr/local/bin.${WHI}"
     echo -e "${RED}  Installation failed.\n${WHI}"
     exit
   fi
-  if [ "$(sudo chmod +x /usr/local/sbin/pistar-lastqso 2> /dev/null)" ]
+  if [ "$(sudo chmod +x /usr/local/bin/pistar-lastqso 2> /dev/null)" ]
   then
     echo -e "${RED}\n  Unable to set execute permission.${WHI}"
     echo -e "${RED}  Installation failed.\n${WHI}"
