@@ -1,4 +1,32 @@
 ```
+CHANGES: V2.35
+ 1. Reorganized fnMAIN_LOOP, moving the DMR and
+    YSF stuff to new fnDMR_MAIN and fnYSF_MAIN
+    functions, called by fnMAIN_LOOP, and like-
+    wise created stub functions as placeholders
+    for other modes.
+ 2. Changes to the animated title screen, in
+    hopes that one day I can add support for
+    additional modes in the future.
+ 3. Added a new commandline option "-r|--replay".
+    This option allows replaying a log for test
+    and development purposes.  See the help text
+    for details.
+ 4. Changed install location of pistar-lastqso
+    from /usr/local/sbin to the more appropriate
+    /usr/local/bin.  The install script takes
+    care of this automatically.
+ 5. Fixed detection of the cross-modes, for the
+    -i|--info section.
+ 6. Fixed glitch in reporting load averages.
+ 7. Additional small cleanups to clear stray
+    artifacts from window size changes, in the
+    -t|--top non-scrolling region.
+ 8. When logging stops/restarts, rescan data for
+    the -t|--top zone, as the interruption may
+    have been due to user config changes made in
+    pi-star's GUI Configuration page.
+
 CHANGES: V2.34
  1. BUGFIX - Your own YSF transmissions, to the
     hotspot, were not rolling up to the history.
