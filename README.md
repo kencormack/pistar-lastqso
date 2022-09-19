@@ -235,16 +235,16 @@ PISTAR-LASTQSO - HELP
 
   -e|--errors
       By default, pistar-lastqso will display any error messages found
-      in the MMDVM log, as they occur.  It ia NOT unusual to see an
+      in the MMDVM log, as they occur.  It is NOT unusual to see an
       occasional, or sporadic message, such as a queue overflow.  But
       if these or other errors are frequent or persist, you may need
-      to get help from the PI-STAR forums.  In the meantime, you can use
+      to get help from the pi-star forums.  In the meantime, you can use
       the "-e" or "--error" option to suppress the onscreen reporting
       of these errors.  The errors will however still be counted for
       the current session, and the count will still be reported on the
       exit screen.  It is your responsibility to investigate any cause.
 
-      Use of this option DOES NOT FIX THE ERRORS coming from PI-STAR.
+      Use of this option DOES NOT FIX THE ERRORS coming from pi-star.
       It only stops telling you that they are happening.
 
       NOTE: The script also displays and tallies any WARNINGS that may
@@ -252,8 +252,8 @@ PISTAR-LASTQSO - HELP
       display of ERRORS, it will NOT supress display of WARNINGS.
 
   -f|--font <1-5>
-      The [-f|--font] option forces use of the selected font, regardless of
-      screen-width.
+      The [-f|--font] option forces use of the selected font, regardless
+      of screen-width.
 
       Valid options are 1, 2, 3, 4, or 5
         1 = "small"
@@ -289,18 +289,18 @@ PISTAR-LASTQSO - HELP
           at the top of the screen using the "-t|--top" option (the
           number of lines of history, if any, is irrelevant).
 
-      If either B or C above is false, then A has no effect.  If all
+      If either B or C above is false, then A is useless.  If all
       three conditions are met, a small block of information, largely
       helpful only to those looking to modify the script, is shown
       in the top-right corner of the screen.  An example looks like
       this:
-                         Options & Parameters: -t 14 -f 4 -w -i -l
-                    Debugging: 3>/dev/null  Profiling: 4>/dev/null
-                 Display=49x160  TTY=pts0  PID=13758  BG_PID=14050
-                           Modes: YSF=1 DMR=0 NXDN=0 DSTAR=0 P25=0
-       XModes: YSF2DMR=0 YSF2NXDN=0 YSF2P25=0 DMR2YSR=0 DMR2NXDN=0
-       -----------------------------------------------------------
-       Counters: DMR=0 YSF=24 KERCHUNK=20 ERROR=0 WARN=0 RESTART=0
+                       Options & Parameters: -t 10 -f 4 -w -i -l
+                   Debugging: 3>/dev/null Profiling: 4>/dev/null
+            xterm Display=44x168 TTY=pts0 PID=28578 BG_PID=28887
+             Modes and X-Modes: YSF=1 DMR=1 NXDN=0 DSTAR=0 P25=0
+             YSF2DMR=0 YSF2NXDN=0 YSF2P25=0 DMR2YSR=0 DMR2NXDN=0
+        Counts: DMR=425 YSF=214 KERCH=216 ERR=0 WARN=0 RESTART=0
+            ----------------------------------------------------
 
       The first line shows the options and parameters passed to the
       script when launched.
@@ -309,7 +309,7 @@ PISTAR-LASTQSO - HELP
       profiling logs, as described in the ABOUT_DEBUGGING.md and
       ABOUT_PROFILING.md files.
 
-      The third line shows the size of the screen/window in rows and
+      The third line shows TERM type, and size of the screen in rows &
       columns (useful to those who want to modify the script, as there
       is so much cursor management stuff going on).  Also shown are the
       TTY of the terminal/session the script is running on, the PID of
@@ -324,7 +324,7 @@ PISTAR-LASTQSO - HELP
       enabled: YSF2DMR, YSF2NXDN, YSF2P25, DMR2YSR, and DMR2NXDN.
       If enabled, the mode will show a "1".  Disabled will show a "0".
 
-      The last line shows a number of counters.  The counters repre-
+      The sixth line shows a number of counters.  The counters repre-
       sent the following: DMR traffic, YSF traffic, Kerchunks, Errors,
       Warnings, and Restarts since program launch.  Regarding the
       restarts, expect typically two such events per day... rotation
@@ -333,6 +333,11 @@ PISTAR-LASTQSO - HELP
       that any changes you make to pi-star's config via the GUI will
       also bounce the services, when your changes are saved.
 
+      The last line shows a dashed line in normal operatation mode,
+      when watching the live log.  However, when the -r|--replay
+      option is specified, a simple reminder appears to indicate
+      that the program is running in "replay mode".
+
   -l|--logo
       Disables the animated logo at startup.
 
@@ -340,8 +345,28 @@ PISTAR-LASTQSO - HELP
       For monochrome displays, this option suppresses all color codes.
 
   -n|--nobig
-      Disable the large font display of callsigns and ID #s, on systems
-      with figlet installed.  This conserves screen-space.
+      Disable the large font display of callsigns and ID #s.  This
+      conserves vertical screen-space.
+
+  -r|--replay /full/path/to/file
+      FOR DEVELOPMENT USE: This option allows the specified file to
+      be "replayed" from the start, as if it were the current log.
+      This aids testing of coding changes, against problematic log
+      entries, by replaying those log entries.  Troubleshooting
+      another user's log too, becomes possible.  A fully qualified
+      filename must be specified.
+
+        Examples:
+                -r /full/path/to/file
+          --replay /full/path/to/file
+
+        Not:
+                -r filename
+          --replay filename
+
+      This also allows adding support for modes for which the user
+      does not have appropriate radios, by soliciting sample logs
+      from contributors who do own radios of the appropriate type.
 
   -t|--top [integer]
       Adds an information zone to the top of the screen that shows
@@ -373,9 +398,9 @@ PISTAR-LASTQSO - HELP
       lines each time the screen is re-sized, rendering useless any
       limit-check performed at startup.
 
-      As a point of reference, "--t 10 -nobig" will maximize the size
-      of the history, while still allowing full details for the QSO
-      in progress (without large fonts), on a typical 80x24 display.
+      As a point of reference, "-t 9 --n" will maximize the size of
+      the history, while still allowing full details for the QSO in
+      progress (without large fonts), on a typical 80x24 display.
       Larger screens will support other combinations.  Feel free to
       experiment - YMMV.
 
@@ -391,6 +416,11 @@ PISTAR-LASTQSO - HELP
       disappear off the right edge of the screen.  You sacrifice what-
       ever information was off the edge of the screen, but without
       wasting so much vertical screen space to line-wrap.
+
+                            END OF HELP
+
+(Cursor Up/Down keys to scroll, Page Up/Dn to page, Q to quit help.)
+
 ```
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
