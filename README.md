@@ -169,11 +169,12 @@ display of the Callsigns, and activate the non-scrolling information section at 
 
   Short Form:
     [-c] [-d] [-D] [-e] [-f <1-5>] [-h] [-i]
-    [-l] [-m] [-n] [-t [integer]] [-v] [-w]
+    [-l] [-m] [-n] [-r /full/path/to/file] [-t [integer]] [-v] [-w]
 
   Long Form:
     [--csv] [--dat] [--DXCC] [--errors] [--font <1-5>] [--help] [--info]
-    [--logo] [--mono] [--nobig] [--top [integer]] [--version] [--wrap]
+    [--logo] [--mono] [--nobig] [--replay /full/path/to/file] [--top [integer]]
+    [--version] [--wrap]
 ```
 
 Also, options that take a parameter (-f|--font and -t|--top) will accept either a space, or an equal sign (=) between the option, and it's parameter.  For example, all of the following are valid forms:
