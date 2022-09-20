@@ -559,7 +559,7 @@ With "-t 24 -f 1" (or "--top 24 --font 1") showing a 24-line history...
 
 **Sample Screenshot:**
 
-These are the 3 basic fonts supplied with the basic "figlet" package, along with the supplemental "ansi_shadow" font.
+These are the 3 basic fonts supplied with the "figlet" package, along with the supplemental "ansi_shadow" font.
 
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/font-samples.jpg)
 
