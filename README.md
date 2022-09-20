@@ -5,8 +5,6 @@
 
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/animation.gif)
 
-## NOTE: Some recent changes to the tool will require updates to a couple of the screenshots, and the animation, that appear on this README page.  Until I update them, the visual differences are minor, and everything you see below will adequately describe the program, even with the older screenshots in place.  I'll update the screenshots when I can get to it.
-
 -------------------------------------------------------------------
 ## Contents
 - **[About](https://github.com/kencormack/pistar-lastqso#about)**
