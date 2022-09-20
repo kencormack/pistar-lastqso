@@ -316,7 +316,7 @@ PISTAR-LASTQSO - HELP
       log activity (daily log rotations and pi-star nightly updates).
 
       The fourth line shows which of the following modes are enabled
-      in pi-star: YSF, DMR, NXDN, DDTAR or P25.  If enabled, the mode
+      in pi-star: YSF, DMR, NXDN, DSTAR or P25.  If enabled, the mode
       will show a "1".  Disabled will show a "0".
 
       The fifth line shows which of the following cross-modes are
