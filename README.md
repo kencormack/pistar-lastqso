@@ -283,7 +283,7 @@ PISTAR-LASTQSO - HELP
       the following THREE CONDITIONS apply...
 
       A.) You MUST specify the "-i|--info" option.
-      B.) Your display MUST be at least 120 chars wide.
+      B.) Your display MUST be at least 130 chars wide.
       C.) You MUST also activate the non-scrolling information zone
           at the top of the screen using the "-t|--top" option (the
           number of lines of history, if any, is irrelevant).
