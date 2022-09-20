@@ -373,8 +373,10 @@ PISTAR-LASTQSO - HELP
       user.csv files, name of the active log file, TX and RX freqs,
       the hotspot's TCXO frequency and firmware version, CPU temp,
       the Modem's device node (port), the computer platform/model,
-      the DMR and/or YSF Master servers, and the first 5 statically
-      defined BrandMeister TalkGroups.
+      the elapsed time since the script was launched, the system
+      load averages for the last 1, 5, and 15 minutes, the DMR and/
+      or YSF Master servers, and the first 5 statically defined
+      BrandMeister TalkGroups.
 
       By default, the use of "-t|--top" also provides a history of
       the last 5 QSOs observed.  However, by specifying an integer
