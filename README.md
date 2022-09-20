@@ -177,10 +177,10 @@ display of the Callsigns, and activate the non-scrolling information section at 
 
 Also, options that take a parameter (-f|--font, -t|--top, and -r|--replay) will accept either a space, or an equal sign (=) between the option, and it's parameter.  For example, all of the following are valid forms:
 ```
-  $ pistar-lastqso -t 10 -f 1
-  $ pistar-lastqso -t=10 -f=1
-  $ pistar-lastqso --top 10 --font 1
-  $ pistar-lastqso --top=10 --font=1
+  $ pistar-lastqso -t 10 -f 1 -r /tmp/logfile
+  $ pistar-lastqso -t=10 -f=1 -r=/tmp/logfile
+  $ pistar-lastqso --top 10 --font 1 --replay /tmp/logfile
+  $ pistar-lastqso --top=10 --font=1 --replay=/tmp/logfile
 ```
 
 **The Help Text...**
