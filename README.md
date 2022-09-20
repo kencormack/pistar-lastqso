@@ -332,7 +332,7 @@ PISTAR-LASTQSO - HELP
       that any changes you make to pi-star's config via the GUI will
       also bounce the services, when your changes are saved.
 
-      The last line shows a dashed line in normal operatation mode,
+      The last line shows a dashed line in normal operation mode,
       when watching the live log.  However, when the -r|--replay
       option is specified, a simple reminder appears to indicate
       that the program is running in "replay mode".
