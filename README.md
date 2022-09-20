@@ -399,7 +399,7 @@ PISTAR-LASTQSO - HELP
       lines each time the screen is re-sized, rendering useless any
       limit-check performed at startup.
 
-      As a point of reference, "-t 9 --n" will maximize the size of
+      As a point of reference, "-t 9 -n" will maximize the size of
       the history, while still allowing full details for the QSO in
       progress (without large fonts), on a typical 80x24 display.
       Larger screens will support other combinations.  Feel free to
