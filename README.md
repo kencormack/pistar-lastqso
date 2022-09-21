@@ -14,6 +14,7 @@
 - **[City, State, Country Lookups for Callsigns (DMR only)](https://github.com/kencormack/pistar-lastqso#city-state-country-lookups-for-callsigns-dmr-only)**
 - **[City, State, Country Lookups for Callsigns (YSF only)](https://github.com/kencormack/pistar-lastqso#city-state-country-lookups-for-callsigns-ysf-only)**
 - **[Commandline Options](https://github.com/kencormack/pistar-lastqso#commandline-options)**
+- **[The Help Text](https://github.com/kencormack/pistar-lastqso#the-help-text)**
 - **[Daily Log Rotation](https://github.com/kencormack/pistar-lastqso#daily-log-rotation)**
 - **[User-Custom Talkgroup List (DMR only)](https://github.com/kencormack/pistar-lastqso#user-custom-talkgroup-list-dmr-only)**
 - **[QSO, Kerchunk, and MMDVM Error Counts](https://github.com/kencormack/pistar-lastqso#qso-kerchunk-and-mmdvm-error-and-warning-counts)**
