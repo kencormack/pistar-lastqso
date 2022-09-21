@@ -148,7 +148,9 @@ If the **user.csv** file is already present on your hotspot, but is older than 7
 -------------------------------------------------------------------
 ## City, State, Country Lookups for Callsigns (YSF only)
 
-As mentioned above, pistar-lastqso will attempt to find QTH info in the DMR **user.csv** file, then PI-STAR's **NXDN.csv** file.  If the Callsign is not found in either of those files, it then calls upon the perl script **dxcc.pl** and it's **cty.dat** file.  As the first two data sources generally contain City, State, and Country info, they are tried first.  The **dxcc.pl** script, and it's **cty.dat** file, can only determine the Country that issued the Callsign, based on the Callsign's prefix.  (Lookups with **dxcc.pl** can be disabled if needed, with the "-D|--DXCC" options - see the help text for details.)
+As mentioned above, pistar-lastqso will attempt to find QTH info in the DMR **user.csv** file, then PI-STAR's **NXDN.csv** file.  If the Callsign is not found in either of those files, it then calls upon the perl script **dxcc.pl** and it's **cty.dat** file.  As the first two data sources generally contain City, State, and Country info, they are tried first.
+
+The **dxcc.pl** script, and it's **cty.dat** file, can only determine the Country that issued the Callsign, based on the Callsign's prefix.  (Lookups with **dxcc.pl** can be disabled if needed, with the "-D|--DXCC" options - see the help text for details.)
 
 Upon first run, **pistar-lastqso** will download the latest version of the **cty.dat** file from https://www.country-files.com/category/big-cty/
 
