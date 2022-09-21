@@ -162,7 +162,7 @@ If the **cty.dat** file is already present on your hotspot, but is older than 30
 -------------------------------------------------------------------
 ## Commandline Options
 
-**pistar-lastqso** supports a number of commandline options, as shown in the **[Usage](https://github.com/kencormack/pistar-lastqso#commandline-options)** and **[Help](https://github.com/kencormack/pistar-lastqso#the-help-text)** screens, below.  Multiple options can be specified at the same time.  For example, specifying "-c -n -t" (or "--csv --nobig --top") will download the latest updated **user.csv** file, disable the large font
+**pistar-lastqso** supports a number of commandline options, as shown below, and in **[the Help text](https://github.com/kencormack/pistar-lastqso#the-help-text)**.  Multiple options can be specified at the same time.  For example, specifying "-c -n -t" (or "--csv --nobig --top") will download the latest updated **user.csv** file, disable the large font
 display of the Callsigns, and activate the non-scrolling information section at the top of the screen.
 
 **Valid Options and Parameters...**
