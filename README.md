@@ -186,7 +186,11 @@ Also, options that take a parameter (-f|--font, -t|--top, and -r|--replay) will 
   $ pistar-lastqso --top=10 --font=1 --replay=/tmp/logfile
 ```
 
-**The Help Text...**
+- **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
+-------------------------------------------------------------------
+## The Help Text
+
 ```
 PISTAR-LASTQSO - HELP
 
@@ -424,7 +428,6 @@ PISTAR-LASTQSO - HELP
                             END OF HELP
 
 (Cursor Up/Down keys to scroll, Page Up/Dn to page, Q to quit help.)
-
 ```
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
