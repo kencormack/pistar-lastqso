@@ -52,7 +52,7 @@
 - The contact's QTH (Determined with best effort, from several sources.)
 - Possibly, the contact's First Name (keep reading.)
 
-As YSF does not require that users be registered, there is no single source for Name or QTH data for YSF users.  The script therefore assumes that the Callsign owner may also have either a registered DMR ID or NXDN ID number.  On the chance that they do, pistar-lastqso first attempts to find the Callsign's name and QTH info in the DMR **user.csv** file, then PI-STAR's **NXDN.csv** file.  If the Callsign is not found in either of those files, as a last resort, it then calls upon the perl script **dxcc.pl** and it's **cty.dat** file.  As the first two data sources generally contain the Callsign's Name, City, State, and Country info, they are tried first.  The **dxcc.pl** script, and it's **cty.dat** file, can only determine the Country that issued the Callsign, based on the Callsign's prefix.  The Callsign's Name will remain unresolved.  (Lookups with **dxcc.pl** can be disabled if needed, with the "-D|--DXCC" options - see the help text for details.)
+As YSF does not require that users be registered, there is no single source for Name or QTH data for YSF users.  The script therefore assumes that the Callsign owner may also have either a registered DMR ID or NXDN ID number.  On the chance that they do, **pistar-lastqso** first attempts to find the Callsign's name and QTH info in the DMR **user.csv** file, then PI-STAR's **NXDN.csv** file.  If the Callsign is not found in either of those files, as a last resort, it then calls upon the perl script **dxcc.pl** and it's **cty.dat** file.  As the first two data sources generally contain the Callsign's Name, City, State, and Country info, they are tried first.  The **dxcc.pl** script, and it's **cty.dat** file, can only determine the Country that issued the Callsign, based on the Callsign's prefix.  The Callsign's Name will remain unresolved.  (Lookups with **dxcc.pl** can be disabled if needed, with the "-D|--DXCC" options - see the help text for details.)
 
 **Note #1:**
 *Talker Alias data is shown, only if present and complete.  Kerchunkers don't stick around long enough for TA data to be gathered.  Partial TA data (or that which is received as empty/null) is not shown.*
@@ -79,7 +79,7 @@ As YSF does not require that users be registered, there is no single source for 
 Put the PI-STAR filesystem in read-write mode...
   $ rpi-rw
 
-Pull down the pistar-lastqso files...
+Pull down the **pistar-lastqso** files...
   $ git clone https://github.com/kencormack/pistar-lastqso.git
 
 Change to the "pistar-lastqso" directory that was just created...
@@ -542,6 +542,7 @@ If you specify an invalid numeric parameter for the "-f|--font" option, **pistar
 ## Replaying a Log
 **Replaying a Log:**
 
+Introduced with version 2.35, **pistar-lstqso** has the ability to replay a log from the beginning, when the commandline option "-r|--replay" is specified.  Intended primarily for troubleshooting and development, this feature works best when an imported log is uploaded to the hotspot's **/tmp** directory, as **tmp** does not require root access, and does not require the pi-star filesystem to first be placed in read-write mode.  Importantly, **/tmp** is ram-based and volatile.  Any file uploaded there will be removed upon reboot.  See the Help text above, for details.
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
