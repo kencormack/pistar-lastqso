@@ -11,7 +11,7 @@
 
 set -o allexport
 
-VERSION=2.35
+VERSION=2.36
 
 #----------
 #===============
@@ -212,7 +212,6 @@ TOP=0
 # Can be disabled with "-l|--logo" cmdline option
 LOGO=1
 #
-#KPC
 # By default, the script will parse the current "live" log
 # using "tail".  But if testing, this option will use the
 # "cat" command instead, to replay a user-specified log.
@@ -319,8 +318,8 @@ LARGE_BOT="$(echo -n "${ESC}#4" 2>/dev/null)"
 #===============
 # Stuff deaaling with pi-star files
 #
-#MY_CALLSIGN="$(grep -A 8 "^\[General\]" /etc/mmdvmhost | grep "^Enable")"
-#MY_CALLSIGN="${MY_CALLSIGN#*=}"
+MY_CALLSIGN="$(grep -A 8 "^\[General\]" /etc/mmdvmhost | grep "^Enable")"
+MY_CALLSIGN="${MY_CALLSIGN#*=}"
 
 # Some DMR-related files we'll be consulting...
 # These are supplied with, and updated by, pistar
@@ -355,7 +354,6 @@ NXDNCSV=/usr/local/etc/NXDN.csv
 # and update it if older than 30 days.
 CTYDAT=/usr/local/etc/cty.dat
 
-#KPC
 #===============
 if [[ ${REPLAY} -eq 1 ]]
 then
@@ -851,7 +849,6 @@ fnTOP_DATA()
 # TOP_PAD=".........................................................."
   TOP_PAD="                                                          "
 
-#KPC
   #----------
   if [[ ${REPLAY} -eq 1 ]]
   then
@@ -1022,7 +1019,6 @@ fnDEV_INFO()
   DEV_STRING[5]="  YSF2DMR=${YSF2DMR_ENABLED} YSF2NXDN=${YSF2NXDN_ENABLED} YSF2P25=${YSF2P25_ENABLED} DMR2YSR=${DMR2YSF_ENABLED} DMR2NXDN=${DMR2NXDN_ENABLED}"
   DEV_STRING[6]="  Counts: DMR=${DMR_COUNT} YSF=${YSF_COUNT} KERCH=${KERCHUNK_COUNT} ERR=${ERROR_COUNT} WARN=${WARNING_COUNT} RESTART=${LOG_RESTARTS}"
 
-#KPC
   # In replay mode, text is bright yellow.
   # In normal mode, text is pale cyan.
   if [[ ${REPLAY} -eq 1 ]]
@@ -1314,7 +1310,7 @@ fnPARSE_CMDLINE()
         else
           # It is not, so show the usage text, and exit.
           echo -n "${BELL}${FLASH}"
-          echo -e "\n  ERROR:  The use of \"-f|--font\" requires an integer 1-5" >&2
+          echo -e "\n  ERROR:  The use of \"-f|--font\" requires an integer 1-5\n" >&2
           fnUSAGE
           exit 1
         fi
@@ -1367,7 +1363,6 @@ fnPARSE_CMDLINE()
         continue
         ;;
 
-#KPC
       -r|--replay)
         # If this option is given, see if the next value
         # is a file we can read
@@ -1431,7 +1426,7 @@ fnPARSE_CMDLINE()
 
       *)
         echo -n "${BELL}${FLASH}"
-        echo -e "\n  ERROR:  \"${OPTION}\" is not a valid option." >&2
+        echo -e "\n  ERROR:  \"${OPTION}\" is not a valid option.\n" >&2
         fnUSAGE
         exit 1
         ;;
@@ -1576,7 +1571,7 @@ PISTAR-LASTQSO - HELP
       log activity (daily log rotations and pi-star nightly updates).
 
       The fourth line shows which of the following modes are enabled
-      in pi-star: YSF, DMR, NXDN, DDTAR or P25.  If enabled, the mode
+      in pi-star: YSF, DMR, NXDN, DSTAR or P25.  If enabled, the mode
       will show a "1".  Disabled will show a "0".
 
       The fifth line shows which of the following cross-modes are
@@ -1592,7 +1587,7 @@ PISTAR-LASTQSO - HELP
       that any changes you make to pi-star's config via the GUI will
       also bounce the services, when your changes are saved.
 
-      The last line shows a dashed line in normal operatation mode,
+      The last line shows a dashed line in normal operation mode,
       when watching the live log.  However, when the -r|--replay
       option is specified, a simple reminder appears to indicate
       that the program is running in "replay mode".
@@ -1633,8 +1628,10 @@ PISTAR-LASTQSO - HELP
       user.csv files, name of the active log file, TX and RX freqs,
       the hotspot's TCXO frequency and firmware version, CPU temp,
       the Modem's device node (port), the computer platform/model,
-      the DMR and/or YSF Master servers, and the first 5 statically
-      defined BrandMeister TalkGroups.
+      the elapsed time since the script was launched, the system
+      load averages for the last 1, 5, and 15 minutes, the DMR and/
+      or YSF Master servers, and the first 5 statically defined
+      BrandMeister TalkGroups.
 
       By default, the use of "-t|--top" also provides a history of
       the last 5 QSOs observed.  However, by specifying an integer
@@ -1657,7 +1654,7 @@ PISTAR-LASTQSO - HELP
       lines each time the screen is re-sized, rendering useless any
       limit-check performed at startup.
 
-      As a point of reference, "-t 9 --n" will maximize the size of
+      As a point of reference, "-t 8 -n" will maximize the size of
       the history, while still allowing full details for the QSO in
       progress (without large fonts), on a typical 80x24 display.
       Larger screens will support other combinations.  Feel free to
@@ -1832,8 +1829,10 @@ fnCHECK_MODES_ENABLED()
 {
   echo -e "\nenter: ${FUNCNAME[*]}" >&3
 
-# if [[ ${DMR_ENABLED} -eq 0 ]] && [[ ${YSF_ENABLED} -eq 0 ]] && [[ ${NXDN_ENABLED} -eq 0 ]] && [[ ${DSTAR_ENABLED} -eq 0 ]]  && [[ ${P25_ENABLED} -eq 0 ]]
-  if [[ ${DMR_ENABLED} -eq 0 ]] && [[ ${YSF_ENABLED} -eq 0 ]]
+#KPC
+# if [[ ! "${DMR_ENABLED}${YSF_ENABLED}${NXDN_ENABLED}${DSTAR_ENABLED}${P25_ENABLED}" =~ "1" ]]
+# if [[ ${DMR_ENABLED} -eq 0 ]] && [[ ${YSF_ENABLED} -eq 0 ]]
+  if [[ ! "${DMR_ENABLED}${YSF_ENABLED}" =~ "1" ]]
   then
     echo -n "${SGR0}${RED}"
     tput cup 11 18
@@ -1843,8 +1842,12 @@ fnCHECK_MODES_ENABLED()
     done
     fnDRAW_BOX 8 16 6 45 2 1 1
 
+#KPC
     tput cup 10 24
     echo "${SGR0}${SMUL}${BOLD}${YEL}NEITHER DMR NOR YSF IS ENABLED${SGR0}${WHI}"
+#   tput cup 10 25
+#   echo "${SGR0}${SMUL}${BOLD}${YEL}NO DIGITAL MODES ARE ENABLED${SGR0}${WHI}"
+
     tput cuf 27
     echo "AT LEAST ONE IS REQUIRED"
     tput cuf 20
@@ -2520,6 +2523,10 @@ fnYSF_SHOW_CURRENT_CALL()
     # Last resort: Look up country based on callsign prefix
     if [[ "${USE_DXCC}" = "1" ]]
     then
+      # At least one numeric digit must appear in the first few characters
+      # of the callsign to have a chance of being valid.  Yeah, I'm looking
+      # at users that come across as "AMERIC" (america-link).  If not valid,
+      # don't waste resources looking it up (and knowing it will fail).
       if echo "${FROM}" | cut -f1 -d"-" | cut -c1-4 | grep -q "[0-9]"
       then
         QTH_SRC="cty.dat"
@@ -2531,7 +2538,7 @@ fnYSF_SHOW_CURRENT_CALL()
         unset CUT_ARRAY
 
         # NOTE: The average time to resolve, calling dxcc.pl,
-        # is 4-5 seconds on a Raspberry Pi Zero.  Loading
+        # is 4-5 seconds on a Raspberry Pi Zero.  Calling
         # the script creates a lot of overhead.
         #
         # Callsigns found in either user.csv or ndxn.csv
@@ -2558,8 +2565,8 @@ fnYSF_SHOW_CURRENT_CALL()
             IFS=$'\n' read -r -d '' CAPTURED_STDERR;
             IFS=$'\n' read -r -d '' CAPTURED_STDOUT;
           } < <( (printf '\0%s\0' "$(time dxcc.pl "${DXCC_FROM}" | grep "^Country Name:" | awk '{ print substr($0, index($0,$3)) }')" 1>&2) 2>&1)
-          #  ^--^--- These spaces are important for proper operation,
-          #          and for syntax linting such as in "vim".
+          #  ^--^--- These spaces are important for proper operation, for
+          #          linting/beautifying, and for syntax highlighting in "vim".
           COUNTRY="${CAPTURED_STDOUT}"
           DXCC_TIME="${CAPTURED_STDERR} secs"
 
@@ -2580,7 +2587,7 @@ fnYSF_SHOW_CURRENT_CALL()
   then
     if [[ "${USE_DXCC}" = "1" ]]
     then
-      echo "${MAG}${BOLD}Unable to determine QTH or DXCC Country${SGR0}${WHI}${CLR_ED}"
+      echo "${MAG}${BOLD}\"${FROM}\" doesn't look like a valid Call - Unable to lookup QTH/Country${SGR0}${WHI}${CLR_ED}"
     else
       echo "${MAG}DXCC Lookups Disabled on Cmdline${SGR0}${WHI}${CLR_ED}"
     fi
@@ -3467,7 +3474,6 @@ fnMAIN_LOOP()
 {
   echo -e "\nenter: ${FUNCNAME[*]}" >&3
 
-#KPC
   if [[ ${REPLAY} -eq 0 ]]
   then
     CMD="tail -f -n 1"
@@ -3483,7 +3489,6 @@ fnMAIN_LOOP()
     # See if MMDVMHost has either shutdown, or transitioned to a new log.
     if [[ "${RECORD}" =~ "MMDVMHOST-STOP" ]] || [[ "${RECORD}" =~ "SIGTERM" ]]
     then
-#KPC
       if [[ ${REPLAY} -eq 0 ]]
       then
         # If it did, it has triggered our exit from the loop.
@@ -3664,7 +3669,6 @@ else
   fnNO_LOGO
 fi
 
-#KPC
 # If running normally (not in replay mode)... ensure that
 # MMDVMHost is running, and that it is writing to the log.
 if [[ ${REPLAY} -eq 0 ]]
@@ -3772,7 +3776,6 @@ do
 
   fnLOAD_HISTORY_FILE
 
-#KPC
   #----------
   if [[ ${REPLAY} -eq 0 ]]
   then
@@ -3807,7 +3810,6 @@ do
   echo "${RED}$(basename "${WORKING_LOG}") LOG ACTIVITY HAS STOPPED.${WHI}${SGR0}"
   echo -n "${YEL}WATCHING FOR NEW LOG ACTIVITY...${WHI}${SGR0} "
 
-#KPC
   #===============
   if [[ ${REPLAY} -eq 1 ]]
   then
@@ -3831,7 +3833,7 @@ do
   OLD_LOG="${WORKING_LOG}"
   while [[ ! "$(sudo fuser -v "${WORKING_LOG}" 2>&1)" =~ "MMDVMHost" ]]
   do
-    sleep 2
+    sleep 1
     # Make sure we're working with latest log.
     CANDIDATE_FILES=("${LOGDIR}/${LOGROOT}"*.log) NEWEST=${CANDIDATE_FILES[0]}
     for F in "${CANDIDATE_FILES[@]}"
@@ -3849,7 +3851,7 @@ do
   if [[ "${OLD_LOG}" != "${WORKING_LOG}" ]]
   then
     echo "${GRE}${DIM}Daily MMDVM log rotation detected.${WHI}${SGR0}"
-    BOUNCE_MSG="- LOG ROTATION -"
+    BOUNCE_MSG="--LOG ROTATION--"
   else
     echo "${GRE}${DIM}Service bounce detected (pi-star update, user reconfig, or other restart.)${WHI}${SGR0}"
     BOUNCE_MSG="-SVCS RESTARTED-"
@@ -3864,7 +3866,6 @@ do
   # Reexamine other details (such as log name, Master Servers, etc.),
   # in case any values shown in the no-scroll zone have changed.
   fnTOP_DATA
-  fnNOSCROLL_ZONE
 
   echo -e "${GRE}${DBL_LINE}${WHI}${SGR0}${CLR_EL}\n"
 

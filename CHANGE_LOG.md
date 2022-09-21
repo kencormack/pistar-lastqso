@@ -1,4 +1,9 @@
 ```
+CHANGES: V2.36
+ 1. Fix inadvertent clearing of history at log
+    restart (bug introduced with v2.35 change
+    number 5, below.)
+
 CHANGES: V2.35
  1. Reorganized fnMAIN_LOOP, moving the DMR and
     YSF stuff to new fnDMR_MAIN and fnYSF_MAIN
