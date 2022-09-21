@@ -538,6 +538,13 @@ If you specify an invalid numeric parameter for the "-f|--font" option, **pistar
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
+## Replaying a Log
+**Replaying a Log:**
+
+
+- **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
+-------------------------------------------------------------------
 ## Sample Screenshots
 **Sample Screenshot:**
 
