@@ -19,6 +19,7 @@
 - **[QSO, Kerchunk, and MMDVM Error Counts](https://github.com/kencormack/pistar-lastqso#qso-kerchunk-and-mmdvm-error-and-warning-counts)**
 - **[More About the Large Font Support](https://github.com/kencormack/pistar-lastqso#more-about-the-large-font-support)**
 - **[One More Thing About Large Fonts](https://github.com/kencormack/pistar-lastqso#one-more-thing-about-large-fonts)**
+- **[Replaying a Log](https://github.com/kencormack/pistar-lastqso#replaying-a-log)**
 - **[Sample Screenshots](https://github.com/kencormack/pistar-lastqso#sample-screenshots)**
 - **[Other Notes](https://github.com/kencormack/pistar-lastqso#other-notes)**
 - **[Getting Help](https://github.com/kencormack/pistar-lastqso#getting-help)**
