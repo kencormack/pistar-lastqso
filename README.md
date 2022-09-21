@@ -162,7 +162,7 @@ If the **cty.dat** file is already present on your hotspot, but is older than 30
 -------------------------------------------------------------------
 ## Commandline Options
 
-**pistar-lastqso** supports a number of commandline options, as shown in the Usage and Help screens, below.  Multiple options can be specified at the same time.  For example, specifying "-c -n -t" (or "--csv --nobig --top") will download the latest updated **user.csv** file, disable the large font
+**pistar-lastqso** supports a number of commandline options, as shown in the **[Usage] (https://github.com/kencormack/pistar-lastqso#commandline-options)** and **[Help](https://github.com/kencormack/pistar-lastqso#the-help-text)** screens, below.  Multiple options can be specified at the same time.  For example, specifying "-c -n -t" (or "--csv --nobig --top") will download the latest updated **user.csv** file, disable the large font
 display of the Callsigns, and activate the non-scrolling information section at the top of the screen.
 
 **Valid Options and Parameters...**
@@ -547,7 +547,7 @@ If you specify an invalid numeric parameter for the "-f|--font" option, **pistar
 -------------------------------------------------------------------
 ## Replaying a Log
 
-Introduced with version 2.35, **pistar-lastqso** has the ability to replay a log from the beginning, when the commandline option "-r|--replay" is specified.  Intended primarily for troubleshooting and development, this feature works best when an imported log is uploaded to the hotspot's **/tmp** directory, as **/tmp** does not require root access, and does not require the pi-star filesystem to first be placed in read-write mode.  Importantly, **/tmp** is ram-based and volatile.  Any file uploaded there will be removed upon reboot.  See the Help text above, for details.
+Introduced with version 2.35, **pistar-lastqso** has the ability to replay a log from the beginning, when the commandline option "-r|--replay" is specified.  Intended primarily for troubleshooting and development, this feature works best when an imported log is uploaded to the hotspot's **/tmp** directory, as **/tmp** does not require root access, and does not require the pi-star filesystem to first be placed in read-write mode.  Importantly, **/tmp** is ram-based and volatile.  Any file uploaded there will be removed upon reboot.  See **[the Help text](https://github.com/kencormack/pistar-lastqso#the-help-text)** above, for details.
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
