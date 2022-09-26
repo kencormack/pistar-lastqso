@@ -640,7 +640,7 @@ The **ansi_shadow** font pre-dates figlet.  It appears to have been created usin
 -------------------------------------------------------------------
 ## Special Thanks
 
-I want to offer a big "Vielen Dank!" to Wolfgang Wendefeuer (DC6LK), for the testing, input, discussion, ideas, and sample TG entries he provided.  Thanks also, to Facebook users Cal Kutemeier (N9KO) for spotting a time-sensitive bug in the conversion of UTC date-stamps to local dates, and "Neil Neil" for reporting a problem with Talker Alias.
+I want to offer a big "Vielen Dank!" to Wolfgang Wendefeuer (DC6LK), for the testing, input, discussion, ideas, and sample TG entries he provided.  Thanks also, to Facebook users Cal Kutemeier (N9KO) for spotting a time-sensitive bug in the conversion of UTC date-stamps to local dates, and Neil Redditch (M1CFK) for reporting a problem with Talker Alias.
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
