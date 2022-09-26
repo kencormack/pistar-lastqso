@@ -1,4 +1,35 @@
 ```
+CHANGES: V2.37
+Since v2.30, approximately 100 calls to external
+commands have been removed from the script,
+replaced with built-in bash string manipulation
+facilities.  This has vastly reduced the load on
+Raspberry Pi Zero-based hotspots, particularly.
+
+Coupled with the DXCC results caching (added back
+in v2.33), I have yet to see my own Pi Zero fall
+behind, during even the busiest flurries of YSF
+kerchunkers.  I'm pleased with all of the recent
+performance-centric improvements.
+
+ 1. Replaced almost two dozen more calls to awk,
+    and grep, with bash variable expansions.
+ 2. RadioId.net had a problem resulting in the
+    script downloading a 0-byte user.csv file,
+    on Sunday, 25 Sept 2022.  Added a check to
+    ensure we aren't updating with such a file.
+    Thank you to Neil Redditch (M1CFK) for
+    reporting the problem.
+ 3. Added same sanity test for the cty.dat file.
+ 4. THE SCRIPT NOW DEFAULTS TO 24-HR TIMESTAMPS.
+    Added a new "-12|--12hr" command line option,
+    to restore the previous 12-Hr am/pm format.
+    Without this option, timestamps are 24-Hr.
+    This brings the script more inline with the
+    pi-star dashboard.
+ 5. Added "a" or "p" to the history timestamps,
+    to differentiate am/pm, in 12hr mode.
+
 CHANGES: V2.36
  1. Fix inadvertent clearing of history at log
     restart (bug introduced with v2.35 change

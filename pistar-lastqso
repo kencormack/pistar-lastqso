@@ -11,7 +11,7 @@
 
 set -o allexport
 
-VERSION=2.36
+VERSION=2.37
 
 #----------
 #===============
@@ -106,7 +106,7 @@ ARG_LIST_LENGTH=${#ARG_LIST[@]}
 SCRIPT="$(readlink -f "${0}")"
 
 #===============
-# Get the tty we're using.  Tmp files will be suffixed to keep
+# Get the tty we're using.  Tmp filenames will be suffixed to keep
 # multiple concurrent sessions from stomping on each other's files.
 MY_TTY="$(tty | sed -u -e 's/\///g' -e 's/dev//')"
 
@@ -170,6 +170,10 @@ PS4='+\011\t ${LINENO}\011'
 #===============
 # Defaults that can be overridden with cmdline options...
 #
+# Timestamps now default to 24Hr format.  To go back
+# to 12Hr am/pm timestamps, use "-12|--12hr" option.
+MIL_TIME=1
+#
 # Don't force immediate download of user.csv file.
 # Can be overridden with "-c|--csv" cmdline option
 GET_CSV_NOW=0
@@ -184,7 +188,7 @@ GET_DAT_NOW=0
 # with "-D|--DXCC" cmdline option.
 USE_DXCC=1
 #
-# Show errors as they appear in the MMDVM log.
+# Show errors, whenever they appear in the MMDVM log.
 # Can be overridden with "-e|--errors" cmdline option
 SHOW_LOG_ERRORS=1
 #
@@ -196,7 +200,7 @@ SHOW_LOG_ERRORS=1
 # than that, it serves little use.
 SHOW_DEV_INFO=0
 #
-# Display Callsigns & TGs/DG-IDs in large font.
+# Display Callsigns & TGs/DG-IDs, etc., in large font.
 # Can be overridden with "-n|--nobig" cmdline option
 USE_BANNER=1
 #
@@ -316,7 +320,7 @@ LARGE_TOP="$(echo -n "${ESC}#3" 2>/dev/null)"
 LARGE_BOT="$(echo -n "${ESC}#4" 2>/dev/null)"
 
 #===============
-# Stuff deaaling with pi-star files
+# Stuff dealing with pi-star files
 #
 MY_CALLSIGN="$(grep -A 8 "^\[General\]" /etc/mmdvmhost | grep "^Enable")"
 MY_CALLSIGN="${MY_CALLSIGN#*=}"
@@ -867,7 +871,6 @@ fnTOP_DATA()
   MY_VER="${MY_VER:0:7}"
 
   # Datestamp of the user.csv file
-# CSV_DATE="$(stat /usr/local/etc/user.csv 2>/dev/null | grep "^Modify" | awk '{ print $2 }')"
   CSV_DATE="$(stat --print=%y /usr/local/etc/user.csv 2>/dev/null)"
   IFS=' '; CUT_ARRAY=(${CSV_DATE}); unset IFS;
   CSV_DATE="${CUT_ARRAY[0]}"
@@ -903,7 +906,10 @@ fnTOP_DATA()
   DESCRIPTION="$(grep "description:" /var/log/pi-star/MMDVM* | tail -1)"
 
   # Firmware version
-  FW="$(echo "${DESCRIPTION}" | awk '{ print $9 }')"
+  IFS=' '; CUT_ARRAY=(${DESCRIPTION}); unset IFS;
+  FW="${CUT_ARRAY[8]}"
+  unset CUT_ARRAY
+
   # Pad, and truncate to fit
   FW="${FW}${TOP_PAD}"
   FW="${FW:0:24}"
@@ -1220,16 +1226,16 @@ fnUSAGE()
 {
   echo -e "\nenter: ${FUNCNAME[*]}" >&3
 
-  echo "  USAGE:  Valid options and parameters include:
+  echo "USAGE:  Valid options and parameters include:
 
-  Short Form:
-    [-c] [-d] [-D] [-e] [-f <1-5>] [-h] [-i]
-    [-l] [-m] [-n] [-r /full/path/to/file] [-t [integer]] [-v] [-w]
+Short Form:
+  [-12] [-c] [-d] [-D] [-e] [-f <1-5>] [-h] [-i]
+  [-l] [-m] [-n] [-r /full/path/to/file] [-t [integer]] [-v] [-w]
 
-  Long Form:
-    [--csv] [--dat] [--DXCC] [--errors] [--font <1-5>] [--help] [--info]
-    [--logo] [--mono] [--nobig] [--replay /full/path/to/file] [--top [integer]]
-    [--version] [--wrap]
+Long Form:
+  [--12hr] [--csv] [--dat] [--DXCC] [--errors] [--font <1-5>] [--help] [--info]
+  [--logo] [--mono] [--nobig] [--replay /full/path/to/file] [--top [integer]]
+  [--version] [--wrap]
   " >&2
 }
 
@@ -1266,8 +1272,8 @@ fnPARSE_CMDLINE()
   #
   # The method I use can do both - it handles empty arguments (such as
   # the "-t|-top" option when no optional number of history lines is
-  # given), and can easliy accomodate long-form options.  It is also,
-  # frankly, easier to understand, and more portable, than either
+  # given), and can easily accommodate long-form options.  It is also,
+  # frankly, much easier to understand, and more portable, than either
   # GNU's getopt or bash's getopts.
 
   for (( INDEX=0; INDEX<ARG_LIST_LENGTH; INDEX++ ))
@@ -1275,6 +1281,11 @@ fnPARSE_CMDLINE()
     OPTION="${ARG_LIST[${INDEX}]}"
 
     case ${OPTION} in
+      -12|--12hr)
+        MIL_TIME=0
+        continue
+        ;;
+
       -c|--csv)
         GET_CSV_NOW=1
         continue
@@ -1310,7 +1321,7 @@ fnPARSE_CMDLINE()
         else
           # It is not, so show the usage text, and exit.
           echo -n "${BELL}${FLASH}"
-          echo -e "\n  ERROR:  The use of \"-f|--font\" requires an integer 1-5\n" >&2
+          echo -e "\nERROR:  The use of \"-f|--font\" requires an integer 1-5\n" >&2
           fnUSAGE
           exit 1
         fi
@@ -1426,7 +1437,7 @@ fnPARSE_CMDLINE()
 
       *)
         echo -n "${BELL}${FLASH}"
-        echo -e "\n  ERROR:  \"${OPTION}\" is not a valid option.\n" >&2
+        echo -e "\nERROR:  \"${OPTION}\" is not a valid option.\n" >&2
         fnUSAGE
         exit 1
         ;;
@@ -1447,6 +1458,12 @@ PISTAR-LASTQSO - HELP
   With no options, the script watches for DMR and YSF traffic.
   Log entries are parsed and presented as each log line is read.
   Use Ctrl-C to exit.
+
+  -12|--12hr
+      By defaukt, timestamps are shown in 24 hour military format.
+      For example, 5:00 PM is displayed as "17:00:00".  However, by
+      using this option, timestamps will be displayed in 12 hour
+      format, with am/pm indicated, as appropriate (ex: 05:00:00 pm).
 
   -c|--csv
       Download an updated user.csv from radioid.net now, rather than
@@ -1771,8 +1788,16 @@ EOF
   done
 
   #----------
-  tput cup 9 29
-  echo -n "${SGR0}${BOLD}${WHI}FOR PI-STAR HOTSPOTS${SGR0}"
+  tput cup 9 9
+  echo -en "${SGR0}${DIM}${WHI}"
+  for ((I=17; I<=76; I++))
+  do
+    printf "${SBOX_HL}%0.s"
+  done
+
+  #----------
+  tput cup 9 28
+  echo -n "${SGR0}${BOLD}${WHI} FOR PI-STAR HOTSPOTS ${SGR0}"
 
   #----------
   # Usage: fnDRAW_BOX BOX_TOP BOX_LEFT BOX_HEIGHT BOX_WIDTH BOX_STYLE BOX_FILL BOX_SHADOW
@@ -1790,10 +1815,10 @@ EOF
 
   #----------
   # title/copyright
-  tput cup 15 30
+  tput cup 15 29
   echo "${SGR0}${BOLD}${YEL}PISTAR-LASTQSO v${VERSION}${WHI}${SGR0}"
-  tput cuf 22
-  echo "${SGR0}${BOLD}${BLU}Copyright © 2022 Ken Cormack - KE8DPF${WHI}${SGR0}"
+  tput cuf 21
+  echo "${SGR0}${BOLD}${BLU}Copyright © 2022  Ken Cormack/KE8DPF${WHI}${SGR0}"
   tput cuf 17
   echo "${SGR0}${BOLD}${BLU}https://github.com/kencormack/pistar-lastqso${WHI}${SGR0}"
   echo -n "${SGR0}${WHI}${CUR_ON}"
@@ -1829,7 +1854,6 @@ fnCHECK_MODES_ENABLED()
 {
   echo -e "\nenter: ${FUNCNAME[*]}" >&3
 
-#KPC
 # if [[ ! "${DMR_ENABLED}${YSF_ENABLED}${NXDN_ENABLED}${DSTAR_ENABLED}${P25_ENABLED}" =~ "1" ]]
 # if [[ ${DMR_ENABLED} -eq 0 ]] && [[ ${YSF_ENABLED} -eq 0 ]]
   if [[ ! "${DMR_ENABLED}${YSF_ENABLED}" =~ "1" ]]
@@ -1842,7 +1866,6 @@ fnCHECK_MODES_ENABLED()
     done
     fnDRAW_BOX 8 16 6 45 2 1 1
 
-#KPC
     tput cup 10 24
     echo "${SGR0}${SMUL}${BOLD}${YEL}NEITHER DMR NOR YSF IS ENABLED${SGR0}${WHI}"
 #   tput cup 10 25
@@ -2118,7 +2141,17 @@ fnCONVERT_DATE_TIME()
 
   # Convert the log entry UTC date/timestamps to localized, human-readable form
   DATE="$(date -d "${LOGREC_DATE} ${LOGREC_TIME} UTC" +"%a %d %b %Y")"
-  TIME="$(date -d "${LOGREC_DATE} ${LOGREC_TIME} UTC" +"%I:%M:%S %p %Z")"
+  if [[ ${MIL_TIME} -eq 1 ]]
+  then
+    TIME="$(date -d "${LOGREC_DATE} ${LOGREC_TIME} UTC" +"%H:%M:%S %Z")"
+    AMPM=" "
+  else
+    TIME="$(date -d "${LOGREC_DATE} ${LOGREC_TIME} UTC" +"%I:%M:%S %p %Z")"
+    IFS=' '; CUT_ARRAY=(${TIME}); unset IFS;
+    AMPM="${CUT_ARRAY[1]}"
+    unset CUT_ARRAY
+    AMPM="${AMPM:0:1}"
+  fi
 }
 
 #-----------------------------------
@@ -2135,8 +2168,7 @@ fnDMR_PAD_ABSENT_TG()
   # used by awk.  A hack, for sure, but a useful one.
   if [[ "${RECORD}" =~ "voice header" ]] || [[ "${RECORD}" =~ "data header" ]] || [[ "${RECORD}" =~ "end of voice" ]]
   then
-    IS_TG="$(echo "${RECORD}" | grep " TG ")"
-    if [[ "${IS_TG}" = "" ]]
+    if [[ ! "${RECORD}" =~ " TG " ]]
     then
       RECORD="${RECORD// to / to PC }"
     fi
@@ -2150,7 +2182,9 @@ fnDMR_GET_FROM()
 
   trap fnWINCH WINCH
 
-  FROM="$(echo "${RECORD}" | awk '{ print $12 }')"
+  IFS=' '; CUT_ARRAY=(${RECORD}); unset IFS;
+  FROM="${CUT_ARRAY[11]}"
+  unset CUT_ARRAY
 
   # The MMDVMHost daemon internally knows the actual DMR ID# of the user,
   # and does ID number to Callsign lookups from DMRIds.dat.  However, in
@@ -2211,7 +2245,9 @@ fnDMR_GET_TO()
 
   trap fnWINCH WINCH
 
-  TO="$(echo "${RECORD}" | awk '{ print $15 }')"
+  IFS=' '; CUT_ARRAY=(${RECORD}); unset IFS;
+  TO="${CUT_ARRAY[14]}"
+  unset CUT_ARRAY
   TO="${TO%,*}"
 
   # See if the recipient is a callsign
@@ -2367,6 +2403,7 @@ fnBANNER()
       echo -n "${CUR_UP}"
       ;;
     *)
+      :
       ;;
   esac
   echo -n "${CLR_ED}"
@@ -2380,10 +2417,16 @@ fnDMR_GET_VOICE_OR_DATA()
   trap fnWINCH WINCH
 
   # Determine if voice or data
-  TYPE="$(echo "${RECORD}" | awk '{ print $9 }')"
+  IFS=' '; CUT_ARRAY=(${RECORD}); unset IFS;
+  TYPE="${CUT_ARRAY[8]}"
+  unset CUT_ARRAY
+
   if [[ "${TYPE}" = "data" ]]
   then
-    BLOCKS="$(echo "${RECORD}" | awk '{ print $16 }')"
+    IFS=' '; CUT_ARRAY=(${RECORD}); unset IFS;
+    BLOCKS="${CUT_ARRAY[15]}"
+    unset CUT_ARRAY
+
     TYPE="${YEL}Data Transfer"
   else
     TYPE="${CYA}Voice Call"
@@ -2411,7 +2454,7 @@ fnYSF_END_NETWORK_TRAFFIC()
   fnCOLORIZE_LOSS
 
   echo -en "\r${CLR_EL}"
-  echo -en "\r${DIM}Dur.:${SGR0} ${BLU}${BOLD}${LOGREC_SECS}${SGR0}${WHI}${DIM}sec\r"
+  echo -en "\r${DIM}Dur.:${SGR0} ${BLU}${BOLD}${LOGREC_SECS}${SGR0}${WHI}${DIM} sec\r"
   tput cuf 18
   echo -en "${DIM}BER:${SGR0} ${BER_COLOR}${BOLD}${BER}%${SGR0}${WHI}\r"
   tput cuf 32
@@ -2442,10 +2485,10 @@ fnYSF_SHOW_CURRENT_CALL()
 
   #----------
   # Show our human-readable date/time
-  echo -n "${DIM}Date:${SGR0} ${BLU}${BOLD}${DATE}${SGR0}${WHI}"
-  tput cuf 11
-  echo -n "${DIM}Time:${SGR0} ${BLU}${BOLD}${TIME}${SGR0}${WHI}"
-  tput cuf 4
+  echo -en "${DIM}Date:${SGR0} ${BLU}${BOLD}${DATE}${SGR0}${WHI}\r"
+  tput cuf 32
+  echo -en "${DIM}Time:${SGR0} ${BLU}${BOLD}${TIME}${SGR0}${WHI}\r"
+  tput cuf 57
   echo -n "${DIM}QSOs Watched:${SGR0} ${BLU}${BOLD}"
   printf %05d "${QSO_COUNT}"
   echo "${SGR0}${WHI}${CLR_ED}"
@@ -2614,10 +2657,10 @@ fnDMR_SHOW_CURRENT_CALL()
 
   #----------
   # Show our human-readable date/time
-  echo -n "${DIM}Date:${SGR0} ${BLU}${BOLD}${DATE}${SGR0}${WHI}"
-  tput cuf 11
-  echo -n "${DIM}Time:${SGR0} ${BLU}${BOLD}${TIME}${SGR0}${WHI}"
-  tput cuf 4
+  echo -en "${DIM}Date:${SGR0} ${BLU}${BOLD}${DATE}${SGR0}${WHI}\r"
+  tput cuf 32
+  echo -en "${DIM}Time:${SGR0} ${BLU}${BOLD}${TIME}${SGR0}${WHI}\r"
+  tput cuf 57
   echo -n "${DIM}QSOs Watched:${SGR0} ${BLU}${BOLD}${CLR_ED}"
   printf %05d "${QSO_COUNT}"
   echo "${SGR0}${WHI}${CLR_ED}"
@@ -2697,10 +2740,17 @@ fnDMR_GET_RF_BER()
   trap fnWINCH WINCH
 
   # BER is in different positions, for network and RF log entries
-  BER="$(echo "${RECORD}" | awk '{ print $21 }')"
+  # Grab the field
+  IFS=' '; CUT_ARRAY=(${RECORD}); unset IFS;
+  BER="${CUT_ARRAY[20]}"
+  unset CUT_ARRAY
+
+  # Remove any comma
   IFS=','; CUT_ARRAY=(${BER}); unset IFS;
   BER="${CUT_ARRAY[0]}"
   unset CUT_ARRAY
+
+  # Remove the "%" symbol
   IFS='%'; CUT_ARRAY=(${BER}); unset IFS;
   BER="${CUT_ARRAY[0]}"
   unset CUT_ARRAY
@@ -2769,10 +2819,14 @@ fnDMR_GET_RSSI()
   trap fnWINCH WINCH
 
   # Get the RSSI
-  RSSI="$(echo "${RECORD}" | awk '{ print $23 }')"
+  IFS=' '; CUT_ARRAY=(${RECORD}); unset IFS;
+  RSSI="${CUT_ARRAY[22]}"
+  unset CUT_ARRAY
+
   IFS='/'; CUT_ARRAY=(${RSSI}); unset IFS;
   DBM="${CUT_ARRAY[0]}"
   unset CUT_ARRAY
+
   IFS='-'; CUT_ARRAY=(${DBM}); unset IFS;
   DBM="${CUT_ARRAY[1]}"
   unset CUT_ARRAY
@@ -2893,13 +2947,21 @@ fnDMR_DOWNLOAD_USERCSV()
     sudo mount -o remount,rw / 2>/dev/null
     if sudo wget -q --show-progress --progress=bar:force:noscroll https://database.radioid.net/static/user.csv -O "${USERCSV}.tmp"
     then
-      echo "Applying the updated file..."
-      if sudo mv "${USERCSV}.tmp" "${USERCSV}" && sudo chown pi-star.pi-star "${USERCSV}"
+      # Check for a too-small (possibly corrupt) file
+      # Make sure it's at least ~10K in size
+      if [[ "$(sudo stat --format=%s "${USERCSV}.tmp")" -lt 10000 ]]
       then
-        echo "Update complete."
-      else
-        echo "There was a problem applying the update.  Will continue without it." >&2
+        echo -e "\nThe download appears corrupt.  Will continue without it.\n" >&2
         sleep 2
+      else
+        echo "Applying the updated file..."
+        if sudo mv "${USERCSV}.tmp" "${USERCSV}" && sudo chown pi-star.pi-star "${USERCSV}"
+        then
+          echo "Update complete."
+        else
+          echo "There was a problem applying the update.  Will continue without it." >&2
+          sleep 2
+        fi
       fi
     else
       echo "Unable to retrieve latest user.csv.  Will continue without it." >&2
@@ -2928,15 +2990,23 @@ fnYSF_DOWNLOAD_CTYDAT()
       mkdir /tmp/bigctydir 2>/dev/null
       if sudo wget -q --show-progress --progress=bar:force:noscroll "${BIGCTYZIP}" -O "/tmp/bigctydir/bigcty.zip"
       then
-        echo "Applying the updated file..."
-        sudo unzip /tmp/bigctydir/bigcty.zip -d /tmp/bigctydir > /dev/null 2>&1
-        if sudo cp /tmp/bigctydir/cty.dat "${CTYDAT}" && sudo chown pi-star.pi-star "${CTYDAT}"
+        # Check for a too-small (possibly corrupt) file
+        # Make sure it's at least ~10K in size
+        if [[ "$(sudo stat --format=%s "/tmp/bigctydir/bigcty.zip")" -lt 10000 ]]
         then
-          sudo rm -r /tmp/bigctydir 2>/dev/null
-          echo "Update complete."
-        else
-          echo "There was a problem applying the update.  Will continue without it." >&2
+          echo -e "\nThe download appears corrupt.  Will continue without it.\n" >&2
           sleep 2
+        else
+          echo "Applying the updated file..."
+          sudo unzip /tmp/bigctydir/bigcty.zip -d /tmp/bigctydir > /dev/null 2>&1
+          if sudo cp /tmp/bigctydir/cty.dat "${CTYDAT}" && sudo chown pi-star.pi-star "${CTYDAT}"
+          then
+            sudo rm -r /tmp/bigctydir 2>/dev/null
+            echo "Update complete."
+          else
+            echo "There was a problem applying the update.  Will continue without it." >&2
+            sleep 2
+          fi
         fi
       else
         echo "Unable to retrieve latest cty.dat.  Will continue without it." >&2
@@ -3007,7 +3077,7 @@ fnBUILD_HISTORY()
       fi
 
       #----------
-      HISTORY[1]="${BOLD}${BLU}${HIST_TIME}${WHI}${SGR0} ${SBOX_VL} ${BOLD}${HIST_COLOR}${HIST_FROM}${SGR0} ${SBOX_VL} ${BOLD}${HIST_COLOR}${HIST_TO}${SGR0} ${SBOX_VL} ${BOLD}${BLU}${HIST_SECS}${WHI}${SGR0} ${SBOX_VL} ${BOLD}${BER_COLOR}${HIST_BER}${WHI}${SGR0} ${SBOX_VL} ${BOLD}${CYA}${HIST_SRC}${WHI}"
+      HISTORY[1]="${BOLD}${BLU}${HIST_TIME}${DIM}${AMPM}${BOLD}${WHI}${SGR0}${SBOX_VL} ${BOLD}${HIST_COLOR}${HIST_FROM}${SGR0} ${SBOX_VL} ${BOLD}${HIST_COLOR}${HIST_TO}${SGR0} ${SBOX_VL} ${BOLD}${BLU}${HIST_SECS}${WHI}${SGR0} ${SBOX_VL} ${BOLD}${BER_COLOR}${HIST_BER}${WHI}${SGR0} ${SBOX_VL} ${BOLD}${CYA}${HIST_SRC}${WHI}"
 
       #----------
       if [[ ${DATA} -eq 1 ]]
@@ -3106,10 +3176,14 @@ fnDMR_MAIN()
     fnCONVERT_DATE_TIME
 
     # Determine DMR Time Slot, and RF or Network traffic
-    TIME_SLOT="$(echo "${RECORD}" | awk '{ print $6 }')"
+    IFS=' '; CUT_ARRAY=(${RECORD}); unset IFS;
+    TIME_SLOT="${CUT_ARRAY[5]}"
+    unset CUT_ARRAY
     TIME_SLOT="${TIME_SLOT%,*}"
 
-    SOURCE="$(echo "${RECORD}" | awk '{ print $8 }')"
+    IFS=' '; CUT_ARRAY=(${RECORD}); unset IFS;
+    SOURCE="${CUT_ARRAY[7]}"
+    unset CUT_ARRAY
     SOURCE="${SOURCE//network/NET}"
 
     # Compensate for shifting fields between "group" and "private" ID numbers
@@ -3137,7 +3211,9 @@ fnDMR_MAIN()
         DATA=0
 
         # The number of seconds the contact lasted
-        SECS="$(echo "${RECORD}" | awk '{ print $18 }')"
+        IFS=' '; CUT_ARRAY=(${RECORD}); unset IFS;
+        SECS="${CUT_ARRAY[17]}"
+        unset CUT_ARRAY
 
         # If it was network traffic...
         if [[ "${LOGREC_REMAINING_DATA}" =~ "RSSI:" ]]
@@ -3149,7 +3225,7 @@ fnDMR_MAIN()
           fnCOLORIZE_RSSI
 
           echo -en "\r${CLR_EL}"
-          echo -en "\r${DIM}Dur.:${SGR0} ${BLU}${BOLD}${SECS}${SGR0}${WHI}${DIM}sec\r"
+          echo -en "\r${DIM}Dur.:${SGR0} ${BLU}${BOLD}${SECS}${SGR0}${WHI}${DIM} sec\r"
           tput cuf 18
           echo -en "${DIM}BER:${SGR0} ${BER_COLOR}${BOLD}${BER}%${SGR0}${WHI}\t${DIM}RSSI:${SGR0} ${SMETER_COLOR}${BOLD}${SMETER} (-${DBM} dBm)${SGR0}${WHI}\r"
         else
@@ -3210,6 +3286,41 @@ fnYSF_MAIN()
 
   trap fnWINCH WINCH
 
+#KPC
+  # We come into this function already knowing:
+  # The entire log line...
+  #   RECORD
+  # The first 4 fields of the log line...
+  #   LOGREC_TYPE  LOGREC_DATE  LOGREC_TIME  LOGREC_MODE
+  # And "everything following" the first 4 fields...
+  #   LOGREC_REMAINING_DATA
+
+  # YSF is now set up to use the array that follows.
+  # I need to revisit the DMR routines, to use a similar method.
+  # This will make a good template for adding other modes.
+  #
+  # The fields, between "RECORD" and "LOGREC_REMAINING_DATA"
+  # align with each other as follows:
+  #     RECORD...
+  #     1 2 3 4   5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20   (awk fields)
+  #     LOGREC_REMAINING_DATA...
+  #               0 1 2 3 4  5  6  7  8  9 10 11 12 13 14 15   (array indexes)
+  #
+  # Grab the parts that we need
+  IFS=' '; CUT_ARRAY=(${LOGREC_REMAINING_DATA}); unset IFS;
+  FIELD_6="${CUT_ARRAY[5]}"
+  FIELD_7="${CUT_ARRAY[6]}"
+  FIELD_8="${CUT_ARRAY[7]}"
+  FIELD_9="${CUT_ARRAY[8]}"
+  FIELD_10="${CUT_ARRAY[9]}"
+  FIELD_11="${CUT_ARRAY[10]}"
+  FIELD_12="${CUT_ARRAY[11]}"
+  FIELD_14="${CUT_ARRAY[13]}"
+  FIELD_15="${CUT_ARRAY[14]}"
+  FIELD_17="${CUT_ARRAY[16]}"
+  FIELD_18="${CUT_ARRAY[17]}"
+  unset CUT_ARRAY
+
   #----------
   # Start of YSF network traffic
   if [[ "${LOGREC_REMAINING_DATA}" =~ "received network data from" ]]
@@ -3217,14 +3328,18 @@ fnYSF_MAIN()
     fnCONVERT_DATE_TIME
     QSO_START_TIME="${TIME}"
 
-    if [[ "$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $7 }')" = "to" ]]
+    if [[ "${FIELD_7}" = "to" ]]
     then
-      read -r LOGREC_CALLSIGN  LOGREC_DG_ID  LOGREC_DG_ID_NUM  LOGREC_MASTER \
-        <<< "$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $6 " " $8 " " $9 " " $11 }')"
+      LOGREC_CALLSIGN="${FIELD_6}"
+      LOGREC_DG_ID="${FIELD_8}"
+      LOGREC_DG_ID_NUM="${FIELD_9}"
+      LOGREC_MASTER="${FIELD_11}"
     else
       # This drops space-separated values from the transmitted callsigns.
-      read -r LOGREC_CALLSIGN  LOGREC_DG_ID  LOGREC_DG_ID_NUM  LOGREC_MASTER \
-        <<< "$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $6 " " $9 " " $10 " " $12 }')"
+      LOGREC_CALLSIGN="${FIELD_6}"
+      LOGREC_DG_ID="${FIELD_9}"
+      LOGREC_DG_ID_NUM="${FIELD_10}"
+      LOGREC_MASTER="${FIELD_12}"
     fi
 
     FROM="${LOGREC_CALLSIGN}"
@@ -3250,25 +3365,29 @@ fnYSF_MAIN()
     if [[ "${LOGREC_REMAINING_DATA}" =~ "received RF header from" ]]
     then
       # Parse Recvd RF header...
-      if [[ "$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $7 }')" = "to" ]]
+      if [[ "${FIELD_7}" = "to" ]]
       then
-        read -r LOGREC_CALLSIGN  LOGREC_DG_ID  LOGREC_DG_ID_NUM \
-          <<< "$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $6 " " $8 " " $9 }')"
+        LOGREC_CALLSIGN="${FIELD_6}"
+        LOGREC_DG_ID="${FIELD_8}"
+        LOGREC_DG_ID_NUM="${FIELD_9}"
       else
         # This drops space-separated values from the transmitted callsigns.
-        read -r LOGREC_CALLSIGN  LOGREC_DG_ID  LOGREC_DG_ID_NUM \
-          <<< "$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $6 " " $8 " " $10 }')"
+        LOGREC_CALLSIGN="${FIELD_6}"
+        LOGREC_DG_ID="${FIELD_8}"
+        LOGREC_DG_ID_NUM="${FIELD_10}"
       fi
     else
       # Parse RF late entries...
-      if [[ "$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $8 }')" = "to" ]]
+      if [[ "${FIELD_8}" = "to" ]]
       then
-        read -r LOGREC_CALLSIGN  LOGREC_DG_ID  LOGREC_DG_ID_NUM \
-          <<< "$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $7 " " $9 " " $10 }')"
+        LOGREC_CALLSIGN="${FIELD_7}"
+        LOGREC_DG_ID="${FIELD_9}"
+        LOGREC_DG_ID_NUM="${FIELD_10}"
       else
         # This drops space-separated values from the transmitted callsigns.
-        read -r LOGREC_CALLSIGN  LOGREC_DG_ID  LOGREC_DG_ID_NUM \
-          <<< "$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $7 " " $9 " " $11 }')"
+        LOGREC_CALLSIGN="${FIELD_7}"
+        LOGREC_DG_ID="${FIELD_9}"
+        LOGREC_DG_ID_NUM="${FIELD_11}"
       fi
     fi
 
@@ -3287,12 +3406,11 @@ fnYSF_MAIN()
 
   #----------
   # YSF RF traffic dropped
-  # transmission lost from KE8DPF     to ALL       , 1.6 seconds, BER: 0.8%, RSSI: -58/-47/-47 dBm
-  # similar to: "received RF end of transmission from KE8DPF     to DG-ID 0, 1.0 seconds, BER: 0.8%, RSSI: -55/-51/-52 dBm"
   if [[ "${LOGREC_REMAINING_DATA}" =~ "transmission lost from" ]]
   then
-    read -r LOGREC_SECS  LOGREC_BER  LOGREC_RSSI \
-      <<< "$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $9 " " $12 " " $14 }')"
+    LOGREC_SECS="${FIELD_9}"
+    LOGREC_BER="${FIELD_12}"
+    LOGREC_RSSI="${FIELD_14}"
     if [[ "${LOGREC_RSSI}" = "" ]]
     then
       LOGREC_RSSI="${LOGREC_BER}"
@@ -3353,16 +3471,18 @@ fnYSF_MAIN()
   # End of YSF network traffic (Wires-X)
   if [[ "${LOGREC_REMAINING_DATA}" =~ "received network end of transmission from" ]]
   then
-    read -r LOGREC_SECS  LOGREC_LOSS  LOGREC_BER \
-      <<< "$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $12 " " $14 " " $18 }')"
+    LOGREC_SECS="${FIELD_12}"
+    LOGREC_LOSS="${FIELD_14}"
+    LOGREC_BER="${FIELD_18}"
     fnYSF_END_NETWORK_TRAFFIC
     return
   fi
   # End of YSF network traffic (Normal traffic)
   if [[ "${LOGREC_REMAINING_DATA}" =~ "network watchdog has expired" ]]
   then
-    read -r LOGREC_SECS  LOGREC_LOSS  LOGREC_BER \
-      <<< "$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $6 " " $8 " " $12 }')"
+    LOGREC_SECS="${FIELD_6}"
+    LOGREC_LOSS="${FIELD_8}"
+    LOGREC_BER="${FIELD_12}"
     fnYSF_END_NETWORK_TRAFFIC
     return
   fi
@@ -3371,8 +3491,9 @@ fnYSF_MAIN()
   # End of YSF RF traffic
   if [[ "${LOGREC_REMAINING_DATA}" =~ "received RF end of transmission from" ]]
   then
-    read -r LOGREC_SECS  LOGREC_BER  LOGREC_RSSI \
-      <<< "$(echo "${LOGREC_REMAINING_DATA}" | awk '{ print $12 " " $15 " " $17 }')"
+    LOGREC_SECS="${FIELD_12}"
+    LOGREC_BER="${FIELD_15}"
+    LOGREC_RSSI="${FIELD_17}"
     if [[ "${LOGREC_RSSI}" = "" ]]
     then
       LOGREC_RSSI="${LOGREC_BER}"
@@ -3520,16 +3641,28 @@ fnMAIN_LOOP()
         fnTALLY_WARNINGS
         continue
         ;;
-      "M:")
-        read -r LOGREC_DATE LOGREC_TIME LOGREC_MODE <<< "$(echo "${RECORD}" | awk '{ print $2 " " $3 " " $4 }')"
-        LOGREC_MODE="${LOGREC_MODE%,*}"
-        # Grab everything that follows the mode...
-        read -r LOGREC_REMAINING_DATA <<< "$(echo "${RECORD}" | awk '{ print substr($0, index($0,$4)) }')"
-        ;;
-      *)
+      "D:")
         continue
         ;;
+      "I:")
+        continue
+        ;;
+      *)
+        :
+        ;;
     esac
+
+    # Get the date, time, and mode
+    IFS=' '; CUT_ARRAY=(${RECORD}); unset IFS;
+    LOGREC_DATE="${CUT_ARRAY[1]}"
+    LOGREC_TIME="${CUT_ARRAY[2]}"
+    LOGREC_MODE="${CUT_ARRAY[3]}"
+    unset CUT_ARRAY
+    # Strip off the comma (ie: "YSF," becomes "YSF")
+    LOGREC_MODE="${LOGREC_MODE%,*}"
+
+    # Grab everything that follows the date/timestamps...
+    LOGREC_REMAINING_DATA="${RECORD//${LOGREC_TYPE} ${LOGREC_DATE} ${LOGREC_TIME} /}"
 
     #----------
     case "${LOGREC_MODE}" in
@@ -3547,6 +3680,9 @@ fnMAIN_LOOP()
         ;;
       "P25")
         fnP25_MAIN
+        ;;
+      *)
+        :
         ;;
     esac
   done
@@ -3819,7 +3955,7 @@ do
       fnSEPARATOR
       fnSEPARATOR
       echo -n "${SGR0}${GRE}"
-      figlet -w 80 -f ansi_shadow "COMPLETE"
+      figlet -w 80 -f ansi_shadow " COMPLETE"
       echo -n "${BOLD}${WHI}"
       tput cuu1
       fnSEPARATOR
