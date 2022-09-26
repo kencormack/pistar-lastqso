@@ -167,16 +167,14 @@ display of the Callsigns, and activate the non-scrolling information section at 
 
 **Valid Options and Parameters...**
 ```
-  USAGE:  Valid options and parameters include:
+Short Form:
+  [-12] [-c] [-d] [-D] [-e] [-f <1-5>] [-h] [-i]
+  [-l] [-m] [-n] [-r /full/path/to/file] [-t [integer]] [-v] [-w]
 
-  Short Form:
-    [-c] [-d] [-D] [-e] [-f <1-5>] [-h] [-i]
-    [-l] [-m] [-n] [-r /full/path/to/file] [-t [integer]] [-v] [-w]
-
-  Long Form:
-    [--csv] [--dat] [--DXCC] [--errors] [--font <1-5>] [--help] [--info]
-    [--logo] [--mono] [--nobig] [--replay /full/path/to/file] [--top [integer]]
-    [--version] [--wrap]
+Long Form:
+  [--12hr] [--csv] [--dat] [--DXCC] [--errors] [--font <1-5>] [--help] [--info]
+  [--logo] [--mono] [--nobig] [--replay /full/path/to/file] [--top [integer]]
+  [--version] [--wrap]
 ```
 
 Also, options that take a parameter (-f|--font, -t|--top, and -r|--replay) will accept either a space, or an equal sign (=) between the option, and it's parameter.  For example, all of the following are valid forms:
@@ -200,6 +198,12 @@ PISTAR-LASTQSO - HELP
   With no options, the script watches for DMR and YSF traffic.
   Log entries are parsed and presented as each log line is read.
   Use Ctrl-C to exit.
+
+  -12|--12hr
+      By defaukt, timestamps are shown in 24 hour military format.
+      For example, 5:00 PM is displayed as "17:00:00".  However, by
+      using this option, timestamps will be displayed in 12 hour
+      format, with am/pm indicated, as appropriate (ex: 05:00:00 pm).
 
   -c|--csv
       Download an updated user.csv from radioid.net now, rather than
