@@ -6,6 +6,8 @@
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/animation.gif)
 
 -------------------------------------------------------------------
+## See the CHANGE_LOG above, for details of what's changed, in each version. 
+-------------------------------------------------------------------
 ## Contents
 - **[About](https://github.com/kencormack/pistar-lastqso#about)**
 - **[Installation](https://github.com/kencormack/pistar-lastqso#installation)**
