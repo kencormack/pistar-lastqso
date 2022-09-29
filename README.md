@@ -101,6 +101,8 @@ You are now ready to monitor DMR and/or YSF traffic from the commandline.
 -------------------------------------------------------------------
 ## Updating
 
+When executed, the script checks to see if an updated version has been posted online.  If an update is available, the user is notified.
+
 To update, log in with SSH, 'cd' into the directory into which you originally cloned **pistar-lastqso**, and run the following commands:
 ```
 $ rpi-rw
