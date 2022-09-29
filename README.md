@@ -214,9 +214,9 @@ PISTAR-LASTQSO - HELP
       updates automatically.
 
   -d|--dat
-      Download an updated cty.dat from country-files.com, rather than
-      waiting for the presently installed copy to age 30 days before it
-      updates automatically.
+      Download an updated cty.dat from country-files.com now, rather
+      than waiting for the presently installed copy to age 30 days
+      before it updates automatically.
 
   -D|--DXCC
       When resolving QTH location for callsigns, pistar-lastqso first
