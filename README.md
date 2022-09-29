@@ -109,7 +109,6 @@ $ rpi-rw
 $ git pull
 $ ./install
   (The install script will return the filesystem to read-only mode)
-
 ```
 That should do it.
 
