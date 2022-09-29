@@ -203,7 +203,7 @@ PISTAR-LASTQSO - HELP
   Use Ctrl-C to exit.
 
   -12|--12hr
-      By defaukt, timestamps are shown in 24 hour military format.
+      By default, timestamps are shown in 24 hour military format.
       For example, 5:00 PM is displayed as "17:00:00".  However, by
       using this option, timestamps will be displayed in 12 hour
       format, with am/pm indicated, as appropriate (ex: 05:00:00 pm).
