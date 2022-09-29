@@ -228,8 +228,8 @@ PISTAR-LASTQSO - HELP
       calls upon dxcc.pl to determine the country that issued the call
       sign.  This can potentially impact pistar-lastqso's ability to
       "keep up" with log entries, as each call to dxcc.pl can take up
-      to 4 or 5 seconds to resolve.  When YSF traffic is more than a
-      few seconds, this is no problem, as the script normally just
+      to 4 or 5 seconds to resolve.  When YSF traffic lasts more than
+      a few seconds, this is no problem, as the script normally just
       sits there saying "QSO In Progress...".  But when the bulk of
       traffic is "[[kerchunks]]", which pistar-lastqso considers any
       traffic lasting less than 2 seconds, the kerchunks can out-pace
