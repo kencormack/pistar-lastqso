@@ -1,13 +1,14 @@
 # pistar-lastqso
 ## A Tool to Monitor DMR, YSF, DMR2YSF and YSF2DMR Traffic, on Pi-STAR
+-------------------------------------------------------------------
+**Preliminary Support for NXDN, D-Star, and P25**
+As of version 3.0, pistar-lastqso now contains limited support for NXDN, D-Star, and P25.  As I do not own radios of these types, I have no way to replicate for parsing, the log entries needed for RF-based traffic (from the radio to the hotspot).  I have, however, been able to create the log entries for network-based traffic (from the network to the hotspot).
+-------------------------------------------------------------------
 
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/title-screen.jpg)
 
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/animation.gif)
 
--------------------------------------------------------------------
-## Preliminary Support for NXDN, D-Star, and P25
-**As of version 3.0, pistar-lastqso now contains limited support for NXDN, D-Star, and P25.  As I do not own radios of these types, I have no way to replicate for parsing, the log entrie needed for RF-based traffic (from the radio to the hotspot).  I have, however, been able to create the log entries for network-based traffic (from the network to the hotspot).**
 -------------------------------------------------------------------
 ## See the CHANGE_LOG above, for details of what's changed, in each version. 
 -------------------------------------------------------------------
