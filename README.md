@@ -7,7 +7,7 @@
 
 -------------------------------------------------------------------
 ## PRELIMINARY SUPPORT HAS BEEN ADDED, FOR NXDN, D-STAR, AND P25!
-## As I do not personally own radios capable of these modes, support for NXDN, D-STAR, and P25 is currently limited to parsing NETWORK log entries ONLY.  However, what's now in place for these modes is a decent start.  (You wont see your own radio RF signals, but you WILL see traffic coming to you from the network.)  Updates to the text and screenshots below, to show all the changes, will come later.  But what's shown below applies to the new modes.
+** As I do not personally own radios capable of these modes, support for NXDN, D-STAR, and P25 is currently limited to parsing NETWORK log entries ONLY.  However, what's now in place for these modes is a decent start.  (You wont see your own radio RF signals, but you WILL see traffic coming to you from the network.)  Updates to the text and screenshots below, to show all the changes, will come later.  But what's shown below applies to the new modes.**
 -------------------------------------------------------------------
 ## See the CHANGE_LOG above, for details of what's changed, in each version. 
 -------------------------------------------------------------------
