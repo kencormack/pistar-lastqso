@@ -1,5 +1,5 @@
 # pistar-lastqso
-## A Tool to Monitor DMR, YSF, NXDN, D-STAR, P25 Traffic, on Pi-STAR
+## A Tool to Monitor DMR, YSF, DMR2YSF, YSF2DMR, NXDN, D-STAR, and P25 Traffic, on Pi-STAR
 
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/title-screen.jpg)
 
