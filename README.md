@@ -28,6 +28,7 @@
 - **[Other Notes](https://github.com/kencormack/pistar-lastqso#other-notes)**
 - **[Getting Help](https://github.com/kencormack/pistar-lastqso#getting-help)**
 - **[Acknowledgements](https://github.com/kencormack/pistar-lastqso#acknowledgements)**
+- **[Disclaimer](https://github.com/kencormack/pistar-lastqso#disclaimer)**
 - **[Special Thanks](https://github.com/kencormack/pistar-lastqso#special-thanks)**
 
 -------------------------------------------------------------------
@@ -642,6 +643,15 @@ The **ansi_shadow** font pre-dates figlet.  It appears to have been created usin
 **dxcc** (https://fkurz.net/ham/dxcc.html) is a small command line utility, written in perl, which determines the ARRL DXCC entity of a ham radio Callsign.  It was written by Fabian Kurz, DJ1YFK and uses the **cty.dat** country file by Jim Reisert, AD1C (http://www.country-files.com/).
 
 **pistar-lastqso** itself was developed on a Raspberry Pi Zero WH with eMMC (backed up to USB storage), with generic Chinese MMDVM boards (including Duplex and Simplex models).  Development began with PI-STAR 4.1.4, and has continued through all PI-STAR updates to date.  Testing the output is performed on 1.) a Lenovo Thinkpad laptop running Windows 10 Pro via SSH with PuTTY and Xming (an X-server), with PuTTY running as term-type TERM=xterm, or 2.) direct HDMI connection from the Pi to a 40" flatscreen (TERM=linux).
+
+- **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
+-------------------------------------------------------------------
+## Disclaimer
+
+I am in no way partnered with the original creator of PI-STAR, Andy Taylor (MW0MWZ), nor with any other contributor to PI-STAR.  Likewise, I have no association with Jonathan Naylor's (G4KLX) underlying MMDVMHost software, nor with other freely available front-ends for it.
+
+**pistar-lastqso** is an independent endeavor, born of a desire to monitor a hotspot's radio traffic directly from the text-mode console, without need to involve a second system with web browser.  My goals are based entirely on displaying some basic elements in common with PI-STAR's "Dashboard" and other front-ends, while adding a little additional "humanizing" information (such as names and location data) that are lacking in those tools.  That is all.  There are no plans to develop this into a full-fledged text-mode management console for PI-STAR or the underlying MMDVMHost engine.  **pistar-lastqso** will remain merely a glorified logfile reader.
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
