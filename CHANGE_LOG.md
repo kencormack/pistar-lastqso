@@ -1,4 +1,9 @@
 ```
+CHANGES: V3.01
+ 1. Added support for DSTAR RF log entries.
+    Thanks to Gaute Alstad (LB6YD) for supplying
+    me with appropriate sample log entries!
+
 CHANGES: V3.00
  1. Restructured DMR processing a bit, to clean
     up parsing.  Folded a few of the small DMR

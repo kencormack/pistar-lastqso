@@ -11,7 +11,7 @@
 
 set -o allexport
 
-VERSION=3.00
+VERSION=3.01
 
 #----------
 #===============
@@ -1558,8 +1558,8 @@ PISTAR-LASTQSO - HELP
       calls upon dxcc.pl to determine the country that issued the call
       sign.  This can potentially impact pistar-lastqso's ability to
       "keep up" with log entries, as each call to dxcc.pl can take up
-      to 4 or 5 seconds to resolve.  When YSF traffic lasts more than
-      a few seconds, this is no problem, as the script normally just
+      to 4 or 5 seconds to resolve.  When traffic lasts more than a
+      few seconds, this is no problem, as the script normally just
       sits there saying "QSO In Progress...".  But when the bulk of
       traffic is "[[kerchunks]]", which pistar-lastqso considers any
       traffic lasting less than 2 seconds, the kerchunks can out-pace
@@ -1567,7 +1567,7 @@ PISTAR-LASTQSO - HELP
       there are generally not a problem.  But a large series of them
       in quick succession can cause delays.  Effectively, you will be
       listening to one callsign, but still seeing data on the screen
-      for QSOs logged many seconds ago.
+      for traffic logged many seconds ago.
 
       This "-D|--DXCC" cmdline option can be used to disable calls
       to the dxcc.pl script, if such delays become an issue for you.
@@ -1575,7 +1575,8 @@ PISTAR-LASTQSO - HELP
       This option has no affect on DMR traffic.  DMR and NXDN users
       go through a registration process that results in their QTH data
       being readily available in the user.csv and NXDN.csv files, thus
-      calls to the dxcc.pl script are never needed for DMR traffic.
+      calls to the dxcc.pl script aren't needed for DMR or NXDN
+      traffic.
 
   -e|--errors
       By default, pistar-lastqso will display any error messages found
@@ -1676,7 +1677,7 @@ PISTAR-LASTQSO - HELP
       and log Restarts observed since program launch.  However, when
       the "-r|--replay" option is used, the last line instead performs
       a different function.  It displays a reminder indicating that the
-      program is in "replay mode" (not viewing live traffic)
+      program is in "replay mode" (not viewing live traffic).
 
   -l|--logo
       Disables the animated logo at startup.
@@ -1715,16 +1716,17 @@ PISTAR-LASTQSO - HELP
       the hotspot's TCXO frequency and firmware version, CPU temp,
       the Modem's device node (port), the computer platform/model,
       the elapsed time since the script was launched, the system
-      load averages for the last 1, 5, and 15 minutes, the DMR and/
-      or YSF Master servers, and the first 5 statically defined
-      BrandMeister TalkGroups.
+      load averages for the last 1, 5, and 15 minutes, the DMR
+      Master and (if Brandmeister) the first 5 statically defined
+      BrandMeister TalkGroups.  The last line shows the current
+      reflectors in effect for the other modes.
 
       By default, the use of "-t|--top" also provides a history of
       the last 5 QSOs observed.  However, by specifying an integer
       parameter, the number of QSOs displayed in the history can be
       changed.  A value of 0 (zero) disables the history (but retains
       all the other information in the "-t|--top" section of the
-      screen.  Other values determine the number of lines of history
+      screen).  Other values determine the number of lines of history
       that will be displayed.
 
       Examples:
@@ -3855,6 +3857,122 @@ fnDSTAR_MAIN()
   fi
 
   #----------
+  # Start of DSTAR RF traffic
+  if [[ "${LOGREC_REMAINING_DATA}" =~ "received RF header from" ]]
+  then
+    fnCONVERT_DATE_TIME
+    QSO_START_TIME="${TIME}"
+
+    SOURCE="RF"
+
+    #----------
+    # Take any entry like "KE8DPF  / INFO"
+    SENDER="${LOGREC_REMAINING_DATA:32:13}"
+    # Remove all spaces ... "KE8DPF/INFO"
+    # Examples such as "KE8DPF  /     " become "KE8DPF/"
+    SENDER="${SENDER// /}"
+    # Preserve anything to the left of the slash
+    FROM="${SENDER%/*}"
+    # If the last character is just the slash
+    if [[ "${SENDER:0-1}" = "/" ]]
+    then
+      # then do without the slash
+      SENDER="${FROM}"
+    fi
+
+    #----------
+    TO="${LOGREC_REMAINING_DATA:49:8}"
+    TO="${TO// /}"
+
+    #----------
+    echo -en "\r${CLR_EL}"
+    fnBANNER
+
+    ((QSO_COUNT++))
+    echo "${QSO_COUNT}" > "${QSO_COUNT_FILE}"
+
+    fnSHOW_CURRENT_CALL
+    return
+  fi
+
+  #----------
+  # End of DSTAR RF traffic
+  if [[ "${LOGREC_REMAINING_DATA}" =~ "received RF end of transmission" ]]
+  then
+    # Take any entry like "KE8DPF  / INFO"
+    SENDER="${LOGREC_REMAINING_DATA:45:13}"
+    # Remove all spaces ... "KE8DPF/INFO"
+    # Examples such as "KE8DPF  /     " become "KE8DPF/"
+    SENDER="${SENDER// /}"
+    # Preserve anything to the left of the slash
+    FROM="${SENDER%/*}"
+    # If the last character is just the slash
+    if [[ "${SENDER:0-1}" = "/" ]]
+    then
+      # then do without the slash
+      SENDER="${FROM}"
+    fi
+
+    #----------
+    TO="${LOGREC_REMAINING_DATA:62:8}"
+    TO="${TO// /}"
+
+    #----------
+    IFS=','; CUT_ARRAY=(${LOGREC_REMAINING_DATA}); unset IFS;
+    FIELD_3="${CUT_ARRAY[2]}"
+    FIELD_4="${CUT_ARRAY[3]}"
+    FIELD_5="${CUT_ARRAY[4]}"
+    unset CUT_ARRAY
+
+    #----------
+    # seconds
+    IFS=' '; CUT_ARRAY=(${FIELD_3}); unset IFS;
+    SECS="${CUT_ARRAY[0]}"
+    unset CUT_ARRAY
+
+    #----------
+    # BER
+    BER="${FIELD_4#*:}"
+    BER="${BER// /}"
+    IFS='%'; CUT_ARRAY=(${BER}); unset IFS;
+    BER="${CUT_ARRAY[0]}"
+    unset CUT_ARRAY
+
+    #----------
+    # Get the RSSI
+    RSSI="${FIELD_5}"
+    DBM="${RSSI%%/*}"
+    DBM="${DBM#*-}"
+    fnCOLORIZE_RSSI
+
+    #----------
+    echo -en "\r${CLR_EL}"
+    echo -en "\r${DIM}Dur.:${SGR0} ${BLU}${BOLD}${SECS}${SGR0}${WHI} sec\r"
+    tput cuf 18
+    echo -en "${DIM}BER:${SGR0} ${BER_COLOR}${BOLD}${BER}${SGR0}${WHI}\r"
+    tput cuf 32
+    echo -en "${DIM}RSSI:${SGR0} ${SMETER_COLOR}${BOLD}${SMETER} (-${DBM} dBm)${SGR0}${WHI}\r"
+
+    #----------
+    if [[ -n "${FROM}" ]] && [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
+    then
+      ((KERCHUNK_COUNT++))
+      echo "${KERCHUNK_COUNT}" > "${KERCHUNK_COUNT_FILE}"
+      tput cuf 64
+      echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
+    else
+      echo
+    fi
+
+    #----------
+    fnBUILD_HISTORY
+    echo -n "${LINE_COLOR}"
+    fnSEPARATOR
+    fnLISTENING
+    return
+  fi
+
+  #----------
   # End of DSTAR network traffic
   if [[ "${LOGREC_REMAINING_DATA}" =~ "received network end of transmission" ]]
   then
@@ -4409,7 +4527,10 @@ do
       fnSEPARATOR
       fnSEPARATOR
       echo -n "${SGR0}${GRE}"
-      figlet -w 80 -f ansi_shadow " COMPLETE"
+
+#     figlet -w 80 -f ansi_shadow " COMPLETE"
+      echo "COMPLETE"
+
       tput cuu1
       echo -n "${BOLD}${WHI}"
       fnSEPARATOR
