@@ -33,7 +33,7 @@
 
 -------------------------------------------------------------------
 ## About
-**pistar-lastqso is a tool to monitor DMR and YSF traffic (including DMR2YSF and YSF2DMR cross-modes) on a PI-STAR node, either via SSH, or, on an HDMI-connected console.  Written as a bash shell script (with a few lines of python), no web browser or other GUI client is required.**
+**pistar-lastqso is a tool to monitor DMR, YSF traffic (including DMR2YSF and YSF2DMR cross-modes) on a PI-STAR node, either via SSH, or, on an HDMI-connected console.  Written as a bash shell script (with a few lines of python), no web browser or other GUI client is required.**
 
 **VERSION 3.00 NOW ADDS LIMITED SUPPORT FOR NXDN, D-STAR, AND P25!**
 
@@ -61,7 +61,7 @@
 - The contact's QTH (Determined with best effort, from several sources.)
 - Possibly, the contact's First Name (keep reading.)
 
-As several of the modes do does not require that users be registered, there is no single source for Name or QTH data for most users.  The script therefore assumes that the Callsign owner may also have either a registered DMR ID or NXDN ID number.  On the chance that they do, **pistar-lastqso** first attempts to find the Callsign's name and QTH info in the DMR **user.csv** file, then PI-STAR's **NXDN.csv** file.  If the Callsign is not found in either of those files, as a last resort, it then calls upon the perl script **dxcc.pl** and it's **cty.dat** file.  As the first two data sources generally contain the Callsign's Name, City, State, and Country info, they are tried first.  The **dxcc.pl** script, and it's **cty.dat** file, can only determine the Country that issued the Callsign, based on the Callsign's prefix.  The Callsign's Name will remain unresolved.  (Lookups with **dxcc.pl** can be disabled if needed, with the "-D|--DXCC" options - see **[the Help text](https://github.com/kencormack/pistar-lastqso#the-help-text)** for details.)
+As several of the modes do not require that users be registered, there is no single source for Name or QTH data for most users.  The script therefore assumes that the Callsign owner may also have either a registered DMR ID or NXDN ID number.  On the chance that they do, **pistar-lastqso** first attempts to find the Callsign's name and QTH info in the DMR **user.csv** file, then PI-STAR's **NXDN.csv** file.  If the Callsign is not found in either of those files, as a last resort, it then calls upon the perl script **dxcc.pl** and it's **cty.dat** file.  As the first two data sources generally contain the Callsign's Name, City, State, and Country info, they are tried first.  The **dxcc.pl** script, and it's **cty.dat** file, can only determine the Country that issued the Callsign, based on the Callsign's prefix.  The Callsign's Name will remain unresolved.  (Lookups with **dxcc.pl** can be disabled if needed, with the "-D|--DXCC" options - see **[the Help text](https://github.com/kencormack/pistar-lastqso#the-help-text)** for details.)
 
 **Note #1:**
 *Talker Alias data is shown, only if present and complete.  Kerchunkers don't stick around long enough for TA data to be gathered.  Partial TA data (or that which is received as empty/null) is not shown.*
@@ -136,7 +136,7 @@ Once the "git pull" is successful, run the install script, as described above.
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
 ## Large Font Display of the Callsign and Talkgroup or DG-ID
-One of the functions of the "install" script (see the "Installation" section, above) is to install the package "figlet" on your system.  With figlet, **pistar-lastqso** can display the Callsign and TG or DG-IG as a large banner, at the beginning of each QSO.
+One of the functions of the "install" script (see the "Installation" section, above) is to install the package "figlet" on your system.  With figlet, **pistar-lastqso** can display the Callsign and target, TG or DG-IG, as a large banner, at the beginning of each QSO.
 
 If figlet is disabled (see the "Commandline options" section, below), the large character display is omitted, but all other information is still displayed normally.
 
@@ -158,7 +158,7 @@ If the **user.csv** file is already present on your hotspot, but is older than 7
 -------------------------------------------------------------------
 ## City, State, Country Lookups for Callsigns (Other Modes)
 
-As mentioned above, pistar-lastqso will attempt to find QTH info in the DMR **user.csv** file, then PI-STAR's **NXDN.csv** file.  If the Callsign is not found in either of those files, it then calls upon the perl script **dxcc.pl** and it's **cty.dat** file.  As the first two data sources generally contain City, State, and Country info, they are tried first.
+For other modes, pistar-lastqso will attempt to find QTH info in the DMR **user.csv** file, then PI-STAR's **NXDN.csv** file, on the likelihood that an NXDN, D-Star, or P25 user is also a registered DMR or NXDN user.  If the Callsign is not found in either of those files, it then calls upon the perl script **dxcc.pl** and it's **cty.dat** file.  As the first two data sources generally contain City, State, and Country info, they are tried first.
 
 The **dxcc.pl** script, and it's **cty.dat** file, can only determine the Country that issued the Callsign, based on the Callsign's prefix.  (Lookups with **dxcc.pl** can be disabled if needed, with the "-D|--DXCC" options - see **[the Help text](https://github.com/kencormack/pistar-lastqso#the-help-text)** for details.)
 
@@ -171,8 +171,7 @@ If the **cty.dat** file is already present on your hotspot, but is older than 30
 -------------------------------------------------------------------
 ## Commandline Options
 
-**pistar-lastqso** supports a number of commandline options, as shown below, and in **[the Help text](https://github.com/kencormack/pistar-lastqso#the-help-text)**.  Multiple options can be specified at the same time.  For example, specifying "-c -n -t" (or "--csv --nobig --top") will download the latest updated **user.csv** file, disable the large font
-display of the Callsigns, and activate the non-scrolling information section at the top of the screen.
+**pistar-lastqso** supports a number of commandline options, as shown below, and described in **[the Help text](https://github.com/kencormack/pistar-lastqso#the-help-text)**.  Multiple options can be specified at the same time (though each option MUST be separated from the next, with a space).  For example, specifying "-c -n -t" (or "--csv --nobig --top") will download the latest updated **user.csv** file, disable the large font display of the Callsigns, and activate the non-scrolling information section at the top of the screen.
 
 **Valid Options and Parameters...**
 ```
@@ -600,7 +599,7 @@ These are the 3 basic fonts supplied with the "figlet" package, along with the s
 ## Other Notes
 
 **pistar-lastqso** is heavily commented, and shouldn't be too difficult to figure out, by those wishing to modify it for
-other modes of traffic (D-Star, or whatever.)
+their own needs.
 
 Key elements of the tool's operation include:
 
