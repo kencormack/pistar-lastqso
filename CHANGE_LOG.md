@@ -1,4 +1,19 @@
 ```
+CHANGES: V3.00
+ 1. Restructured DMR processing a bit, to clean
+    up parsing.  Folded a few of the small DMR
+    functions back into fnDMR_MAIN.
+ 2. Fixed display of DMR MASTER in the -t|--top
+    section, when YSF2DMR is used.
+ 3. Fixed display of YSF MASTER in the -t|--top
+    section, when DMR2YSF is used.
+ 4. Added preliminary supprt for NXDN, D-Star,
+    and P25 modes... Only network-based traffic
+    can be parsed at this time.  As I do not own
+    radios supporting these modes, I can't create
+    for examination, the corresponding log entries
+    for RF-based traffic.
+
 CHANGES: V2.37
 Since v2.30, approximately 100 calls to external
 commands have been removed from the script,
