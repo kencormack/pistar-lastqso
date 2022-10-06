@@ -6,6 +6,15 @@
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/animation.gif)
 
 -------------------------------------------------------------------
+## PRELIMINARY SUPPORT HAS NOW BEEN ADDED, FOR NXDN, D-STAR, AND P25!
+## As I do not personally own radios capable of these modes, support
+## for NXDN, D-STAR, and P25 is currently limited to parsing NETWORK
+## log entries ONLY.  However, what's now in place for these modes is
+## a decent start.  (You wont see your own radio RF signals, but you
+## WILL see traffic coming to you from the network.)
+## Updates to the text and screenshots below, to show all the changes,
+## will come later.  But what's shown below applies to the new modes.
+-------------------------------------------------------------------
 ## See the CHANGE_LOG above, for details of what's changed, in each version. 
 -------------------------------------------------------------------
 ## Contents
@@ -14,7 +23,7 @@
 - **[Updating](https://github.com/kencormack/pistar-lastqso#updating)**
 - **[Large Font Display of the Callsign and Talkgroup or DG-ID](https://github.com/kencormack/pistar-lastqso#large-font-display-of-the-callsign-and-talkgroup-or-dg-id)**
 - **[City, State, Country Lookups for Callsigns (DMR only)](https://github.com/kencormack/pistar-lastqso#city-state-country-lookups-for-callsigns-dmr-only)**
-- **[City, State, Country Lookups for Callsigns (YSF only)](https://github.com/kencormack/pistar-lastqso#city-state-country-lookups-for-callsigns-ysf-only)**
+- **[City, State, Country Lookups for Callsigns (Other Modes)](https://github.com/kencormack/pistar-lastqso#city-state-country-lookups-for-callsigns-other-modes)**
 - **[Commandline Options](https://github.com/kencormack/pistar-lastqso#commandline-options)**
 - **[The Help Text](https://github.com/kencormack/pistar-lastqso#the-help-text)**
 - **[Daily Log Rotation](https://github.com/kencormack/pistar-lastqso#daily-log-rotation)**
@@ -33,7 +42,10 @@
 ## About
 **pistar-lastqso is a tool to monitor DMR and YSF traffic (including DMR2YSF and YSF2DMR cross-modes) on a PI-STAR node, either via SSH, or, on an HDMI-connected console.  Written as a bash shell script (with a few lines of python), no web browser or other GUI client is required.**
 
-**For each QSO (either DMR or YSF), the program displays the following data:**
+## Preliminary Support for NXDN, D-Star, and P25
+**As of version 3.0, pistar-lastqso now contains limited support for NXDN, D-Star, and P25.  As I do not own radios of these types, I have no way to replicate for parsing, the log entrie needed for RF-based traffic (from the radio to the hotspot).  I have, however, been able to create the log entries for network-based traffic (from the network to the hotspot).
+
+**For each QSO (all modes), the program displays the following data:**
 - The localized Time and Date of the contact
 - The running count of QSOs observed since launch
 - The Sender (From)
@@ -51,11 +63,11 @@
 - The talkgroup's Name (Note #2, below)
 - The contact's DMR ID# (Note #3, below)
 
-**For each YSF QSO, the program displays the following data beyond what the PI-STAR dashboard can show:**
+**For the other modes, the program displays the following data beyond what the PI-STAR dashboard can show:**
 - The contact's QTH (Determined with best effort, from several sources.)
 - Possibly, the contact's First Name (keep reading.)
 
-As YSF does not require that users be registered, there is no single source for Name or QTH data for YSF users.  The script therefore assumes that the Callsign owner may also have either a registered DMR ID or NXDN ID number.  On the chance that they do, **pistar-lastqso** first attempts to find the Callsign's name and QTH info in the DMR **user.csv** file, then PI-STAR's **NXDN.csv** file.  If the Callsign is not found in either of those files, as a last resort, it then calls upon the perl script **dxcc.pl** and it's **cty.dat** file.  As the first two data sources generally contain the Callsign's Name, City, State, and Country info, they are tried first.  The **dxcc.pl** script, and it's **cty.dat** file, can only determine the Country that issued the Callsign, based on the Callsign's prefix.  The Callsign's Name will remain unresolved.  (Lookups with **dxcc.pl** can be disabled if needed, with the "-D|--DXCC" options - see **[the Help text](https://github.com/kencormack/pistar-lastqso#the-help-text)** for details.)
+As several of the modes do does not require that users be registered, there is no single source for Name or QTH data for most users.  The script therefore assumes that the Callsign owner may also have either a registered DMR ID or NXDN ID number.  On the chance that they do, **pistar-lastqso** first attempts to find the Callsign's name and QTH info in the DMR **user.csv** file, then PI-STAR's **NXDN.csv** file.  If the Callsign is not found in either of those files, as a last resort, it then calls upon the perl script **dxcc.pl** and it's **cty.dat** file.  As the first two data sources generally contain the Callsign's Name, City, State, and Country info, they are tried first.  The **dxcc.pl** script, and it's **cty.dat** file, can only determine the Country that issued the Callsign, based on the Callsign's prefix.  The Callsign's Name will remain unresolved.  (Lookups with **dxcc.pl** can be disabled if needed, with the "-D|--DXCC" options - see **[the Help text](https://github.com/kencormack/pistar-lastqso#the-help-text)** for details.)
 
 **Note #1:**
 *Talker Alias data is shown, only if present and complete.  Kerchunkers don't stick around long enough for TA data to be gathered.  Partial TA data (or that which is received as empty/null) is not shown.*
@@ -150,7 +162,7 @@ If the **user.csv** file is already present on your hotspot, but is older than 7
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
-## City, State, Country Lookups for Callsigns (YSF only)
+## City, State, Country Lookups for Callsigns (Other Modes)
 
 As mentioned above, pistar-lastqso will attempt to find QTH info in the DMR **user.csv** file, then PI-STAR's **NXDN.csv** file.  If the Callsign is not found in either of those files, it then calls upon the perl script **dxcc.pl** and it's **cty.dat** file.  As the first two data sources generally contain City, State, and Country info, they are tried first.
 
@@ -308,13 +320,13 @@ PISTAR-LASTQSO - HELP
       helpful only to those looking to modify the script, is shown
       in the top-right corner of the screen.  An example looks like
       this:
-                       Options & Parameters: -t 10 -f 4 -w -i -l
+                       Options & Parameters: -t 15 -f 5 -w -i -l
                    Debugging: 3>/dev/null Profiling: 4>/dev/null
-            xterm Display=44x168 TTY=pts0 PID=28578 BG_PID=28887
-             Modes and X-Modes: YSF=1 DMR=1 NXDN=0 DSTAR=0 P25=0
+                 xterm SIZE=44x168 TTY=pts0 PID=2110 BG_PID=2414
+             Modes and X-Modes: YSF=0 DMR=0 NXDN=0 DSTAR=0 P25=1
              YSF2DMR=0 YSF2NXDN=0 YSF2P25=0 DMR2YSR=0 DMR2NXDN=0
-        Counts: DMR=425 YSF=214 KERCH=216 ERR=0 WARN=0 RESTART=0
-            ----------------------------------------------------
+                Traffic Counts: DMR=0 YSF=0 NXDN=0 DSTAR=0 P25=0
+        Other Counts: Kerchunks=0 Errors=0 Warnings=0 Restarts=0
 
       The first line shows the options and parameters passed to the
       script when launched.
@@ -338,19 +350,15 @@ PISTAR-LASTQSO - HELP
       enabled: YSF2DMR, YSF2NXDN, YSF2P25, DMR2YSR, and DMR2NXDN.
       If enabled, the mode will show a "1".  Disabled will show a "0".
 
-      The sixth line shows a number of counters.  The counters repre-
-      sent the following: DMR traffic, YSF traffic, Kerchunks, Errors,
-      Warnings, and Restarts since program launch.  Regarding the
-      restarts, expect typically two such events per day... rotation
-      to a new day's log at midnight UTC, and again each night during
-      pi-star's nightly update, when services are bounced.  Note too
-      that any changes you make to pi-star's config via the GUI will
-      also bounce the services, when your changes are saved.
+      The sixth line shows a number of counters.  They show the number
+      of DMR, YSF, NXDN, DSTAR, and P25 messages seen since the program
+      was launched.
 
-      The last line shows a dashed line in normal operation mode,
-      when watching the live log.  However, when the -r|--replay
-      option is specified, a simple reminder appears to indicate
-      that the program is running in "replay mode".
+      The last line shows the number of Kerchunks, Errors, Warnings,
+      and log Restarts observed since program launch.  However, when
+      the "-r|--replay" option is used, the last line instead performs
+      a different function.  It displays a reminder indicating that the
+      program is in "replay mode" (not viewing live traffic)
 
   -l|--logo
       Disables the animated logo at startup.
