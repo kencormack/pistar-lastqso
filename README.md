@@ -233,8 +233,8 @@ PISTAR-LASTQSO - HELP
       calls upon dxcc.pl to determine the country that issued the call
       sign.  This can potentially impact pistar-lastqso's ability to
       "keep up" with log entries, as each call to dxcc.pl can take up
-      to 4 or 5 seconds to resolve.  When YSF traffic lasts more than
-      a few seconds, this is no problem, as the script normally just
+      to 4 or 5 seconds to resolve.  When traffic lasts more than a
+      few seconds, this is no problem, as the script normally just
       sits there saying "QSO In Progress...".  But when the bulk of
       traffic is "[[kerchunks]]", which pistar-lastqso considers any
       traffic lasting less than 2 seconds, the kerchunks can out-pace
@@ -242,7 +242,7 @@ PISTAR-LASTQSO - HELP
       there are generally not a problem.  But a large series of them
       in quick succession can cause delays.  Effectively, you will be
       listening to one callsign, but still seeing data on the screen
-      for QSOs logged many seconds ago.
+      for traffic logged many seconds ago.
 
       This "-D|--DXCC" cmdline option can be used to disable calls
       to the dxcc.pl script, if such delays become an issue for you.
@@ -250,7 +250,8 @@ PISTAR-LASTQSO - HELP
       This option has no affect on DMR traffic.  DMR and NXDN users
       go through a registration process that results in their QTH data
       being readily available in the user.csv and NXDN.csv files, thus
-      calls to the dxcc.pl script are never needed for DMR traffic.
+      calls to the dxcc.pl script aren't needed for DMR or NXDN
+      traffic.
 
   -e|--errors
       By default, pistar-lastqso will display any error messages found
@@ -351,7 +352,7 @@ PISTAR-LASTQSO - HELP
       and log Restarts observed since program launch.  However, when
       the "-r|--replay" option is used, the last line instead performs
       a different function.  It displays a reminder indicating that the
-      program is in "replay mode" (not viewing live traffic)
+      program is in "replay mode" (not viewing live traffic).
 
   -l|--logo
       Disables the animated logo at startup.
@@ -390,16 +391,17 @@ PISTAR-LASTQSO - HELP
       the hotspot's TCXO frequency and firmware version, CPU temp,
       the Modem's device node (port), the computer platform/model,
       the elapsed time since the script was launched, the system
-      load averages for the last 1, 5, and 15 minutes, the DMR and/
-      or YSF Master servers, and the first 5 statically defined
-      BrandMeister TalkGroups.
+      load averages for the last 1, 5, and 15 minutes, the DMR
+      Master and (if Brandmeister) the first 5 statically defined
+      BrandMeister TalkGroups.  The last line shows the current
+      reflectors in effect for the other modes.
 
       By default, the use of "-t|--top" also provides a history of
       the last 5 QSOs observed.  However, by specifying an integer
       parameter, the number of QSOs displayed in the history can be
       changed.  A value of 0 (zero) disables the history (but retains
       all the other information in the "-t|--top" section of the
-      screen.  Other values determine the number of lines of history
+      screen).  Other values determine the number of lines of history
       that will be displayed.
 
       Examples:
@@ -657,7 +659,7 @@ I am in no way partnered with the original creator of PI-STAR, Andy Taylor (MW0M
 -------------------------------------------------------------------
 ## Special Thanks
 
-I want to offer a big "Vielen Dank!" to Wolfgang Wendefeuer (DC6LK), for the testing, input, discussion, ideas, and sample TG entries he provided.  Thanks also, to Cal Kutemeier (N9KO) for spotting a time-sensitive bug in the conversion of UTC date-stamps to local dates, and Neil Redditch (M1CFK) for reporting a problem with Talker Alias.
+I want to offer a big "Vielen Dank!" to Wolfgang Wendefeuer (DC6LK), for the testing, input, discussion, ideas, and sample TG entries he provided.  Thanks also, to Cal Kutemeier (N9KO) for spotting a time-sensitive bug in the conversion of UTC date-stamps to local dates, Neil Redditch (M1CFK) for reporting a problem with Talker Alias, and Gaute Alstad (LB6YD) for providing sample log entries with which to add D-Star RF log message support.
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
