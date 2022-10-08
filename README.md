@@ -27,6 +27,7 @@
 - **[Sample Screenshots](https://github.com/kencormack/pistar-lastqso#sample-screenshots)**
 - **[Other Notes](https://github.com/kencormack/pistar-lastqso#other-notes)**
 - **[Getting Help](https://github.com/kencormack/pistar-lastqso#getting-help)**
+- **[License](https://github.com/kencormack/pistar-lastqso#license)**
 - **[Acknowledgements](https://github.com/kencormack/pistar-lastqso#acknowledgements)**
 - **[Disclaimer](https://github.com/kencormack/pistar-lastqso#disclaimer)**
 - **[Special Thanks](https://github.com/kencormack/pistar-lastqso#special-thanks)**
