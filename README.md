@@ -1,5 +1,5 @@
 # pistar-lastqso
-## A Tool to Monitor DMR, YSF, D-STAR, NXDN, and P25 Traffic, on Pi-STAR
+## A Tool to Monitor DMR, YSF, D-STAR, NXDN, and P25 Traffic, on Pi-Star
 
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/title-screen.jpg)
 
@@ -38,18 +38,17 @@
 **VERSION 3.01 NOW INCLUDES FULL SUPPORT FOR D-STAR (BOTH NETWORK AND RF TRAFFIC ARE DISPLAYED).**
 **NXDN AND P25 INCLUDE PARTIAL SUPPORT - ONLY NETWORK TRAFFIC IS DISPLAYED (NOT RF TRAFFIC).**
 
-**As I do not own appropriate radios to create the RF-based log entries, support for these additional modes is, for the moment, limited to network-based traffic only.**
+**As I do not own appropriate radios to create the RF-based log entries, support for these additional modes is, for the moment, limited to network-based traffic only.  Your own RF traffic to the hotspot will not, at present, be displayed.**
 
 **For each QSO (all modes), the program displays the following data:**
 - The localized Time and Date of the contact
 - The running count of QSOs observed since launch
 - The Sender (From)
 - The Recipient (To)
+- Possibly, the contact's First Name (keep reading.)
+- The contact's QTH (Determined with best effort, from several sources.)
 - The Duration of the contact (in seconds)
 - The Bit Error Rate, and Loss (Net), or Signal Strength (RF)
-
-**In Addition:**
-- Any MMDVM errors or warnings appearing in the log while the tool is monitoring
 
 **For each DMR (Only) QSO, the program displays the following data beyond what the PI-STAR dashboard can show:**
 - The contact's Name (from PI-STAR's **DMRIds.dat** file)
@@ -58,14 +57,13 @@
 - The talkgroup's Name (Note #2, below)
 - The contact's DMR ID# (Note #3, below)
 
-**For the other modes, the program displays the following data beyond what the PI-STAR dashboard can show:**
-- The contact's QTH (Determined with best effort, from several sources.)
-- Possibly, the contact's First Name (keep reading.)
+**In Addition:**
+- Any MMDVM errors or warnings appearing in the log while the tool is monitoring
 
-As several of the modes do not require that users be registered, there is no single source for Name or QTH data for most users.  The script therefore assumes that the Callsign owner may also have either a registered DMR ID or NXDN ID number.  On the chance that they do, **pistar-lastqso** first attempts to find the Callsign's name and QTH info in the DMR **user.csv** file, then PI-STAR's **NXDN.csv** file.  If the Callsign is not found in either of those files, as a last resort, it then calls upon the perl script **dxcc.pl** and it's **cty.dat** file.  As the first two data sources generally contain the Callsign's Name, City, State, and Country info, they are tried first.  The **dxcc.pl** script, and it's **cty.dat** file, can only determine the Country that issued the Callsign, based on the Callsign's prefix.  The Callsign's Name will remain unresolved.  (Lookups with **dxcc.pl** can be disabled if needed, with the "-D|--DXCC" options - see **[the Help text](https://github.com/kencormack/pistar-lastqso#the-help-text)** for details.)
+As several of the modes do not require that users be registered, there is no single source for Name or QTH data for most users.  The script therefore assumes that the Callsign owner may also have either a registered DMR ID or NXDN ID number.  On the chance that they do, **pistar-lastqso** first attempts to find the Callsign's name and QTH info in the DMR **user.csv** file, then PI-STAR's **NXDN.csv** file.  If the Callsign is not found in either of those files, as a last resort, it then calls upon the perl script **dxcc.pl** and it's **cty.dat** file.  As the first two data sources generally contain the Callsign's Name, City, State, and Country info, they are tried first.  The **dxcc.pl** script, and it's **cty.dat** file, can only determine the Country that issued the Callsign, based on the Callsign's prefix.  The Callsign's Name will remain unresolved.  (Lookups with **dxcc.pl** can be disabled if desired, with the "-D|--DXCC" options - see **[the Help text](https://github.com/kencormack/pistar-lastqso#the-help-text)** for details.)
 
 **Note #1:**
-*Talker Alias data is shown, only if present and complete.  Kerchunkers don't stick around long enough for TA data to be gathered.  Partial TA data (or that which is received as empty/null) is not shown.*
+*DMR Talker Alias data is shown, only if present and complete.  Kerchunkers don't stick around long enough for TA data to be gathered.  Partial TA data (or that which is received as empty/null) is not shown.*
 
 **Note #2:**
 *See the "User-Custom Talkgroup List" section below, for more info.*
@@ -85,22 +83,31 @@ As several of the modes do not require that users be registered, there is no sin
 ## Installation
 
 **pistar-lastqso** comes with an "install" script.  To install **pistar-lastqso**, log in to your PI-STAR hotspot with SSH, and perform the following steps:
-```
 Put the PI-STAR filesystem in read-write mode...
+```
   $ rpi-rw
+```
 
 Pull down the pistar-lastqso files...
+```
   $ git clone https://github.com/kencormack/pistar-lastqso.git
+```
 
 Change to the "pistar-lastqso" directory that was just created...
+```
   $ cd pistar-lastqso
+```
 
 Run the install script...
+```
   $ ./install
-  (The install script will return the filesystem to read-only mode)
+```
+(The install script will return the filesystem to read-only mode)
 
 You are now ready to monitor DMR and/or YSF traffic from the commandline.
+```
   $ pistar-lastqso
+```
 ```
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
