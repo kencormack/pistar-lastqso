@@ -111,10 +111,22 @@ Each time the script is run, it checks to see if an updated version has been pos
 
 To update, log in with SSH, 'cd' into the directory into which you originally cloned **pistar-lastqso**, and run the following commands:
 ```
-$ rpi-rw
-$ git pull
-$ ./install
+Put the PI-STAR filesystem in read-write mode...
+  $ rpi-rw
+
+Change to the "pistar-lastqso" directory...
+  $ cd pistar-lastqso
+
+Pull down the updated files...
+  $ git pull
+
+Run the install script...
+  $ ./install
+
   (The install script will return the filesystem to read-only mode)
+
+You are now ready to run your updated version...
+  $ pistar-lastqso
 ```
 That should do it.
 
