@@ -655,6 +655,14 @@ The **ansi_shadow** font pre-dates figlet.  It appears to have been created usin
 
 **dxcc** (https://fkurz.net/ham/dxcc.html) is a small command line utility, written in perl, which determines the ARRL DXCC entity of a ham radio Callsign.  It was written by Fabian Kurz, DJ1YFK and uses the **cty.dat** country file by Jim Reisert, AD1C (http://www.country-files.com/).
 
+**PuTTY** (https://www.putty.org/) is an excellent SSH client, available for several platforms.  I mention it here because it has been my defacto SSH client for 10 years, and is used extensively when developing and testing **pistar-lastqso**.
+
+**Vim** (https://www.vim.org/) is my editor of choice, when scripting, and has been used exclusively throughout the development of **pistar-lastqso**.
+
+**Shellcheck** (https://github.com/koalaman/shellcheck) has proven itself quite useful in catching coding errors and inefficiencies, and iperiodically lends "another set of eyes" to the development of **pistar-lastqso**.
+
+**Beautysh** (https://github.com/lovesegfault/beautysh) is another tool that has been called upon from time to time, in the development of **pistar-lastqso**.  To quote it's developer: "This program takes upon itself the hard task of beautifying Bash scripts (yeesh)."
+
 **pistar-lastqso** itself was developed on a Raspberry Pi Zero WH with eMMC (backed up to USB storage), with generic Chinese MMDVM boards (including Duplex and Simplex models).  Development began with PI-STAR 4.1.4, and has continued through all PI-STAR updates to date.  Testing the output is performed on 1.) a Lenovo Thinkpad laptop running Windows 10 Pro via SSH with PuTTY and Xming (an X-server), with PuTTY running as term-type TERM=xterm, or 2.) direct HDMI connection from the Pi to a 40" flatscreen (TERM=linux).
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
