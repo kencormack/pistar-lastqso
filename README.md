@@ -659,7 +659,7 @@ The **ansi_shadow** font pre-dates figlet.  It appears to have been created usin
 
 **Vim** (https://www.vim.org/) is my editor of choice, when scripting, and has been used exclusively throughout the development of **pistar-lastqso**.
 
-**Shellcheck** (https://github.com/koalaman/shellcheck) has proven itself quite useful in catching coding errors and inefficiencies, and iperiodically lends "another set of eyes" to the development of **pistar-lastqso**.
+**Shellcheck** (https://github.com/koalaman/shellcheck) has proven itself quite useful in catching coding errors and inefficiencies, and periodically lends "another set of eyes" to the development of **pistar-lastqso**.
 
 **Beautysh** (https://github.com/lovesegfault/beautysh) is another tool that has been called upon from time to time, in the development of **pistar-lastqso**.  To quote it's developer: "This program takes upon itself the hard task of beautifying Bash scripts (yeesh)."
 
