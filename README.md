@@ -1,6 +1,5 @@
 # pistar-lastqso
 ## A Tool to Monitor DMR, YSF, D-STAR, NXDN, and P25 Traffic, on Pi-STAR
-### (DMR2YSF and YSF2DMR cross-modes are also supported.) ###
 
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/title-screen.jpg)
 
@@ -47,7 +46,7 @@
 - The Sender (From)
 - The Recipient (To)
 - The Duration of the contact (in seconds)
-- The BER, and Loss (Net), or Signal Strength (RF)
+- The Bit Error Rate, and Loss (Net), or Signal Strength (RF)
 
 **In Addition:**
 - Any MMDVM errors or warnings appearing in the log while the tool is monitoring
