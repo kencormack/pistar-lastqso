@@ -37,6 +37,7 @@
 
 **VERSION 3.01 NOW INCLUDES FULL SUPPORT FOR D-STAR (BOTH NETWORK AND RF TRAFFIC ARE DISPLAYED).**
 **NXDN AND P25 INCLUDE PARTIAL SUPPORT - ONLY NETWORK TRAFFIC IS DISPLAYED (NOT RF TRAFFIC).**
+Note: Some screenshots below may not reflect the latest version of the script.  I'll get those updated as time permits.  However, the ones below will suffice for now.
 
 **As I do not own appropriate radios to create the RF-based log entries, support for these additional modes is, for the moment, limited to network-based traffic only.  Your own RF traffic to the hotspot will not, at present, be displayed.**
 
