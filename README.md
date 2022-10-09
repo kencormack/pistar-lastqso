@@ -86,26 +86,19 @@ As several of the modes do not require that users be registered, there is no sin
 Put the PI-STAR filesystem in read-write mode...
 ```
   $ rpi-rw
-```
 
 Pull down the pistar-lastqso files...
-```
   $ git clone https://github.com/kencormack/pistar-lastqso.git
-```
 
 Change to the "pistar-lastqso" directory that was just created...
-```
   $ cd pistar-lastqso
-```
 
 Run the install script...
-```
   $ ./install
-```
-(The install script will return the filesystem to read-only mode)
+
+  (The install script will return the filesystem to read-only mode)
 
 You are now ready to monitor DMR and/or YSF traffic from the commandline.
-```
   $ pistar-lastqso
 ```
 
