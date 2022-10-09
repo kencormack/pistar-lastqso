@@ -554,7 +554,7 @@ Lastly, a 5th font *MAY* be available, depending upon the SSH client emulator, a
 alternate character set that *some* term types and emulators support.  It is based on the '\e'#3 and '\e'#4 ANSI Escape sequences.  If it
 works for you, you should see a line of text **DOUBLE HIGH & DOUBLE WIDE**.  If it does *NOT* work for you, you will either see *TWO* single-width &
 single-height lines that look like any other line of text on the screen, or you will see unpredicatible results.  **Neither the Raspberry Pi HDMI console,
-nor the pi-star web GUI's SSH screen supports this 5th font.**
+nor the pi-star web GUI's SSH screen supports this 5th font.**  *(The **[PuTTY SSH client](https://www.putty.org/)** works well with this font, with Connection/Data "Terminal-type string" set to either "xterm" or "ansi".)*
 
 The "emulator-dependent alternate charset" font can be tried by specifying "-f|--font 5" on the **pistar-lastqso** commandline.
 
