@@ -83,8 +83,8 @@ As several of the modes do not require that users be registered, there is no sin
 ## Installation
 
 **pistar-lastqso** comes with an "install" script.  To install **pistar-lastqso**, log in to your PI-STAR hotspot with SSH, and perform the following steps:
-Put the PI-STAR filesystem in read-write mode...
 ```
+Put the PI-STAR filesystem in read-write mode...
   $ rpi-rw
 
 Pull down the pistar-lastqso files...
