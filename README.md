@@ -108,7 +108,6 @@ You are now ready to monitor DMR and/or YSF traffic from the commandline.
 ```
   $ pistar-lastqso
 ```
-```
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
