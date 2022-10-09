@@ -1,4 +1,15 @@
 ```
+CHANGES: V3.02
+ 1. Fixed a bug with QTH lookups, for callsigns
+    from YSF users who use "/" or "-" to combine
+    their name with their actual callsign.  The
+    change isolates the callsign, for lookup.
+ 2. Sometimes when queried via the API, BM lists
+    the same static TG twice.  The script now
+    removes the redundant reference to the TG.
+ 3. Minor stylistic cleanups, and updates to the
+    README.
+
 CHANGES: V3.01
  1. Added support for DSTAR RF log entries.
     Thanks to Gaute Alstad (LB6YD) for supplying
