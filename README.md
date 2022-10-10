@@ -617,6 +617,10 @@ These are the 3 basic fonts supplied with the "figlet" package, along with the s
 **pistar-lastqso** is heavily commented, and shouldn't be too difficult to figure out, by those wishing to modify it for
 their own needs.
 
+![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/code-readability.jpg)
+
+I've tried to write this script with readability in mind.  A year after having last touched a script, I like to look at it and quickly understand what it's doing, without a lot of head scratching.  Comments are applied liberally throughout, and "clever but cryptic" one-liners that are not immediately understandable without reading (and then re-reading) various man pages, are generally avoided.  The priority is understandability, rather than clever elegance or raw performance, within reason.  I did, however, undertake a performance minded sweep through the code, replacing well over a hundred calls to external tools like awk, cut, grep and such, with bash variable expansion mechanisms.  This saves tremendous overhead in loops such as this script, particularly on a Pi Zero.
+
 Key elements of the tool's operation include:
 
 - determining which log is the latest
