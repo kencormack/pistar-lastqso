@@ -40,6 +40,8 @@
 
 **As I do not own appropriate radios to create the RF-based log entries, support for these additional modes is, for the moment, limited to network-based traffic only.  Your own RF traffic to the hotspot will not, at present, be displayed.**
 
+**IF YOU OWN A P25 OR NXDN RADIO, AND CAN SEND ME A SNIPPET OF YOUR LOG SHOWING YOUR RF TRANSMISSIONS (TRAFFIC FROM YOUR RADIO TO THE HOTSPOT), I CAN WORK FROM THOSE LOG ENTRIES, TO COMPLETE THE NEEDED PARSING TO PISTAR-LASTQSO.**
+
 Note: Some screenshots below may not reflect the latest version of the script.  I'll get those updated as time permits.  However, the ones below will suffice for now.
 
 **For each QSO (all modes), the program displays the following data:**
