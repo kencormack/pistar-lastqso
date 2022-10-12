@@ -573,7 +573,7 @@ If you specify an invalid numeric parameter for the "-f|--font" option, **pistar
 -------------------------------------------------------------------
 ## Replaying a Log
 
-Introduced with version 2.35, **pistar-lastqso** now has the ability to replay a log from the beginning, when the commandline option "-r|--replay" is specified.  Intended primarily for troubleshooting and development, this feature works best when an imported log is uploaded to the hotspot's **/tmp** directory, as **/tmp** does not require root access, and does not require the pi-star filesystem to first be placed in read-write mode.  Importantly, **/tmp** is ram-based and volatile.  Any file uploaded there will be removed upon reboot.  See **[the Help text](https://github.com/kencormack/pistar-lastqso#the-help-text)** above, for details.
+Introduced with version 2.35, **pistar-lastqso** now has the ability to replay a log from the beginning, when the commandline option "-r|--replay" is specified.  Intended primarily for troubleshooting and development, this feature works best when an imported log is uploaded or copied to the hotspot's **/tmp** directory, as **/tmp** does not require root access, and does not require the pi-star filesystem to first be placed in read-write mode.  Importantly, **/tmp** is ram-based and volatile.  Any file uploaded there will be removed upon reboot.  See **[the Help text](https://github.com/kencormack/pistar-lastqso#the-help-text)** above, for details.
 
 Here is an example demonstrating the replay mode...
 
