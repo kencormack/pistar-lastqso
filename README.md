@@ -502,6 +502,8 @@ You can also add certain 'private contact' IDs here that may not be listed.  Not
 -------------------------------------------------------------------
 ## QSO, Kerchunk, and MMDVM Error and Warning Counts
 
+![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/closing-screen.jpg)
+
 **pistar-lastqso** counts the number of QSOs it has watched since last launched by the user.  With each QSO the running count is displayed.  Connections lasting less than 2 seconds are considered "kerchunks", which are also counted.  These are noted on the screen as kerchunks, but the running count is not displayed.  When the user quits the program using Ctrl-C, the closing screen shows the number of QSOs the program watched, and how many of these were considered kerchunks.
 
 The program also watches the MMDVM log for any errors, or more severe warnings, reported by the MMDVMhost daemon that is the real "engine" behind PI-STAR.  Any such errors or warnings noted in the MMDVM log are reported by **pistar-lastqso** as they occur, and are tallied.  The total number of errors and warnings counted (if any) since **pistar-lastqso** was launched by the user, are reported on the exit screen, in a red pop-up box.  If no errors or warnings were tallied, the red pop-up box does not appear.
