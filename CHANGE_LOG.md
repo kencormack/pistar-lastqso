@@ -1,4 +1,22 @@
 ```
+CHANGES: V3.03
+ 1. Small cleanups to NXDN and P25 network traffic.
+ 2. Minor change to the check to see if an updated
+    version of the script has been made available.
+ 3. Fixed D-Star network traffic not rolling up to
+    history when "network watchdog has expired".
+ 4. Removed an unneeded search string from the main
+    loop, along with two case conditions that would
+    never apply.
+ 5. Turn off keyboard character echo during program
+    run, and re-enable upon exit.
+
+NOTE: I'm still looking for someone with a P25 or
+    NXDN radio to share a bit of their log, showing
+    the log entries for their RF transmissions.
+    With such sample log entries, I can add the
+    necessary support for RF traffic to the script.
+
 CHANGES: V3.02
  1. Fixed a bug with QTH lookups, for callsigns
     from YSF users who use "/" or "-" to combine

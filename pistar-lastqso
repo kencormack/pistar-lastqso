@@ -13,7 +13,7 @@
 
 set -o allexport
 
-VERSION=3.02
+VERSION=3.03
 
 #----------
 if [[ "${EUID}" -eq 0 ]]
@@ -25,6 +25,12 @@ then
   echo
   exit
 fi
+
+# Save the current terminal configuration
+STTY="$(stty -g)"
+# Turn off character/word/line erase, and
+# turn off echo of chars as they are typed
+stty cbreak -echo 
 
 #----------
 # NOTE #1: Originally written for pi-star >= 4.1.4, for DMR mode ONLY.
@@ -2219,38 +2225,6 @@ fnDMR_CSV_SEARCH()
 }
 
 #-----------------------------------
-# This takes the NXDN user's callsign and looks up the
-# city, state, and country fields
-fnNXDN_CSV_SEARCH()
-{
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
-
-  trap fnWINCH WINCH
-
-  # Fields in the file:
-  # RADIO_ID,CALLSIGN,FIRST_NAME,LAST_NAME,CITY,STATE,COUNTRY
-  # We want the last three.
-  CSV_RECORD="$(grep ",${CSV_CALLSIGN}," "${NXDNCSV}" | cut -f5-7 -d"," | sort -u)"
-
-  if [[ "${CSV_RECORD}" != "" ]]
-  then
-    IFS=','; CUT_ARRAY=(${CSV_RECORD}); unset IFS;
-    CITY="${CUT_ARRAY[0]}"
-    STATE="${CUT_ARRAY[1]}"
-    COUNTRY="${CUT_ARRAY[2]}"
-    unset CUT_ARRAY
-  else
-    CITY=""
-    STATE=""
-    COUNTRY=""
-  fi
-  # If any fields came back empty, set a default of "n/a" (not available)
-  CITY=${CITY:-'n/a'}
-  STATE=${STATE:-'n/a'}
-  COUNTRY=${COUNTRY:-'n/a'}
-}
-
-#-----------------------------------
 fnCONVERT_DATE_TIME()
 {
   echo -e "\nenter: ${FUNCNAME[*]}" >&3
@@ -3788,42 +3762,47 @@ fnNXDN_MAIN()
   FIELD_6="${CUT_ARRAY[5]}"
   FIELD_8="${CUT_ARRAY[7]}"
   FIELD_9="${CUT_ARRAY[8]}"
+  FIELD_10="${CUT_ARRAY[9]}"
   FIELD_11="${CUT_ARRAY[10]}"
   FIELD_12="${CUT_ARRAY[11]}"
   unset CUT_ARRAY
 
   #----------
   # Start of NXDN network traffic
-  if [[ "${LOGREC_REMAINING_DATA}" =~ "received network transmission" ]]
+  if [[ "${LOGREC_REMAINING_DATA}" =~ "received network transmission from" ]]
   then
     fnCONVERT_DATE_TIME
     QSO_START_TIME="${TIME}"
 
-    SOURCE="NET"
-
     FROM="${FIELD_6}"
+    TG_LABLE="${FIELD_8}"
     TO="${FIELD_9}"
+
+    TO="${TG_LABLE} ${TO}"
     echo -en "\r${CLR_EL}"
     fnBANNER
 
+    SOURCE="NET"
+
     ((QSO_COUNT++))
     echo "${QSO_COUNT}" > "${QSO_COUNT_FILE}"
-
     fnSHOW_CURRENT_CALL
     return
   fi
 
   #----------
   # End of NXDN network traffic
-  if [[ "${LOGREC_REMAINING_DATA}" =~ "received network end of transmission" ]]
+  if [[ "${LOGREC_REMAINING_DATA}" =~ "received network end of transmission from" ]]
   then
-    echo -en "\r${CLR_EL}"
-
     FROM="${FIELD_8}"
+    TG_LABLE="${FIELD_10}"
     TO="${FIELD_11%,*}"
     SECS="${FIELD_12}"
 
+    LOSS="n/a"
+
     fnNXDN_END_NETWORK_TRAFFIC
+
     return
   fi
 
@@ -4082,13 +4061,25 @@ fnDSTAR_MAIN()
   if [[ "${LOGREC_REMAINING_DATA}" =~ "network watchdog has expired" ]]
   then
     echo -en "\r${CLR_EL}"
-    IFS=','; CUT_ARRAY=(${LOGREC_REMAINING_DATA}); unset IFS;
-    FIELD_3="${CUT_ARRAY[2]}"
+    IFS=' '; CUT_ARRAY=(${LOGREC_REMAINING_DATA}); unset IFS;
+    FIELD_6="${CUT_ARRAY[5]}"
+    FIELD_8="${CUT_ARRAY[7]}"
+    FIELD_12="${CUT_ARRAY[11]}"
     unset CUT_ARRAY
 
     # seconds
-    IFS=' '; CUT_ARRAY=(${FIELD_3}); unset IFS;
-    SECS="${CUT_ARRAY[0]}"
+    SECS="${FIELD_6}"
+
+    # loss
+    IFS='%'; CUT_ARRAY=(${FIELD_8}); unset IFS;
+    LOSS="${CUT_ARRAY[0]}"
+    unset CUT_ARRAY
+
+    # BER
+    BER="${FIELD_12#*:}"
+    BER="${BER// /}"
+    IFS='%'; CUT_ARRAY=(${BER}); unset IFS;
+    BER="${CUT_ARRAY[0]}"
     unset CUT_ARRAY
 
     fnDSTAR_END_NETWORK_TRAFFIC
@@ -4211,13 +4202,13 @@ fnMAIN_LOOP()
     CMD="cat"
   fi
 
-  eval "${CMD}" "${WORKING_LOG}" 2>/dev/null | grep -E --line-buffered " DMR | YSF,| D-Star| NXDN| P25|MMDVMHOST-STOP|SIGTERM" \
-    | grep -v -E --line-buffered "^D:|^I:|0000:|Opening|Closing|Embedded" \
+  eval "${CMD}" "${WORKING_LOG}" 2>/dev/null | grep -v -E --line-buffered "^D:|^I:|0000:|Opening|Closing|Embedded" \
+    | grep -E --line-buffered " DMR | YSF,| D-Star| NXDN| P25|MMDVMHOST-STOP" \
     | while read -r RECORD
   do
     #----------
-    # See if MMDVMHost has either shutdown, or transitioned to a new log.
-    if [[ "${RECORD}" =~ "MMDVMHOST-STOP" ]] || [[ "${RECORD}" =~ "SIGTERM" ]]
+    # See if MMDVMHost has shutdown or transitioned to a new log.
+    if [[ "${RECORD}" =~ "MMDVMHOST-STOP" ]]
     then
       if [[ ${REPLAY} -eq 0 ]]
       then
@@ -4248,12 +4239,6 @@ fnMAIN_LOOP()
         ;;
       "W:")
         fnTALLY_WARNINGS
-        continue
-        ;;
-      "D:")
-        continue
-        ;;
-      "I:")
         continue
         ;;
       *)
@@ -4358,6 +4343,7 @@ fnABORT()
 
   tput cup "${LINES}" 0
   echo -en "${TERM_RESET}"
+  stty "${STTY}"
   exit
 }
 
@@ -4465,7 +4451,7 @@ fi
 # If github has a later version, tell the user.
 echo -en "\r${CLR_EL}${SGR0}${WHI}Performing Version Check... "
 VER_CHECK_COLOR="${WHI}${BOLD}"
-VER_CHECK="$(curl -s https://raw.githubusercontent.com/kencormack/pistar-lastqso/main/pistar-lastqso 2>/dev/null | grep "^VERSION=")"
+VER_CHECK="$(curl -s https://raw.githubusercontent.com/kencormack/pistar-lastqso/main/pistar-lastqso 2>/dev/null | grep -m 1 "^VERSION=")"
 VER_CHECK="${VER_CHECK#*=}"
 
 IS_DEV=""
@@ -4562,7 +4548,7 @@ do
     # It runs "fuser" against the log.  If "MMDVMHost" no longer shows
     # in the output, then MMDVMHost is no longer writing to the log.  The
     # function then appends "MMDVMHOST-STOP" to the log file.  The "read" in
-    # fnMAIN_LOOP will spot this and will act on it, to re-launch the script.
+    # fnMAIN_LOOP will spot this, and act on it to re-start the main loop.
     #
     # If the background job is already running, don't spawn another copy.
     if [[ "$(pgrep -f "/bin/bash -c fnMMDVMLOG_FUSER")" = "" ]]
@@ -4600,9 +4586,10 @@ do
       fnSEPARATOR
       echo -n "${SGR0}${GRE}"
 
-      figlet -w 80 -f ansi_shadow " COMPLETE"
+#     figlet -w 80 -f ansi_shadow " COMPLETE"
+#     tput cuu1
+      echo "COMPLETE"
 
-      tput cuu1
       echo -n "${BOLD}${WHI}"
       fnSEPARATOR
       fnSEPARATOR
