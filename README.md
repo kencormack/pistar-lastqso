@@ -44,13 +44,14 @@
 
 Note: Some screenshots below may not reflect the latest version of the script.  I'll get those updated as time permits.  However, the ones below will suffice for now.
 
-**For each QSO (all modes), the program displays the following data:**
+**For each QSO (all modes), the program can display the following data:**
 - The localized Time and Date of the contact
 - The running count of QSOs observed since launch
 - The Sender (From)
 - The Recipient (To)
-- Possibly, the contact's First Name (keep reading.)
-- The contact's QTH (Determined with best effort, from several sources.)
+- Possibly, the contact's First Name (keep reading)
+- The contact's QTH (Determined with best effort, from several sources)
+- The Grid Square location of the contact (US Callsigns only - Note #4, below)
 - The Duration of the contact (in seconds)
 - The Bit Error Rate, and Loss (Net), or Signal Strength (RF)
 
@@ -80,6 +81,9 @@ As several of the modes do not require that users be registered, there is no sin
 *In the early days of DMR, some users were registering for multiple IDs (one for each radio, one for each hotspot, etc.)  The prefered method of identifying hotspots today is by adding a two-digit suffix to the user's normal 7-digit ID, for example.  However, those earlier cases of multiple ID numbers mapped to the same Callsign still exist in the file.  Each DMR ID links to only one Callsign, but not every Callsign links to just one ID.  (I saw one Callsign that has EIGHT consecutive DMR ID numbers associated with it.)  With no guarantee that I'm picking the correct ID linked to a given Callsign, I just arbitrarily pick the first number, on the assumption that that's the one that represents the user, not one of their hotspots, etc.  I wish MMDVMHost would log both Callsign and ID#.  But it's one or the other, not both.  For the vast (VAST!) majority of cases, my "lesser of two evils" approach will serve well enough.*
 
 *If the Callsign maps to multiple ID#'s, I indicate that the ID shown is just a "guess", by displaying an asterisk, immediately after the ID#.*
+
+**Note #4:**
+Maidenhead Grid Square look-ups are only possible with US Callsigns at this time, as the API that fetches them is tied to the US FCC's database.  The Grid Squares are based on the Callsign's address.  Display of a Callsign's Grid Square requires use of the "-g|--grid" commandline option (see the help text, below.)
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
@@ -311,6 +315,13 @@ PISTAR-LASTQSO - HELP
 
       Font # 5 may not work for everyone.  Not all terminal emulators
       or TERM-types support the ANSI control codes for this feature.
+
+  -g|--grid
+      For US callsigns only, enable Maidenhead Grid Square look-up for
+      callsigns, based on the US FCC mailing address of record, for a
+      callsign.  The grid square appears at the end of the QTH data.
+      Results of a lookup are cached until the hotspot is rebooted.
+      This works only for US callsigns.
 
   -h|--help
       Display this help screen, then exit.
