@@ -13,7 +13,7 @@
 
 set -o allexport
 
-VERSION=3.03
+VERSION=3.04
 
 #----------
 if [[ "${EUID}" -eq 0 ]]
@@ -182,6 +182,10 @@ PS4='+\011\t ${LINENO}\011'
 #----------
 # Defaults that can be overridden with cmdline options...
 #
+# Maidenhead lookups on US callsigns disabled by default.
+# Can be activated with "-g|--grid" cmdline option.
+GRID=0
+
 # Timestamps now default to 24Hr format.  To go back
 # to 12Hr am/pm timestamps, use "-12|--12hr" option.
 MIL_TIME=1
@@ -448,6 +452,18 @@ STATIC_TG_FILE="/tmp/lastqso-static-${MY_TTY}"
 DXCC_CACHE_FILE="/tmp/lastqso-dxcc-cache-${MY_TTY}"
 touch "${DXCC_CACHE_FILE}"
 
+# Lookups for the Maidenhead Grid Squares of US-based
+# callsigns are performed via an online query to a
+# remote host.  These queries are normally very fast.
+# But there's little point in continually querying the
+# remote server each time we see the same callsign.
+# So, we'll cache any learned results, in a manner
+# similar to caching of the dxcc lookups.  Also like
+# the dxcc cache, this file is not cleared on program
+# exit, but is removed at hotspot reboot.
+GRID_CACHE_FILE="/tmp/lastqso-grid-cache-${MY_TTY}"
+touch "${GRID_CACHE_FILE}"
+
 #----------
 # Finding a way to get the screen width of a window that can
 # be dynamically re-sized is funky, in bash.  Neither tput,
@@ -513,6 +529,33 @@ fnCENTER()
   LENGTH=${#STRING}
   tput cup $((LINES / 2)) $(((COLUMNS / 2) - (LENGTH / 2)))
   echo "${STRING}"
+}
+
+#KPC
+# Look up Maidenhead Grid Square for US Callsigns,
+# based on address of record, in the FCC database.
+#-----------------------------------
+fnGET_US_GRIDSQUARE()
+{
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
+  US_CALL="${1}"
+  GRIDSQUARE=""
+
+  # Search the cache.
+  RESULT="$(grep "^${US_CALL}:" "${GRID_CACHE_FILE}")"
+  if [[ -n "${RESULT}" ]]
+  then
+    # If the cache delivered, we're done.
+    RESULT="${RESULT^^}"
+    GRIDSQUARE=" (${RESULT#*:})"
+  else
+    # Otherwise, we need to query the remote host.
+    read -r -a RESULT <<< "$(curl -s https://callook.info/"${US_CALL}"/text | grep "Square:" | cut -f2 -d":")"
+    RESULT="${RESULT^^}"
+    echo "${US_CALL}:${RESULT}" >> "${GRID_CACHE_FILE}"
+    GRIDSQUARE=" (${RESULT})"
+  fi
 }
 
 #-----------------------------------
@@ -1329,13 +1372,13 @@ fnUSAGE()
   echo "USAGE:  Valid options and parameters include:
 
 Short Form:
-  [-12] [-c] [-d] [-D] [-e] [-f <1-5>] [-h] [-i]
+  [-12] [-c] [-d] [-D] [-e] [-f <1-5>] [-g] [-h] [-i]
   [-l] [-m] [-n] [-r /full/path/to/file] [-t [integer]] [-v] [-w]
 
 Long Form:
-  [--12hr] [--csv] [--dat] [--DXCC] [--errors] [--font <1-5>] [--help] [--info]
-  [--logo] [--mono] [--nobig] [--replay /full/path/to/file] [--top [integer]]
-  [--version] [--wrap]
+  [--12hr] [--csv] [--dat] [--DXCC] [--errors] [--font <1-5>] [--grid]
+  [-help] [-info] [--logo] [--mono] [--nobig] [--replay /full/path/to/file]
+  [--top [integer]] [--version] [--wrap]
   " >&2
 }
 
@@ -1423,13 +1466,22 @@ fnPARSE_CMDLINE()
           echo -n "${BELL}${FLASH}"
           echo -e "\nERROR:  The use of \"-f|--font\" requires an integer 1-5\n" >&2
           fnUSAGE
+          stty "${STTY}"
+          fnCLEANUP
           exit 1
         fi
         continue
         ;;
 
+      -g|--grid)
+        GRID=1
+        continue
+        ;;
+
       -h|--help)
         fnGET_HELP
+        stty "${STTY}"
+        fnCLEANUP
         exit
         ;;
 
@@ -1483,12 +1535,16 @@ fnPARSE_CMDLINE()
         then
           echo "The file specified for replay does not exist." >&2
           echo "Aborting" >&2
+          stty "${STTY}"
+          fnCLEANUP
           exit
         fi
         if [[ ! -r "${PARAM}" ]]
         then
           echo "The file specified for replay lacks read permission." >&2
           echo "Aborting" >&2
+          stty "${STTY}"
+          fnCLEANUP
           exit
         fi
         REPLAY=1
@@ -1527,6 +1583,8 @@ fnPARSE_CMDLINE()
 
       -v|--version)
         fnVERSION
+        stty "${STTY}"
+        fnCLEANUP
         exit
         ;;
 
@@ -1539,6 +1597,8 @@ fnPARSE_CMDLINE()
         echo -n "${BELL}${FLASH}"
         echo -e "\nERROR:  \"${OPTION}\" is not a valid option.\n" >&2
         fnUSAGE
+        stty "${STTY}"
+        fnCLEANUP
         exit 1
         ;;
     esac
@@ -1647,6 +1707,13 @@ PISTAR-LASTQSO - HELP
 
       Font # 5 may not work for everyone.  Not all terminal emulators
       or TERM-types support the ANSI control codes for this feature.
+
+  -g|--grid
+      For US callsigns only, enable Maidenhead Grid Square look-up for
+      callsigns, based on the US FCC mailing address of record, for a
+      callsign.  The grid square appears at the end of the QTH data.
+      Results of a lookup are cached until the hotspot is rebooted.
+      This works only for US callsigns.
 
   -h|--help
       Display this help screen, then exit.
@@ -1994,6 +2061,8 @@ fnCHECK_MODES_ENABLED()
     #----------
     tput cup "${LINES}" 0
     echo -e "${TERM_RESET}"
+    stty "${STTY}"
+    fnCLEANUP
     exit
   fi
 }
@@ -2191,7 +2260,7 @@ fnDMR_CSV_SEARCH()
   # Fields in the file:
   # RADIO_ID,CALLSIGN,FIRST_NAME,LAST_NAME,CITY,STATE,COUNTRY
   # We want the last three.
-  CSV_RECORD="$(grep ",${CSV_CALLSIGN}," "${USERCSV}" | cut -f5-7 -d"," | sort -u)"
+  CSV_RECORD="$(grep ",${CSV_CALLSIGN}," "${USERCSV}" | sort -u | head -1)"
 
   # I've seen someone using the Malaysian Country Code of 5020386 as their
   # DMR ID, so the log contained only that number (not a callsign), thus
@@ -2203,15 +2272,15 @@ fnDMR_CSV_SEARCH()
   # for the DMR ID number, rather than the callsign.
   if [[ "${CSV_RECORD}" = "" ]]
   then
-    CSV_RECORD="$(grep "^${CSV_CALLSIGN}," "${USERCSV}" | cut -f5-7 -d"," | sort -u)"
+    CSV_RECORD="$(grep "^${CSV_CALLSIGN}," "${USERCSV}" | sort -u | head -1)"
   fi
 
   if [[ "${CSV_RECORD}" != "" ]]
   then
     IFS=','; CUT_ARRAY=(${CSV_RECORD}); unset IFS;
-    CITY="${CUT_ARRAY[0]}"
-    STATE="${CUT_ARRAY[1]}"
-    COUNTRY="${CUT_ARRAY[2]}"
+    CITY="${CUT_ARRAY[4]}"
+    STATE="${CUT_ARRAY[5]}"
+    COUNTRY="${CUT_ARRAY[6]}"
     unset CUT_ARRAY
   else
     CITY=""
@@ -2222,6 +2291,15 @@ fnDMR_CSV_SEARCH()
   CITY=${CITY:-'n/a'}
   STATE=${STATE:-'n/a'}
   COUNTRY=${COUNTRY:-'n/a'}
+
+#KPC
+  #----------
+  if [[ "${COUNTRY}" = "United States" ]] && [[ "${GRID}" = "1" ]]
+  then
+    fnGET_US_GRIDSQUARE "${CSV_CALLSIGN}"
+  else
+    GRIDSQUARE=""
+  fi
 }
 
 #-----------------------------------
@@ -2730,13 +2808,13 @@ fnSHOW_CURRENT_CALL()
   # Lookup the QTH data for the callsign.
   # Try the DMR user.csv file first...
   QTH_SRC="user.csv"
-  CSV_RECORD="$(grep ",${SEARCH_FROM}," "${USERCSV}" | cut -f5-7 -d"," | sort -u)"
+  CSV_RECORD="$(grep ",${SEARCH_FROM}," "${USERCSV}" | sort -u | head -1)"
 
   # If nothing found, try the NXDN.csv file...
   if [[ "${CSV_RECORD}" = "" ]]
   then
     QTH_SRC="NXDN.csv"
-    CSV_RECORD="$(grep ",${SEARCH_FROM}," "${NXDNCSV}" | cut -f5-7 -d"," | sort -u)"
+    CSV_RECORD="$(grep ",${SEARCH_FROM}," "${NXDNCSV}" | sort -u | head -1)"
   fi
 
   #----------
@@ -2749,9 +2827,9 @@ fnSHOW_CURRENT_CALL()
   then
     # Callsign was found in one or the other csv file
     IFS=','; CUT_ARRAY=(${CSV_RECORD}); unset IFS;
-    CITY="${CUT_ARRAY[0]}"
-    STATE="${CUT_ARRAY[1]}"
-    COUNTRY="${CUT_ARRAY[2]}"
+    CITY="${CUT_ARRAY[4]}"
+    STATE="${CUT_ARRAY[5]}"
+    COUNTRY="${CUT_ARRAY[6]}"
     unset CUT_ARRAY
   else
     # Callsign was not found in either csv file
@@ -2817,6 +2895,15 @@ fnSHOW_CURRENT_CALL()
   STATE=${STATE:-'n/a'}
   COUNTRY=${COUNTRY:-'n/a'}
 
+#KPC
+  #----------
+  if [[ "${COUNTRY}" = "United States" ]] && [[ "${GRID}" = "1" ]]
+  then
+    fnGET_US_GRIDSQUARE "${SEARCH_FROM}"
+  else
+    GRIDSQUARE=""
+  fi
+
   #----------
   # Show location details.
   # If all the fields came back empty...
@@ -2841,9 +2928,9 @@ fnSHOW_CURRENT_CALL()
     tput cuf 18
     if [[ "${QTH_SRC}" = "cty.dat" ]]
     then
-      echo "${DIM}QTH:${SGR0} ${SGR0}${BOLD}${MAG}${COUNTRY} (DXCC: ${DXCC_TIME})${SGR0}${WHI}${CLR_ED}"
+      echo "${DIM}QTH:${SGR0} ${SGR0}${BOLD}${MAG}${COUNTRY}${GRIDSQUARE} (DXCC: ${DXCC_TIME})${SGR0}${WHI}${CLR_ED}"
     else
-      echo "${DIM}QTH:${SGR0} ${SGR0}${BOLD}${MAG}${CITY}, ${STATE}, ${COUNTRY}${SGR0}${WHI}${CLR_ED}"
+      echo "${DIM}QTH:${SGR0} ${SGR0}${BOLD}${MAG}${CITY}, ${STATE}, ${COUNTRY}${GRIDSQUARE}${SGR0}${WHI}${CLR_ED}"
     fi
   fi
 
@@ -2903,11 +2990,9 @@ fnDMR_SHOW_CURRENT_CALL()
   then
     echo "${MAG}${BOLD}No Location Data Found${SGR0}${WHI}${CLR_ED}"
   else
-    # Another "empty" TA containing only blank spaces.  :/
-    # Either put something useful in your TA, or don't bother using it.
     if echo "${CITY}${STATE}${COUNTRY}" | grep -q "[a-zA-Z]"
     then
-      echo "${DIM}QTH:${SGR0} ${MAG}${BOLD}${CITY}, ${STATE}, ${COUNTRY}${SGR0}${WHI}${CLR_ED}"
+      echo "${DIM}QTH:${SGR0} ${MAG}${BOLD}${CITY}, ${STATE}, ${COUNTRY}${GRIDSQUARE}${SGR0}${WHI}${CLR_ED}"
     fi
   fi
 
@@ -4433,12 +4518,16 @@ then
   then
     echo -e "\n  ${RED}MMDVMHost is NOT RUNNING.${SGR0}" >&2
     echo -e "  Check status in the pi-star GUI and try again.\n" >&2
+    stty "${STTY}"
+    fnCLEANUP
     exit
   else
     if [[ ! "$(sudo fuser -v "${WORKING_LOG}" 2>&1)" =~ "MMDVMHost" ]]
     then
       echo -e "\n  ${YEL}MMDVMHost is running, but is NOT writing to $(basename "${WORKING_LOG}").${SGR0}" >&2
       echo -e "  Check status in the pi-star GUI and try again.\n" >&2
+      stty "${STTY}"
+      fnCLEANUP
       exit
     fi
   fi
@@ -4586,14 +4675,16 @@ do
       fnSEPARATOR
       echo -n "${SGR0}${GRE}"
 
-#     figlet -w 80 -f ansi_shadow " COMPLETE"
-#     tput cuu1
-      echo "COMPLETE"
+      figlet -w 80 -f ansi_shadow " COMPLETE"
+      tput cuu1
+#     echo "COMPLETE"
 
       echo -n "${BOLD}${WHI}"
       fnSEPARATOR
       fnSEPARATOR
       echo -n "${SGR0}${DEF}"
+      stty "${STTY}"
+      fnCLEANUP
       exit
     fi
   fi

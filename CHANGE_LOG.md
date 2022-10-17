@@ -1,4 +1,31 @@
 ```
+NOTE: I'm still looking for someone with a P25 or
+    NXDN radio to share a bit of their log, showing
+    the log entries for their RF transmissions.
+    With such sample log entries, I can add the
+    necessary parsing for RF traffic for these
+    modes.
+
+CHANGES: V3.04
+ 1. Added a new "-g|--grid" commandline option.
+    This option enables the display of Maidenhead
+    Grid Squares for US Callsigns only, based on
+    the FCC address of record, for the Callsign.
+    Learned Grid Squares are cached until reboot,
+    to prevent repeated queries each time the same
+    callsign appears.  The cache persists accross
+    program stops and restarts, but is deleted at
+    hotspot reboot.  If I can find a way to get
+    grid squares for other callsigns (that is fast
+    and will work within this shell script), I'll
+    investigate that as well.  Grid Square lookups
+    are disabled by default.
+ 2. Fixed a small DMR bug with user.csv lookups,
+    when the callsign is associated with multiple
+    DMR ID#s, and removed a couple of redundant
+    calls to the cut command.
+ 3. Small fixes to cleanups at exit points.
+
 CHANGES: V3.03
  1. Small cleanups to NXDN and P25 network traffic.
  2. Minor change to the check to see if an updated
@@ -10,12 +37,6 @@ CHANGES: V3.03
     never apply.
  5. Turn off keyboard character echo during program
     run, and re-enable upon exit.
-
-NOTE: I'm still looking for someone with a P25 or
-    NXDN radio to share a bit of their log, showing
-    the log entries for their RF transmissions.
-    With such sample log entries, I can add the
-    necessary support for RF traffic to the script.
 
 CHANGES: V3.02
  1. Fixed a bug with QTH lookups, for callsigns
