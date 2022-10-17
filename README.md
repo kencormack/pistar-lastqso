@@ -683,6 +683,8 @@ The **ansi_shadow** font pre-dates figlet.  It appears to have been created usin
 
 **dxcc** (https://fkurz.net/ham/dxcc.html) is a small command line utility, written in perl, which determines the ARRL DXCC entity of a ham radio Callsign.  It was written by Fabian Kurz, DJ1YFK and uses the **cty.dat** country file by Jim Reisert, AD1C (http://www.country-files.com/).
 
+**callook.info**, maintained by Josh Dick, W1JDD, provides a wonderfully simple API for determining the Maidenhead Grid Square location of a callsign.  Because the location is based on data from the United States Federal Communications Commission (FCC) database, the API can only provide Grid Squares for US callsigns.
+
 **PuTTY** (https://www.putty.org/) is an excellent SSH client, available for several platforms.  I mention it here because it has been my defacto SSH client for 10 years, and is used extensively when developing and testing **pistar-lastqso**.
 
 **Vim** (https://www.vim.org/) is my editor of choice, when scripting, and has been used exclusively throughout the development of **pistar-lastqso**.
