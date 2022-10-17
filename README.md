@@ -15,6 +15,7 @@
 - **[Large Font Display of the Callsign and Talkgroup or DG-ID](https://github.com/kencormack/pistar-lastqso#large-font-display-of-the-callsign-and-talkgroup-or-dg-id)**
 - **[City, State, Country Lookups for Callsigns (DMR only)](https://github.com/kencormack/pistar-lastqso#city-state-country-lookups-for-callsigns-dmr-only)**
 - **[City, State, Country Lookups for Callsigns (Other Modes)](https://github.com/kencormack/pistar-lastqso#city-state-country-lookups-for-callsigns-other-modes)**
+- **[Maidenhead Grid Square Lookups for US Callsigns (All Modes)](https://github.com/kencormack/pistar-lastqso#maidenhead-grid-square-lookups-for-us-callsigns-all-modes)**
 - **[Commandline Options](https://github.com/kencormack/pistar-lastqso#commandline-options)**
 - **[The Help Text](https://github.com/kencormack/pistar-lastqso#the-help-text)**
 - **[Daily Log Rotation](https://github.com/kencormack/pistar-lastqso#daily-log-rotation)**
@@ -185,6 +186,12 @@ The **dxcc.pl** script, and it's **cty.dat** file, can only determine the Countr
 Upon first run, **pistar-lastqso** will download the latest version of the **cty.dat** file from https://www.country-files.com/category/big-cty/
 
 If the **cty.dat** file is already present on your hotspot, but is older than 30 days, **pistar-lastqso** will update the file to it's latest version automatically.  You can also force an update to the latest version at any time, using the "-d|--dat" commandline option.
+
+- **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
+-------------------------------------------------------------------
+- **[Maidenhead Grid Square Lookups for US Callsigns (All Modes)](https://github.com/kencormack/pistar-lastqso#maidenhead-grid-square-lookups-for-us-callsigns-all-modes)**
+If a callsign is determined to be one issued by the United States Federal Communications Commission (FCC), a query is issued to the remote server at **callook.info**, to determine the Maidenhead Grid Square location of the callsign.  The Grid Square, once retrieved, is cached locally to prevent multiple appearances by a given callsign resulting in redundant queries to the remote server.  The cache is cleared upon hotspot reboot.  The Grid Square location is displayed in parenthesis, directly following the QTH data described above.  Because this feature relies on queries to a remote server, and could potentially suffer lag due to network connectivity issues, this feature is disabled, by default.  To enable Maidenhead Grid Square lookups for US callsigns, use the "-g|--grid" commandline option, as described in the Help text.
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
