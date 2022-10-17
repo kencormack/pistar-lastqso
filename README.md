@@ -193,7 +193,7 @@ If the **cty.dat** file is already present on your hotspot, but is older than 30
 ## Maidenhead Grid Square Lookups for US Callsigns (All Modes)
 If a callsign is determined to be one issued by the United States Federal Communications Commission (FCC), a query is sent to the remote server at **callook.info**, to determine the Maidenhead Grid Square location of the callsign.  The Grid Square, once retrieved, is cached locally to prevent multiple appearances by a given callsign resulting in redundant queries to the remote server.  The cache is cleared upon hotspot reboot.  The Grid Square location is displayed in parenthesis, directly following the QTH data described above.  Because this feature relies on queries to a remote server, and could potentially suffer lag due to network connectivity issues, this feature is disabled, by default.  To enable Maidenhead Grid Square lookups for US callsigns, use the "-g|--grid" commandline option, as described in the Help Text, below.
 
-*Note that with some callsigns, the query can return "Unknown", null, or other unexpected result.  This can happen when the remote server is unable to determine the latitude/longitude necessary to generate the Maidenhead location.
+*Note that with some callsigns, the query can return "Unknown", null, or other unexpected result.  This can happen when the remote server is unable to determine the latitude/longitude necessary to generate the Maidenhead location.  When the remote server's issues are corrected, proper Grid Square responses will resume.
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
