@@ -190,7 +190,7 @@ If the **cty.dat** file is already present on your hotspot, but is older than 30
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
-- **[Maidenhead Grid Square Lookups for US Callsigns (All Modes)](https://github.com/kencormack/pistar-lastqso#maidenhead-grid-square-lookups-for-us-callsigns-all-modes)**
+## Maidenhead Grid Square Lookups for US Callsigns (All Modes)
 If a callsign is determined to be one issued by the United States Federal Communications Commission (FCC), a query is issued to the remote server at **callook.info**, to determine the Maidenhead Grid Square location of the callsign.  The Grid Square, once retrieved, is cached locally to prevent multiple appearances by a given callsign resulting in redundant queries to the remote server.  The cache is cleared upon hotspot reboot.  The Grid Square location is displayed in parenthesis, directly following the QTH data described above.  Because this feature relies on queries to a remote server, and could potentially suffer lag due to network connectivity issues, this feature is disabled, by default.  To enable Maidenhead Grid Square lookups for US callsigns, use the "-g|--grid" commandline option, as described in the Help text.
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
