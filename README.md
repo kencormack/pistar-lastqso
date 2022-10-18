@@ -232,9 +232,9 @@ PISTAR-LASTQSO - HELP
 
 (Cursor Up/Down keys to scroll, Page Up/Dn to page, Q to quit help.)
 
-  With no options, the script watches for DMR and YSF traffic.
-  Log entries are parsed and presented as each log line is read.
-  Use Ctrl-C to exit.
+  With no options, the script watches for DMR, YSF, D-Star, NXDN, and
+  P25 traffic types.  Log entries are parsed and presented as each log
+  line is read.  Ctrl-C can be used to exit the program.
 
   -12|--12hr
       By default, timestamps are shown in 24 hour military format.
