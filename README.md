@@ -276,11 +276,11 @@ PISTAR-LASTQSO - HELP
       This "-D|--DXCC" cmdline option can be used to disable calls
       to the dxcc.pl script, if such delays become an issue for you.
 
-      This option has no affect on DMR traffic.  DMR and NXDN users
-      go through a registration process that results in their QTH data
-      being readily available in the user.csv and NXDN.csv files, thus
-      calls to the dxcc.pl script aren't needed for DMR or NXDN
-      traffic.
+      This option has no affect on DMR or NXDN traffic.  DMR and NXDN
+      users go through a registration process that results in their
+      QTH data being readily available in the user.csv and NXDN.csv
+      files, thus calls to the dxcc.pl script aren't needed for DMR
+      or NXDN traffic.
 
   -e|--errors
       By default, pistar-lastqso will display any error messages found
