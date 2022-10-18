@@ -663,7 +663,7 @@ The rest of the program is mainly parsing the log entries, managing the history 
 
 **Likewise, please don't expect the PI-STAR forums to offer any assistance with pistar-lastqso.  They did not write this script, they do not bundle and distribute it with PI-STAR, and thus cannot be expected to know anything about it.  (For these reasons, they don't allow discussion of 3rd-party add-ons/tools on their forum.)**
 
-Every effort has been made to anticipate and address any questions users may have about **pistar-lastqso**, in this README.  Please read through the above carefully.  That having been said, should you have questions, or encounter a problem that is not addressed above, please use the "**[Issues](https://github.com/kencormack/pistar-lastqso/issues)**" tab at the top of this page, to report it.  There, you and others will be able to see if a problem has already been identified, and whether it's been resolved.
+**With all of that having been said...** Every effort has been made to anticipate and address any questions users may have about **pistar-lastqso**, in this README.  Please read through the above carefully.  That having been said, should you have questions, or encounter a problem that is not addressed above, please use the "**[Issues](https://github.com/kencormack/pistar-lastqso/issues)**" tab at the top of this page, to report it.  There, you and others will be able to see if a problem has already been identified, and whether it's been resolved.
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
