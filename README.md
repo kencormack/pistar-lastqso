@@ -428,7 +428,7 @@ PISTAR-LASTQSO - HELP
       the Modem's device node (port), the computer platform/model,
       the elapsed time since the script was launched, the system
       load averages for the last 1, 5, and 15 minutes, the DMR
-      Master and (if Brandmeister) the first 5 statically defined
+      Master and (if Brandmeister) the first few statically defined
       BrandMeister TalkGroups.  The last line shows the current
       reflectors in effect for the other modes.
 
