@@ -695,7 +695,7 @@ The **ansi_shadow** font pre-dates figlet.  It appears to have been created usin
 
 **Beautysh** (https://github.com/lovesegfault/beautysh) is another tool that has been called upon from time to time, in the development of **pistar-lastqso**.  To quote it's developer: *"This program takes upon itself the hard task of beautifying Bash scripts (yeesh)."*
 
-**pistar-lastqso** itself was developed on a Raspberry Pi Zero WH Rev 1.1 equipped with a 16GB eMMC module for reliability (and backed up to USB storage).  Generic Chinese MMDVM boards (including Duplex and Simplex models) have been used.  Development of **pistar-lastqso** began with PI-STAR 4.1.4, and has continued through all PI-STAR updates to date.  Testing the output is performed on 1.) a Lenovo Thinkpad laptop running Windows 10 Pro via SSH with PuTTY and Xming (an X-server), with PuTTY running as term-type TERM=xterm, or 2.) direct HDMI connection from the Pi to a 40" flatscreen (TERM=linux).
+**pistar-lastqso** itself was developed on a Raspberry Pi Zero WH Rev 1.1 equipped with a 16GB eMMC module for reliability (and backed up via rsync, to USB storage).  Multiple generic Chinese MMDVM boards (including Duplex and Simplex models) have been used.  Development of **pistar-lastqso** began with PI-STAR 4.1.4, and has continued through all PI-STAR updates to date.  Testing the output is performed on 1.) a Lenovo Thinkpad laptop running Windows 10 Pro via SSH with PuTTY and Xming (an X-server), with PuTTY running as term-type TERM=xterm, or 2.) direct HDMI connection from the Pi to a 40" flatscreen (TERM=linux).
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
