@@ -4,7 +4,15 @@ NOTE: I'm still looking for someone with a P25 or
     the log entries for their RF transmissions.
     With such sample log entries, I can add the
     necessary parsing for RF traffic for these
-    modes.
+    modes.  Until then, pistar-lastqso will only
+    show network traffic, for those modes.
+
+CHANGES: V3.05
+ 1. Added a 2 sec. timeout, to the remote server
+    queries for Grid Squares.
+ 2. Added a check for failed queries, to the new
+    grid square lookups.  Negative responses
+    ("Unknown") are no longer cached.
 
 CHANGES: V3.04
  1. Added a new "-g|--grid" commandline option.

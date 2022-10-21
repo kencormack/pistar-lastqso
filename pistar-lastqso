@@ -13,7 +13,7 @@
 
 set -o allexport
 
-VERSION=3.04
+VERSION=3.05
 
 #----------
 if [[ "${EUID}" -eq 0 ]]
@@ -26,6 +26,7 @@ then
   exit
 fi
 
+#----------
 # Save the current terminal configuration
 STTY="$(stty -g)"
 # Turn off character/word/line erase, and
@@ -531,7 +532,6 @@ fnCENTER()
   echo "${STRING}"
 }
 
-#KPC
 # Look up Maidenhead Grid Square for US Callsigns,
 # based on address of record, in the FCC database.
 #-----------------------------------
@@ -551,10 +551,22 @@ fnGET_US_GRIDSQUARE()
     GRIDSQUARE=" (${RESULT#*:})"
   else
     # Otherwise, we need to query the remote host.
-    read -r -a RESULT <<< "$(curl -s https://callook.info/"${US_CALL}"/text | grep "Square:" | cut -f2 -d":")"
-    RESULT="${RESULT^^}"
-    echo "${US_CALL}:${RESULT}" >> "${GRID_CACHE_FILE}"
-    GRIDSQUARE=" (${RESULT})"
+    read -r -a RESULT <<< "$(curl -s --fail --max-time 2 https://callook.info/"${US_CALL}"/text 2>/dev/null | grep "Square:" | cut -f2 -d":")"
+#KPC
+    # Dont cache an "Unknown" or null response
+    case "${RESULT}" in
+      "Unknown")
+        GRIDSQUARE=" (${RESULT})"
+        ;;
+      "")
+        GRIDSQUARE=""
+        ;;
+      *)
+        RESULT="${RESULT^^}"
+        echo "${US_CALL}:${RESULT}" >> "${GRID_CACHE_FILE}"
+        GRIDSQUARE=" (${RESULT})"
+        ;;
+    esac
   fi
 }
 
@@ -792,6 +804,7 @@ fnDRAW_BOX()
   BOX_BOTTOM=$((BOX_TOP + BOX_HEIGHT))
   BOX_RIGHT=$((BOX_LEFT + BOX_WIDTH))
 
+  #----------
   if [[ "${BOX_STYLE}" = "1" ]]
   then
     # single-line characters
@@ -1071,6 +1084,7 @@ fnDEV_INFO()
   # If null, set to "n/a"
   BG_PID=${BG_PID:-'n/a'}
 
+  #----------
   DEV_STRING[1]="  Options & Parameters: ${MY_CMDLINE}"
   DEV_STRING[2]="  Debugging: 3>${DEBUG_LOG} Profiling: 4>${PROFILING_LOG}"
   DEV_STRING[3]="  ${TERM} SIZE=${LINES}x${COLUMNS} TTY=${MY_TTY} PID=${MY_PID} BG_PID=${BG_PID}"
@@ -1079,6 +1093,7 @@ fnDEV_INFO()
   DEV_STRING[6]="  Traffic Counts: DMR=${DMR_COUNT} YSF=${YSF_COUNT} NXDN=${NXDN_COUNT} DSTAR=${DSTAR_COUNT} P25=${P25_COUNT}"
   DEV_STRING[7]="  Other Counts: Kerchunks=${KERCHUNK_COUNT} Errors=${ERROR_COUNT} Warnings=${WARNING_COUNT} Restarts=${LOG_RESTARTS}"
 
+  #----------
   # In replay mode, text is bright yellow.
   # In normal mode, text is pale cyan.
   if [[ ${REPLAY} -eq 1 ]]
@@ -1089,6 +1104,7 @@ fnDEV_INFO()
     echo -n "${DIM}${CYA}"
   fi
 
+  #----------
   DEV_INDEX=1
   until [[ ${DEV_INDEX} -gt 7 ]]
   do
@@ -1317,7 +1333,7 @@ fnNOSCROLL_ZONE()
   #----------
   # Print the QSO history lines... newest through oldest
   # Save the history to a file, as well, for auto-restarts.
-  true > "${HISTORY_FILE}"
+  > "${HISTORY_FILE}" 2>/dev/null
   HIST_COUNT=1
   until [[ ${HIST_COUNT} -gt ${HIST_MAX} ]]
   do
@@ -1615,9 +1631,9 @@ PISTAR-LASTQSO - HELP
 
 (Cursor Up/Down keys to scroll, Page Up/Dn to page, Q to quit help.)
 
-  With no options, the script watches for DMR and YSF traffic.
-  Log entries are parsed and presented as each log line is read.
-  Use Ctrl-C to exit.
+  With no options, the script watches for DMR, YSF, D-Star, NXDN, and
+  P25 traffic types.  Log entries are parsed and presented as each log
+  line is read.  Ctrl-C can be used to exit the program.
 
   -12|--12hr
       By default, timestamps are shown in 24 hour military format.
@@ -1659,11 +1675,11 @@ PISTAR-LASTQSO - HELP
       This "-D|--DXCC" cmdline option can be used to disable calls
       to the dxcc.pl script, if such delays become an issue for you.
 
-      This option has no affect on DMR traffic.  DMR and NXDN users
-      go through a registration process that results in their QTH data
-      being readily available in the user.csv and NXDN.csv files, thus
-      calls to the dxcc.pl script aren't needed for DMR or NXDN
-      traffic.
+      This option has no affect on DMR or NXDN traffic.  DMR and NXDN
+      users go through a registration process that results in their
+      QTH data being readily available in the user.csv and NXDN.csv
+      files, thus calls to the dxcc.pl script aren't needed for DMR
+      or NXDN traffic.
 
   -e|--errors
       By default, pistar-lastqso will display any error messages found
@@ -1811,7 +1827,7 @@ PISTAR-LASTQSO - HELP
       the Modem's device node (port), the computer platform/model,
       the elapsed time since the script was launched, the system
       load averages for the last 1, 5, and 15 minutes, the DMR
-      Master and (if Brandmeister) the first 5 statically defined
+      Master and (if Brandmeister) the first few statically defined
       BrandMeister TalkGroups.  The last line shows the current
       reflectors in effect for the other modes.
 
@@ -2292,7 +2308,6 @@ fnDMR_CSV_SEARCH()
   STATE=${STATE:-'n/a'}
   COUNTRY=${COUNTRY:-'n/a'}
 
-#KPC
   #----------
   if [[ "${COUNTRY}" = "United States" ]] && [[ "${GRID}" = "1" ]]
   then
@@ -2895,7 +2910,6 @@ fnSHOW_CURRENT_CALL()
   STATE=${STATE:-'n/a'}
   COUNTRY=${COUNTRY:-'n/a'}
 
-#KPC
   #----------
   if [[ "${COUNTRY}" = "United States" ]] && [[ "${GRID}" = "1" ]]
   then
@@ -3860,10 +3874,10 @@ fnNXDN_MAIN()
     QSO_START_TIME="${TIME}"
 
     FROM="${FIELD_6}"
-    TG_LABLE="${FIELD_8}"
+    TG_LABEL="${FIELD_8}"
     TO="${FIELD_9}"
 
-    TO="${TG_LABLE} ${TO}"
+    TO="${TG_LABEL} ${TO}"
     echo -en "\r${CLR_EL}"
     fnBANNER
 
@@ -3880,7 +3894,7 @@ fnNXDN_MAIN()
   if [[ "${LOGREC_REMAINING_DATA}" =~ "received network end of transmission from" ]]
   then
     FROM="${FIELD_8}"
-    TG_LABLE="${FIELD_10}"
+    TG_LABEL="${FIELD_10}"
     TO="${FIELD_11%,*}"
     SECS="${FIELD_12}"
 
@@ -4234,10 +4248,10 @@ fnP25_MAIN()
     QSO_START_TIME="${TIME}"
 
     FROM="${FIELD_6}"
-    TG_LABLE="${FIELD_8}"
+    TG_LABEL="${FIELD_8}"
     TO="${FIELD_9}"
 
-    TO="${TG_LABLE} ${TO}"
+    TO="${TG_LABEL} ${TO}"
     echo -en "\r${CLR_EL}"
     fnBANNER
 
@@ -4254,7 +4268,7 @@ fnP25_MAIN()
   if [[ "${LOGREC_REMAINING_DATA}" =~ "network end of transmission from" ]]
   then
     FROM="${FIELD_7}"
-    TG_LABLE="${FIELD_8}"
+    TG_LABEL="${FIELD_8}"
     TO="${FIELD_10%,*}"
     SECS="${FIELD_11}"
     IFS='%'; CUT_ARRAY=(${FIELD_13}); unset IFS;
