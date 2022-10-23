@@ -34,12 +34,12 @@
 
 -------------------------------------------------------------------
 ## About
-**pistar-lastqso is a tool to monitor DMR, YSF (including DMR2YSF and YSF2DMR cross-modes), D-Star, NXDN, and P25 traffic on a PI-STAR node, either via SSH, or, on an HDMI-connected console.  Written as a bash shell script (with a few lines of python), no web browser or other GUI client is required.**
+pistar-lastqso is a tool to monitor DMR, YSF (including DMR2YSF and YSF2DMR cross-modes), D-Star, NXDN, and P25 traffic on a PI-STAR node, either via SSH, or, on an HDMI-connected console.  Written as a bash shell script (with a few lines of python), no web browser or other GUI client is required.
 
 **VERSION 3.01 ADDED FULL SUPPORT FOR D-STAR (BOTH NETWORK AND RF TRAFFIC ARE DISPLAYED).**
 **NXDN AND P25 ARE ONLY PARTIALLY SUPPORTED - ONLY NETWORK TRAFFIC IS DISPLAYED (NOT RF TRAFFIC).**
 
-**As I do not own appropriate radios to create the RF-based log entries, support for these additional modes is, for the moment, limited to network-based traffic only.  Your own RF traffic to the hotspot will not, at present, be displayed.**
+As I do not own appropriate radios to create the RF-based log entries, support for these additional modes is, for the moment, limited to network-based traffic only.  Your own RF traffic to the hotspot will not, at present, be displayed.
 
 **IF YOU OWN A P25 OR NXDN RADIO, AND CAN SEND ME A SNIPPET OF YOUR LOG SHOWING YOUR RF TRANSMISSIONS (TRAFFIC FROM YOUR RADIO TO THE HOTSPOT), I CAN WORK FROM THOSE LOG ENTRIES, TO COMPLETE THE NEEDED PARSING IN PISTAR-LASTQSO.**
 
