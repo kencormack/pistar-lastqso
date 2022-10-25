@@ -13,7 +13,7 @@
 
 set -o allexport
 
-VERSION=3.05
+VERSION=3.06
 
 #----------
 if [[ "${EUID}" -eq 0 ]]
@@ -552,7 +552,6 @@ fnGET_US_GRIDSQUARE()
   else
     # Otherwise, we need to query the remote host.
     read -r -a RESULT <<< "$(curl -s --fail --max-time 2 https://callook.info/"${US_CALL}"/text 2>/dev/null | grep "Square:" | cut -f2 -d":")"
-#KPC
     # Dont cache an "Unknown" or null response
     case "${RESULT}" in
       "Unknown")
@@ -2007,26 +2006,26 @@ EOF
   echo -n "${SGR0}${WHI}${CUR_ON}"
 
   #----------
-  # The 5 mode names, left to right
-  tput cup 11 11
-  echo -n "${BOLD}${WHI}DMR${SGR0}"
-  tput cup 11 24
-  echo -n "${BOLD}${WHI}NXDN${SGR0}"
+  # The 5 mode names
   tput cup 11 37
   echo -n "${BOLD}${WHI}P25${SGR0}"
+  tput cup 11 24
+  echo -n "${BOLD}${WHI}NXDN${SGR0}"
   tput cup 11 49
   echo -n "${BOLD}${WHI}DSTAR${SGR0}"
+  tput cup 11 11
+  echo -n "${BOLD}${WHI}DMR${SGR0}"
   tput cup 11 63
   echo -n "${BOLD}${WHI}YSF${SGR0}"
 
   #----------
-  # The 5 mode boxes, right to left
+  # The 5 mode boxes
   echo -n "${SGR0}${BLU}"
-  fnDRAW_BOX 10 61 2 6 1 0 1
-  fnDRAW_BOX 10 47 2 8 1 0 1
   fnDRAW_BOX 10 35 2 6 1 0 1
   fnDRAW_BOX 10 22 2 7 1 0 1
+  fnDRAW_BOX 10 47 2 8 1 0 1
   fnDRAW_BOX 10 9 2 6 1 0 1
+  fnDRAW_BOX 10 61 2 6 1 0 1
 }
 
 #-----------------------------------
@@ -2898,8 +2897,11 @@ fnSHOW_CURRENT_CALL()
           COUNTRY="${CAPTURED_STDOUT}"
           DXCC_TIME="${CAPTURED_STDERR} secs"
 
-          # Store the from:country in the cache.
-          echo "${SEARCH_FROM}:${COUNTRY}" >> "${DXCC_CACHE_FILE}"
+          if [[ -n "${COUNTRY}" ]]
+          then
+            # Store the from:country in the cache.
+            echo "${SEARCH_FROM}:${COUNTRY}" >> "${DXCC_CACHE_FILE}"
+          fi
         fi
       fi
     fi
@@ -3337,7 +3339,7 @@ fnTALLY_ERRORS()
   # skip displaying the error, but still tally it.
   if [[ "${SHOW_LOG_ERRORS}" = "1" ]]
   then
-    echo "${SGR0}${YEL}"
+    echo -n "${SGR0}${YEL}"
     fnSEPARATOR
 
     echo -en "${BOLD}${RED}ERROR: ${WHI}${ERROR_MSG}\r"
@@ -3364,7 +3366,7 @@ fnTALLY_WARNINGS()
   # Unlike errors, warnings will not be masked by
   # the "-e|--error" cmdline option.  They will
   # always be displayed (as well as tallied.)
-  echo "${SGR0}${RED}"
+  echo -n "${SGR0}${RED}"
   fnSEPARATOR
 
   echo -en "${BOLD}${RED}WARNING: ${WHI}${WARNING_MSG}\r"
@@ -3382,6 +3384,14 @@ fnDMR_MAIN()
 
   trap fnWINCH WINCH
 
+  #----------
+  # Don't waste any time with these...
+  if [[ "${LOGREC_REMAINING_DATA}" =~ " CSBK " ]] || [[ "${LOGREC_REMAINING_DATA}" =~ " VSBK " ]]
+  then
+    return
+  fi
+
+  #----------
   # Compensate for shifting fields between "group" and "private" ID numbers
   # "private" call log entries lack "TG" in the log line, which skews the
   # data returned when parsing positional fields.  These few lines inject a
@@ -3392,6 +3402,7 @@ fnDMR_MAIN()
     LOGREC_REMAINING_DATA="${LOGREC_REMAINING_DATA// to / to PC }"
   fi
 
+  #----------
   # We come into this function already knowing:
   # The entire log line...
   #   RECORD
@@ -3449,139 +3460,183 @@ fnDMR_MAIN()
         fnQSO_IN_PROGRESS
       fi
     fi
-  else
-    fnCONVERT_DATE_TIME
+    return
+  fi
 
-    # Determine DMR Time Slot, and RF or Network traffic
-    TIME_SLOT="${FIELD_3%,*}"
-    SOURCE="${FIELD_5//network/NET}"
+  #----------
+  fnCONVERT_DATE_TIME
+
+  # Determine DMR Time Slot, and RF or Network traffic
+  TIME_SLOT="${FIELD_3%,*}"
+  SOURCE="${FIELD_5//network/NET}"
+
+  #----------
+  if [[ "${LOGREC_REMAINING_DATA}" =~ "received network late entry from" ]]
+  then
+    ((QSO_COUNT++))
+    echo "${QSO_COUNT}" > "${QSO_COUNT_FILE}"
+
+    # A QSO has started...
+    QSO_START_TIME="${TIME}"
+
+    FROM="${FIELD_9}"
+    fnDMR_GET_FROM
+
+    TO="${FIELD_12%,*}"
+    fnDMR_GET_TO
+    echo -en "\r${CLR_EL}"
+    fnBANNER
 
     #----------
-    if [[ "${LOGREC_REMAINING_DATA}" =~ "header from" ]]
-    then
-      ((QSO_COUNT++))
-      echo "${QSO_COUNT}" > "${QSO_COUNT_FILE}"
+    TYPE="${YEL}Late Entry"
 
-      # A QSO has started...
-      QSO_START_TIME="${TIME}"
-
-      FROM="${FIELD_9}"
-      fnDMR_GET_FROM
-
-      TO="${FIELD_12%,*}"
-      fnDMR_GET_TO
-      echo -en "\r${CLR_EL}"
-      fnBANNER
-
-      #----------
-      # Determine if voice or data
-      if [[ "${FIELD_6}" = "data" ]]
-      then
-        BLOCKS="${FIELD_13}"
-        TYPE="${YEL}Data Transfer"
-      else
-        TYPE="${CYA}Voice Call"
-      fi
-
-      fnDMR_SHOW_CURRENT_CALL
-    else
-      # The QSO has ended.
-      # If it was voice traffic...
-      if [[ "${LOGREC_REMAINING_DATA}" =~ "end of voice" ]]
-      then
-        DATA=0
-
-        # The number of seconds the contact lasted
-        SECS="${FIELD_15}"
-
-        #----------
-        # If it was network traffic...
-        if [[ "${LOGREC_REMAINING_DATA}" =~ "RSSI:" ]]
-        then
-          # For RF traffic...
-          # BER is in different positions, for network and RF log entries
-          # Remove any comma
-          BER="${FIELD_18%,*}"
-          # Remove the "%" symbol
-          IFS='%'; CUT_ARRAY=(${BER}); unset IFS;
-          BER="${CUT_ARRAY[0]}"
-          unset CUT_ARRAY
-          fnCOLORIZE_BER
-
-          #----------
-          # Get the RSSI
-          RSSI="${FIELD_20}"
-          DBM="${RSSI%%/*}"
-          DBM="${DBM#*-}"
-          fnCOLORIZE_RSSI
-
-          echo -en "\r${CLR_EL}"
-          echo -en "\r${DIM}Dur.:${SGR0} ${BLU}${BOLD}${SECS}${SGR0}${WHI}${DIM} sec\r"
-          tput cuf 18
-          echo -en "${DIM}BER:${SGR0} ${BER_COLOR}${BOLD}${BER}%${SGR0}${WHI}\t${DIM}RSSI:${SGR0} ${SMETER_COLOR}${BOLD}${SMETER} (-${DBM} dBm)${SGR0}${WHI}\r"
-        else
-          # For network traffic...
-          # BER is in different positions, for network and RF log entries
-          BER="${FIELD_21%,*}"
-          # Remove the "%" symbol
-          IFS='%'; CUT_ARRAY=(${BER}); unset IFS;
-          BER="${CUT_ARRAY[0]}"
-          unset CUT_ARRAY
-          fnCOLORIZE_BER
-
-          #----------
-          # Get the packet loss
-          IFS='%'; CUT_ARRAY=(${FIELD_17}); unset IFS;
-          LOSS="${CUT_ARRAY[0]}"
-          unset CUT_ARRAY
-          fnCOLORIZE_LOSS
-
-          echo -en "\r${CLR_EL}"
-          echo -en "\r${DIM}Dur.:${SGR0} ${BLU}${BOLD}${SECS}${SGR0}${WHI} sec\r"
-          tput cuf 18
-          echo -en "${DIM}BER:${SGR0} ${BER_COLOR}${BOLD}${BER}%${SGR0}${WHI}\t${DIM}Loss:${SGR0} ${LOSS_COLOR}${BOLD}${LOSS}%${SGR0}${WHI}\r"
-        fi
-
-        #----------
-        # If call was less than 2 secs,
-        # and we know who it was from,
-        # then call it a kerchunk.
-        # Responses such as "disconnected",
-        # received with a 4000 disconnect
-        # are not counted.
-        if [[ -n "${FROM}" ]] && [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
-        then
-          ((KERCHUNK_COUNT++))
-          echo "${KERCHUNK_COUNT}" > "${KERCHUNK_COUNT_FILE}"
-          tput cuf 64
-          echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
-        else
-          echo
-        fi
-      else
-        #----------
-        # It was data traffic...
-        DATA=1
-
-        if [[ "${LOGREC_REMAINING_DATA}" =~ "ended network data" ]] || [[ "${LOGREC_REMAINING_DATA}" =~ "ended RF data" ]]
-        then
-          if [[ ${BLOCKS} -gt 1 ]]
-          then
-            S="s"
-          else
-            S=""
-          fi
-          echo -e "\r${CLR_EL}${YEL}${BOLD}End of Data Transmission (${BLOCKS} block${S})${SGR0}${WHI}"
-        fi
-      fi
-
-      #----------
-      fnBUILD_HISTORY
-      echo -n "${LINE_COLOR}"
-      fnSEPARATOR
-      fnLISTENING
-    fi
+    fnDMR_SHOW_CURRENT_CALL
+    return
   fi
+
+  #----------
+  if [[ "${LOGREC_REMAINING_DATA}" =~ "header from" ]]
+  then
+    ((QSO_COUNT++))
+    echo "${QSO_COUNT}" > "${QSO_COUNT_FILE}"
+
+    # A QSO has started...
+    QSO_START_TIME="${TIME}"
+
+    FROM="${FIELD_9}"
+    fnDMR_GET_FROM
+
+    TO="${FIELD_12%,*}"
+    fnDMR_GET_TO
+    echo -en "\r${CLR_EL}"
+    fnBANNER
+
+    #----------
+    # Determine if voice or data
+    if [[ "${FIELD_6}" = "data" ]]
+    then
+      BLOCKS="${FIELD_13}"
+      TYPE="${YEL}Data Transfer"
+    else
+      TYPE="${CYA}Voice Call"
+    fi
+
+    fnDMR_SHOW_CURRENT_CALL
+    return
+  fi
+
+  #----------
+  # The QSO has ended.
+  # If it was voice traffic...
+  if [[ "${LOGREC_REMAINING_DATA}" =~ "end of voice" ]]
+  then
+    DATA=0
+
+    # The number of seconds the contact lasted
+    SECS="${FIELD_15}"
+
+    #----------
+    # If it was network traffic...
+    if [[ "${LOGREC_REMAINING_DATA}" =~ "RSSI:" ]]
+    then
+      # For RF traffic...
+      # BER is in different positions, for network and RF log entries
+      # Remove any comma
+      BER="${FIELD_18%,*}"
+      # Remove the "%" symbol
+      IFS='%'; CUT_ARRAY=(${BER}); unset IFS;
+      BER="${CUT_ARRAY[0]}"
+      unset CUT_ARRAY
+      fnCOLORIZE_BER
+
+      #----------
+      # Get the RSSI
+      RSSI="${FIELD_20}"
+      DBM="${RSSI%%/*}"
+      DBM="${DBM#*-}"
+      fnCOLORIZE_RSSI
+
+      echo -en "\r${CLR_EL}"
+      echo -en "\r${DIM}Dur.:${SGR0} ${BLU}${BOLD}${SECS}${SGR0}${WHI}${DIM} sec\r"
+      tput cuf 18
+      echo -en "${DIM}BER:${SGR0} ${BER_COLOR}${BOLD}${BER}%${SGR0}${WHI}\t${DIM}RSSI:${SGR0} ${SMETER_COLOR}${BOLD}${SMETER} (-${DBM} dBm)${SGR0}${WHI}\r"
+    else
+      # For network traffic...
+      # BER is in different positions, for network and RF log entries
+      BER="${FIELD_21%,*}"
+      # Remove the "%" symbol
+      IFS='%'; CUT_ARRAY=(${BER}); unset IFS;
+      BER="${CUT_ARRAY[0]}"
+      unset CUT_ARRAY
+      fnCOLORIZE_BER
+
+      #----------
+      # Get the packet loss
+      IFS='%'; CUT_ARRAY=(${FIELD_17}); unset IFS;
+      LOSS="${CUT_ARRAY[0]}"
+      unset CUT_ARRAY
+      fnCOLORIZE_LOSS
+
+      echo -en "\r${CLR_EL}"
+      echo -en "\r${DIM}Dur.:${SGR0} ${BLU}${BOLD}${SECS}${SGR0}${WHI} sec\r"
+      tput cuf 18
+      echo -en "${DIM}BER:${SGR0} ${BER_COLOR}${BOLD}${BER}%${SGR0}${WHI}\t${DIM}Loss:${SGR0} ${LOSS_COLOR}${BOLD}${LOSS}%${SGR0}${WHI}\r"
+    fi
+
+    #----------
+    # If call was less than 2 secs,
+    # and we know who it was from,
+    # then call it a kerchunk.
+    # Responses such as "disconnected",
+    # received with a 4000 disconnect
+    # are not counted.
+    if [[ -n "${FROM}" ]] && [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
+    then
+      ((KERCHUNK_COUNT++))
+      echo "${KERCHUNK_COUNT}" > "${KERCHUNK_COUNT_FILE}"
+      tput cuf 64
+      echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
+    else
+      echo
+    fi
+
+    #----------
+    fnBUILD_HISTORY
+    echo -n "${LINE_COLOR}"
+    fnSEPARATOR
+    fnLISTENING
+    return
+  fi
+
+  #----------
+  # It was data traffic...
+  if [[ "${LOGREC_REMAINING_DATA}" =~ "ended network data" ]] || [[ "${LOGREC_REMAINING_DATA}" =~ "ended RF data" ]]
+  then
+  DATA=1
+    if [[ ${BLOCKS} -gt 1 ]]
+    then
+      S="s"
+    else
+      S=""
+    fi
+    echo -e "\r${CLR_EL}${YEL}${BOLD}End of Data Transmission (${BLOCKS} block${S})${SGR0}${WHI}"
+
+    #----------
+    fnBUILD_HISTORY
+    echo -n "${LINE_COLOR}"
+    fnSEPARATOR
+    fnLISTENING
+    return
+  fi
+
+  #----------
+  echo -n "${LINE_COLOR}"
+  fnSEPARATOR
+  echo "Un-parsed DMR log entry..." >&2
+  echo "${LOGREC_REMAINING_DATA}" >&2
+# echo "${LOGREC_REMAINING_DATA}" >>/tmp/unparsed_DMR
+  echo -n "${LINE_COLOR}"
+  fnSEPARATOR
 }
 
 #-----------------------------------
@@ -3830,6 +3885,15 @@ fnYSF_MAIN()
     fnLISTENING
     return
   fi
+
+  #----------
+  echo -n "${LINE_COLOR}"
+  fnSEPARATOR
+  echo "Un-parsed YSF log entry..." >&2
+  echo "${LOGREC_REMAINING_DATA}" >&2
+# echo "${LOGREC_REMAINING_DATA}" >>/tmp/unparsed_YSF
+  echo -n "${LINE_COLOR}"
+  fnSEPARATOR
 }
 
 #-----------------------------------
@@ -3919,6 +3983,7 @@ fnNXDN_MAIN()
   fnSEPARATOR
   echo "Un-parsed NXDN log entry..." >&2
   echo "${LOGREC_REMAINING_DATA}" >&2
+# echo "${LOGREC_REMAINING_DATA}" >>/tmp/unparsed_NXDN
   echo -n "${LINE_COLOR}"
   fnSEPARATOR
 }
@@ -4196,6 +4261,7 @@ fnDSTAR_MAIN()
   fnSEPARATOR
   echo "Un-parsed DSTAR log entry..." >&2
   echo "${LOGREC_REMAINING_DATA}" >&2
+# echo "${LOGREC_REMAINING_DATA}" >>/tmp/unparsed_DSTAR
   echo -n "${LINE_COLOR}"
   fnSEPARATOR
 }
@@ -4241,6 +4307,38 @@ fnP25_MAIN()
   unset CUT_ARRAY
 
   #----------
+  # What to do with these (if anything?)..."
+  # P25, received RF header
+  # P25, total frames: 36, bits: 44389, undecodable LC: 0, errors: 29, BER: 0.0653%
+  if [[ "${LOGREC_REMAINING_DATA}" =~ "received RF header" ]] || [[ "${LOGREC_REMAINING_DATA}" =~ "total frames" ]]
+  then
+    return
+  fi
+
+  #----------
+  # Start of P25 RF voice traffic
+  if [[ "${LOGREC_REMAINING_DATA}" =~ "received RF voice transmission from" ]]
+  then
+    fnCONVERT_DATE_TIME
+    QSO_START_TIME="${TIME}"
+
+    FROM="${FIELD_7}"
+    TG_LABEL="${FIELD_9}"
+    TO="${FIELD_10}"
+
+    TO="${TG_LABEL} ${TO}"
+    echo -en "\r${CLR_EL}"
+    fnBANNER
+
+    SOURCE="RF"
+
+    ((QSO_COUNT++))
+    echo "${QSO_COUNT}" > "${QSO_COUNT_FILE}"
+    fnSHOW_CURRENT_CALL
+    return
+  fi
+
+  #----------
   # Start of P25 network traffic
   if [[ "${LOGREC_REMAINING_DATA}" =~ "received network transmission from" ]]
   then
@@ -4264,7 +4362,53 @@ fnP25_MAIN()
   fi
 
   #----------
-  # End of P25 network traffic
+  # End of P25 RF traffic
+  if [[ "${LOGREC_REMAINING_DATA}" =~ "received RF end of voice transmission" ]]
+  then
+    SECS="${FIELD_8}"
+
+    BER="${FIELD_11}"
+    BER="${BER%,*}"
+
+    RSSI="${FIELD_13}"
+
+    # Fields to pass to the history...
+    IFS='%'; CUT_ARRAY=(${BER}); unset IFS;
+    BER="${CUT_ARRAY[0]}"
+    unset CUT_ARRAY
+
+    DBM="${RSSI%%/*}"
+    DBM="${DBM#*-}"
+    fnCOLORIZE_BER
+    fnCOLORIZE_RSSI
+
+    echo -en "\r${CLR_EL}"
+    echo -en "\r${DIM}Dur.:${SGR0} ${BLU}${BOLD}${SECS}${SGR0}${WHI} sec\r"
+    tput cuf 18
+    echo -en "${DIM}BER:${SGR0} ${BER_COLOR}${BOLD}${BER}${SGR0}${WHI}\r"
+    tput cuf 32
+    echo -en "${DIM}RSSI:${SGR0} ${SMETER_COLOR}${BOLD}${SMETER} (-${DBM} dBm)${SGR0}${WHI}\r"
+
+    if [[ -n "${FROM}" ]] && [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
+    then
+      ((KERCHUNK_COUNT++))
+      echo "${KERCHUNK_COUNT}" > "${KERCHUNK_COUNT_FILE}"
+      tput cuf 64
+      echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
+    else
+      echo
+    fi
+
+    #----------
+    fnBUILD_HISTORY
+    echo -n "${LINE_COLOR}"
+    fnSEPARATOR
+    fnLISTENING
+    return
+  fi
+
+  #----------
+  # End of P25 network traffic (VARIANT A)
   if [[ "${LOGREC_REMAINING_DATA}" =~ "network end of transmission from" ]]
   then
     FROM="${FIELD_7}"
@@ -4276,7 +4420,29 @@ fnP25_MAIN()
     unset CUT_ARRAY
 
     fnP25_END_NETWORK_TRAFFIC
+    return
+  fi
 
+  #----------
+  # End of P25 network traffic (VARIANT B)
+  if [[ "${LOGREC_REMAINING_DATA}" =~ "network end of transmission," ]]
+  then
+    SECS="${FIELD_6}"
+    IFS='%'; CUT_ARRAY=(${FIELD_8}); unset IFS;
+    LOSS="${CUT_ARRAY[0]}"
+    unset CUT_ARRAY
+
+    fnP25_END_NETWORK_TRAFFIC
+    return
+  fi
+
+  #----------
+  if [[ "${LOGREC_REMAINING_DATA}" =~ "network watchdog has expired" ]]
+  then
+    SECS="${FIELD_6}"
+    LOSS="${FIELD_8}"
+
+    fnP25_END_NETWORK_TRAFFIC
     return
   fi
 
@@ -4285,6 +4451,7 @@ fnP25_MAIN()
   fnSEPARATOR
   echo "Un-parsed P25 log entry..." >&2
   echo "${LOGREC_REMAINING_DATA}" >&2
+# echo "${LOGREC_REMAINING_DATA}" >>/tmp/unparsed_P25
   echo -n "${LINE_COLOR}"
   fnSEPARATOR
 }
@@ -4642,7 +4809,7 @@ do
   ERROR_COUNT=$(< "${ERROR_COUNT_FILE}")
   WARNING_COUNT=$(< "${WARNING_COUNT_FILE}")
 
-  fnLOAD_HISTORY_FILE
+# fnLOAD_HISTORY_FILE
 
   #----------
   if [[ ${REPLAY} -eq 0 ]]
@@ -4675,7 +4842,7 @@ do
   # to the log that we've been watching.  Either the service was stopped
   # during pi-star's nightly update, or it has rolled to a new day's log.
   # Watch for new log activity, then resume watching QSOs.
-  echo -e "\n\n${RED}${DBL_LINE}${WHI}${SGR0}${CLR_EL}"
+  echo -e "\n${RED}${DBL_LINE}${WHI}${SGR0}${CLR_EL}"
   echo "${RED}$(basename "${WORKING_LOG}") LOG ACTIVITY HAS STOPPED.${WHI}${SGR0}"
   echo -n "${YEL}WATCHING FOR NEW LOG ACTIVITY...${WHI}${SGR0} "
 
@@ -4731,6 +4898,8 @@ do
     BOUNCE_MSG="-SVCS RESTARTED-"
   fi
 
+  fnLOAD_HISTORY_FILE
+
   #----------
   # Reexamine the activated modes, in case the log was bounced due to
   # user configuration changes made in the GUI's "Configuration" page.
@@ -4741,7 +4910,7 @@ do
   # in case any values shown in the no-scroll zone have changed.
   fnTOP_DATA
 
-  echo -e "${GRE}${DBL_LINE}${WHI}${SGR0}${CLR_EL}\n"
+  echo -e "${GRE}${DBL_LINE}${WHI}${SGR0}${CLR_EL}"
 
   ((LOG_RESTARTS++))
 done

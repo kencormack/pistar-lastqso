@@ -1,11 +1,28 @@
 ```
-NOTE: I'm still looking for someone with a P25 or
-    NXDN radio to share a bit of their log, showing
-    the log entries for their RF transmissions.
+    I'm still looking for someone with an NXDN
+    radio to share a bit of their log, showing
+    the log entries for NXDN RF transmissions.
     With such sample log entries, I can add the
-    necessary parsing for RF traffic for these
-    modes.  Until then, pistar-lastqso will only
-    show network traffic, for those modes.
+    necessary parsing for RF traffic for that
+    mode.  Until then, pistar-lastqso will only
+    show network traffic, for the NXDN mode.
+
+CHANGES: V3.06
+ 1. Added P25 support for RF voice transmissions.
+ 2. Added a "catch all" to report unparsed log
+    entries to DMR and YSF, similar to those for
+    the other modes, in case I missed possible
+    types of messages that should be parsed.
+ 3. Added parsing of "late" entries to DMR, found
+    by change #2, above.
+ 4. Ignore CSBK/VSBK entries to DMR, found by
+    change #2, above.
+ 5. Added a variant of network end of transmission
+    to P25, found by change #2, above.
+ 6. Added a handler for P25 watchdog expired.
+ 7. Ignore a couple strings in P25 handling.
+ 8. Don't store null results in the dxcc cache.
+ 9. Tighten up spacing on errors and warnings.
 
 CHANGES: V3.05
  1. Added a 2 sec. timeout, to the remote server
