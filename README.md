@@ -36,12 +36,12 @@
 ## About
 pistar-lastqso is a tool to monitor DMR, YSF (including DMR2YSF and YSF2DMR cross-modes), D-Star, NXDN, and P25 traffic on a PI-STAR node, either via SSH, or, on an HDMI-connected console.  Written as a bash shell script (with a few lines of python), no web browser or other GUI client is required.
 
-**VERSION 3.01 ADDED FULL SUPPORT FOR D-STAR (BOTH NETWORK AND RF TRAFFIC ARE DISPLAYED).**
-**NXDN AND P25 ARE ONLY PARTIALLY SUPPORTED - ONLY NETWORK TRAFFIC IS DISPLAYED (NOT RF TRAFFIC).**
+**VERSION 3.06 ADDS SUPPORT FOR P25 RF TRAFFIC (BOTH NETWORK AND RF TRAFFIC ARE DISPLAYED).**
+**NXDN IS ONLY PARTIALLY SUPPORTED AT THE MOMENT - ONLY NETWORK TRAFFIC IS DISPLAYED (NOT RF TRAFFIC).**
 
-As I do not own appropriate radios to create the RF-based log entries, support for these additional modes is, for the moment, limited to network-based traffic only.  Your own RF traffic to the hotspot will not, at present, be displayed.
+As I do not own an appropriate radio to create the RF-based log entries, support for NXDN is, for the moment, limited to network-based traffic only.  Your own RF traffic to the hotspot will not, at present, be displayed.
 
-**IF YOU OWN A P25 OR NXDN RADIO, AND CAN SEND ME A SNIPPET OF YOUR LOG SHOWING YOUR RF TRANSMISSIONS (TRAFFIC FROM YOUR RADIO TO THE HOTSPOT), I CAN WORK FROM THOSE LOG ENTRIES, TO COMPLETE THE NEEDED PARSING IN PISTAR-LASTQSO.**
+**IF YOU OWN AN NXDN RADIO, AND CAN SEND ME A SNIPPET OF YOUR LOG SHOWING YOUR RF TRANSMISSIONS (TRAFFIC FROM YOUR RADIO TO THE HOTSPOT), I CAN WORK FROM THOSE LOG ENTRIES, TO COMPLETE THE NEEDED PARSING IN PISTAR-LASTQSO.**
 
 Note: Some screenshots below may not reflect the latest version of the script.  I'll get those updated as time permits.  However, the ones below will suffice for now.
 
@@ -107,7 +107,7 @@ Run the install script...
 
   (The install script will return the filesystem to read-only mode)
 
-You are now ready to monitor DMR and/or YSF traffic from the commandline.
+You are now ready to monitor traffic from the commandline.
   $ pistar-lastqso
 ```
 
@@ -179,7 +179,7 @@ If the **user.csv** file is already present on your hotspot, but is older than 7
 -------------------------------------------------------------------
 ## City, State, Country Lookups for Callsigns (Other Modes)
 
-For other modes, pistar-lastqso will attempt to find QTH info in the DMR **user.csv** file, then PI-STAR's **NXDN.csv** file, on the likelihood that a D-Star, or P25 user is also a registered DMR or NXDN user.  If the Callsign is not found in either of those files, it then calls upon the perl script **dxcc.pl** and it's **cty.dat** file.  As the first two data sources generally contain City, State, and Country info, they are tried first.
+For other modes, pistar-lastqso will attempt to find QTH info in the DMR **user.csv** file, then PI-STAR's **NXDN.csv** file, on the likelihood that a YSF, D-Star, or P25 user is also a registered DMR or NXDN user.  If the Callsign is not found in either of those files, it then calls upon the perl script **dxcc.pl** and it's **cty.dat** file.  As the first two data sources generally contain City, State, and Country info, they are tried first.
 
 The **dxcc.pl** script, and it's **cty.dat** file, can only determine the Country that issued the Callsign, based on the Callsign's prefix.  (Lookups with **dxcc.pl** can be disabled if needed, with the "-D|--DXCC" options - see **[the Help text](https://github.com/kencormack/pistar-lastqso#the-help-text)** for details.)
 
