@@ -1,6 +1,8 @@
 # pistar-lastqso
 ## A Tool to Monitor DMR, YSF, D-STAR, NXDN, and P25 Traffic, on Pi-Star
 
+**AS OF VERSION 3.07, PARSING OF NXDN RF VOICE TRAFFIC IS NOW IN PLACE.**
+
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/title-screen.jpg)
 
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/animation.gif)
@@ -35,8 +37,6 @@
 -------------------------------------------------------------------
 ## About
 pistar-lastqso is a tool to monitor DMR, YSF (including DMR2YSF and YSF2DMR cross-modes), D-Star, NXDN, and P25 traffic on a PI-STAR node, either via SSH, or, on an HDMI-connected console.  Written as a bash shell script (with a few lines of python), no web browser or other GUI client is required.
-
-**AS OF VERSION 3.07, PARSING OF NXDN RF VOICE TRAFFIC IS NOW IN PLACE.**
 
 **For each QSO (all modes), the program can display the following data:**
 - The localized Time and Date of the contact
