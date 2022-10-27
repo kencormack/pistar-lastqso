@@ -13,7 +13,7 @@
 
 set -o allexport
 
-VERSION=3.06
+VERSION=3.07
 
 #----------
 if [[ "${EUID}" -eq 0 ]]
@@ -535,6 +535,7 @@ fnCENTER()
 # Look up Maidenhead Grid Square for US Callsigns,
 # based on address of record, in the FCC database.
 #-----------------------------------
+# shellcheck disable=SC2128,SC2178
 fnGET_US_GRIDSQUARE()
 {
   echo -e "\nenter: ${FUNCNAME[*]}" >&3
@@ -1332,7 +1333,7 @@ fnNOSCROLL_ZONE()
   #----------
   # Print the QSO history lines... newest through oldest
   # Save the history to a file, as well, for auto-restarts.
-  > "${HISTORY_FILE}" 2>/dev/null
+  : > "${HISTORY_FILE}" 2>/dev/null
   HIST_COUNT=1
   until [[ ${HIST_COUNT} -gt ${HIST_MAX} ]]
   do
@@ -2006,26 +2007,35 @@ EOF
   echo -n "${SGR0}${WHI}${CUR_ON}"
 
   #----------
-  # The 5 mode names
-  tput cup 11 37
-  echo -n "${BOLD}${WHI}P25${SGR0}"
-  tput cup 11 24
-  echo -n "${BOLD}${WHI}NXDN${SGR0}"
-  tput cup 11 49
-  echo -n "${BOLD}${WHI}DSTAR${SGR0}"
-  tput cup 11 11
-  echo -n "${BOLD}${WHI}DMR${SGR0}"
-  tput cup 11 63
-  echo -n "${BOLD}${WHI}YSF${SGR0}"
+  # The 5 mode names in random (yeah, I got bored) sequence
+  local SEQUENCE
+  local NUM
+  SEQUENCE=($(shuf -i 1-5 -n 5))
+  for NUM in ${SEQUENCE[@]}
+  do
+    case "${NUM}" in
+      1) tput cup 11 11 ; echo -n "${BOLD}${WHI}DMR${SGR0}" ;;
+      2) tput cup 11 24 ; echo -n "${BOLD}${WHI}NXDN${SGR0}" ;;
+      3) tput cup 11 37 ; echo -n "${BOLD}${WHI}P25${SGR0}" ;;
+      4) tput cup 11 49 ; echo -n "${BOLD}${WHI}DSTAR${SGR0}" ;;
+      5) tput cup 11 63 ; echo -n "${BOLD}${WHI}YSF${SGR0}" ;;
+    esac
+  done
 
   #----------
-  # The 5 mode boxes
+  # The 5 mode boxes in random (I'm still bored) sequence
   echo -n "${SGR0}${BLU}"
-  fnDRAW_BOX 10 35 2 6 1 0 1
-  fnDRAW_BOX 10 22 2 7 1 0 1
-  fnDRAW_BOX 10 47 2 8 1 0 1
-  fnDRAW_BOX 10 9 2 6 1 0 1
-  fnDRAW_BOX 10 61 2 6 1 0 1
+  SEQUENCE=($(shuf -i 1-5 -n 5))
+  for NUM in ${SEQUENCE[@]}
+  do
+    case "${NUM}" in
+      1) fnDRAW_BOX 10  9 2 6 1 0 1 ;;
+      2) fnDRAW_BOX 10 22 2 7 1 0 1 ;;
+      3) fnDRAW_BOX 10 35 2 6 1 0 1 ;;
+      4) fnDRAW_BOX 10 47 2 8 1 0 1 ;;
+      5) fnDRAW_BOX 10 61 2 6 1 0 1 ;;
+    esac
+  done
 }
 
 #-----------------------------------
@@ -3261,13 +3271,13 @@ fnBUILD_HISTORY()
       HIST_SECS="$(printf %5s "${SECS}")"
       if [[ "${BER}" = "n/a" ]]
       then
-        HIST_BER="$(printf %5s "-----")"
+        HIST_BER="-----"
       else
         HIST_BER="$(printf %4s "${BER}")%"
       fi
       if [[ "${LOSS}" = "n/a" ]]
       then
-        HIST_LOSS="$(printf %4s "-----")"
+        HIST_LOSS="-----"
       else
         HIST_LOSS="$(printf %3s "${LOSS}")%"
       fi
@@ -3277,7 +3287,12 @@ fnBUILD_HISTORY()
         HIST_SMETER=""
       else
         HIST_SRC="$(printf %-3s "RF")"
-        HIST_SMETER="${SMETER} (-${DBM} dBm)"
+        if [[ "${RSSI}" = "n/a" ]]
+        then
+          HIST_SMETER="-----"
+        else
+          HIST_SMETER="${SMETER} (-${DBM} dBm)"
+        fi
       fi
 
       #----------
@@ -3471,7 +3486,8 @@ fnDMR_MAIN()
   SOURCE="${FIELD_5//network/NET}"
 
   #----------
-  if [[ "${LOGREC_REMAINING_DATA}" =~ "received network late entry from" ]]
+# if [[ "${LOGREC_REMAINING_DATA}" =~ "received network late entry from" ]]
+  if [[ "${LOGREC_REMAINING_DATA}" =~ "late entry from" ]]
   then
     ((QSO_COUNT++))
     echo "${QSO_COUNT}" > "${QSO_COUNT_FILE}"
@@ -3559,7 +3575,9 @@ fnDMR_MAIN()
       echo -en "\r${CLR_EL}"
       echo -en "\r${DIM}Dur.:${SGR0} ${BLU}${BOLD}${SECS}${SGR0}${WHI}${DIM} sec\r"
       tput cuf 18
-      echo -en "${DIM}BER:${SGR0} ${BER_COLOR}${BOLD}${BER}%${SGR0}${WHI}\t${DIM}RSSI:${SGR0} ${SMETER_COLOR}${BOLD}${SMETER} (-${DBM} dBm)${SGR0}${WHI}\r"
+      echo -en "${DIM}BER:${SGR0} ${BER_COLOR}${BOLD}${BER}%${SGR0}${WHI}\r"
+      tput cuf 32
+      echo -en "${DIM}RSSI:${SGR0} ${SMETER_COLOR}${BOLD}${SMETER} (-${DBM} dBm)${SGR0}${WHI}\r"
     else
       # For network traffic...
       # BER is in different positions, for network and RF log entries
@@ -3580,7 +3598,9 @@ fnDMR_MAIN()
       echo -en "\r${CLR_EL}"
       echo -en "\r${DIM}Dur.:${SGR0} ${BLU}${BOLD}${SECS}${SGR0}${WHI} sec\r"
       tput cuf 18
-      echo -en "${DIM}BER:${SGR0} ${BER_COLOR}${BOLD}${BER}%${SGR0}${WHI}\t${DIM}Loss:${SGR0} ${LOSS_COLOR}${BOLD}${LOSS}%${SGR0}${WHI}\r"
+      echo -en "${DIM}BER:${SGR0} ${BER_COLOR}${BOLD}${BER}%${SGR0}${WHI}\r"
+      tput cuf 32
+      echo -en "${DIM}Loss:${SGR0} ${LOSS_COLOR}${BOLD}${LOSS}%${SGR0}${WHI}\r"
     fi
 
     #----------
@@ -3634,7 +3654,7 @@ fnDMR_MAIN()
   fnSEPARATOR
   echo "Un-parsed DMR log entry..." >&2
   echo "${LOGREC_REMAINING_DATA}" >&2
-# echo "${LOGREC_REMAINING_DATA}" >>/tmp/unparsed_DMR
+  echo "${LOGREC_REMAINING_DATA}" >>/tmp/unparsed_DMR
   echo -n "${LINE_COLOR}"
   fnSEPARATOR
 }
@@ -3891,7 +3911,7 @@ fnYSF_MAIN()
   fnSEPARATOR
   echo "Un-parsed YSF log entry..." >&2
   echo "${LOGREC_REMAINING_DATA}" >&2
-# echo "${LOGREC_REMAINING_DATA}" >>/tmp/unparsed_YSF
+  echo "${LOGREC_REMAINING_DATA}" >>/tmp/unparsed_YSF
   echo -n "${LINE_COLOR}"
   fnSEPARATOR
 }
@@ -3923,12 +3943,75 @@ fnNXDN_MAIN()
   # Grab the parts that we need
   IFS=' '; CUT_ARRAY=(${LOGREC_REMAINING_DATA}); unset IFS;
   FIELD_6="${CUT_ARRAY[5]}"
+  FIELD_7="${CUT_ARRAY[6]}"
   FIELD_8="${CUT_ARRAY[7]}"
   FIELD_9="${CUT_ARRAY[8]}"
   FIELD_10="${CUT_ARRAY[9]}"
   FIELD_11="${CUT_ARRAY[10]}"
   FIELD_12="${CUT_ARRAY[11]}"
   unset CUT_ARRAY
+
+  #----------
+  # Start of NXDN RF voice traffic
+  if [[ "${LOGREC_REMAINING_DATA}" =~ "received RF transmission from" ]]
+  then
+    fnCONVERT_DATE_TIME
+    QSO_START_TIME="${TIME}"
+
+    FROM="${FIELD_6}"
+    TG_LABEL="${FIELD_8}"
+    TO="${FIELD_9}"
+
+    TO="${TG_LABEL} ${TO}"
+    echo -en "\r${CLR_EL}"
+    fnBANNER
+
+    SOURCE="RF"
+
+    ((QSO_COUNT++))
+    echo "${QSO_COUNT}" > "${QSO_COUNT_FILE}"
+    fnSHOW_CURRENT_CALL
+    return
+  fi
+
+  #----------
+  # End of NXDN RF traffic
+  if [[ "${LOGREC_REMAINING_DATA}" =~ "received RF end of transmission" ]]
+  then
+    SECS="${FIELD_7}"
+
+    BER="${FIELD_10}"
+    BER="${BER%,*}"
+    IFS='%'; CUT_ARRAY=(${BER}); unset IFS;
+    BER="${CUT_ARRAY[0]}"
+    unset CUT_ARRAY
+
+    fnCOLORIZE_BER
+
+    RSSI="n/a"
+
+    echo -en "\r${CLR_EL}"
+    echo -en "\r${DIM}Dur.:${SGR0} ${BLU}${BOLD}${SECS}${SGR0}${WHI} sec\r"
+    tput cuf 18
+    echo -en "${DIM}BER:${SGR0} ${BER_COLOR}${BOLD}${BER}${SGR0}${WHI}\r"
+
+    if [[ -n "${FROM}" ]] && [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
+    then
+      ((KERCHUNK_COUNT++))
+      echo "${KERCHUNK_COUNT}" > "${KERCHUNK_COUNT_FILE}"
+      tput cuf 64
+      echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
+    else
+      echo
+    fi
+
+    #----------
+    fnBUILD_HISTORY
+    echo -n "${LINE_COLOR}"
+    fnSEPARATOR
+    fnLISTENING
+    return
+  fi
 
   #----------
   # Start of NXDN network traffic
@@ -3983,7 +4066,7 @@ fnNXDN_MAIN()
   fnSEPARATOR
   echo "Un-parsed NXDN log entry..." >&2
   echo "${LOGREC_REMAINING_DATA}" >&2
-# echo "${LOGREC_REMAINING_DATA}" >>/tmp/unparsed_NXDN
+  echo "${LOGREC_REMAINING_DATA}" >>/tmp/unparsed_NXDN
   echo -n "${LINE_COLOR}"
   fnSEPARATOR
 }
@@ -4261,7 +4344,7 @@ fnDSTAR_MAIN()
   fnSEPARATOR
   echo "Un-parsed DSTAR log entry..." >&2
   echo "${LOGREC_REMAINING_DATA}" >&2
-# echo "${LOGREC_REMAINING_DATA}" >>/tmp/unparsed_DSTAR
+  echo "${LOGREC_REMAINING_DATA}" >>/tmp/unparsed_DSTAR
   echo -n "${LINE_COLOR}"
   fnSEPARATOR
 }
@@ -4451,7 +4534,7 @@ fnP25_MAIN()
   fnSEPARATOR
   echo "Un-parsed P25 log entry..." >&2
   echo "${LOGREC_REMAINING_DATA}" >&2
-# echo "${LOGREC_REMAINING_DATA}" >>/tmp/unparsed_P25
+  echo "${LOGREC_REMAINING_DATA}" >>/tmp/unparsed_P25
   echo -n "${LINE_COLOR}"
   fnSEPARATOR
 }
@@ -4468,7 +4551,8 @@ fnMAIN_LOOP()
     CMD="cat"
   fi
 
-  eval "${CMD}" "${WORKING_LOG}" 2>/dev/null | grep -v -E --line-buffered "^D:|^I:|0000:|Opening|Closing|Embedded" \
+  eval "${CMD}" "${WORKING_LOG}" 2>/dev/null \
+    | grep -v -E --line-buffered "^D:|^I:|0000:|Opening|Closing|Embedded|Downlink|is running|link status|Logged into" \
     | grep -E --line-buffered " DMR | YSF,| D-Star| NXDN| P25|MMDVMHOST-STOP" \
     | while read -r RECORD
   do
@@ -4559,8 +4643,8 @@ fnMAIN_LOOP()
         fnP25_MAIN
         ;;
       *)
-        BANNER_COLOR="${WHI}"
-        HIST_COLOR="${WHI}"
+        BANNER_COLOR="${BLU}"
+        HIST_COLOR="${BLU}"
         LINE_COLOR="${WHI}"
         ;;
     esac
@@ -4809,7 +4893,7 @@ do
   ERROR_COUNT=$(< "${ERROR_COUNT_FILE}")
   WARNING_COUNT=$(< "${WARNING_COUNT_FILE}")
 
-# fnLOAD_HISTORY_FILE
+  fnLOAD_HISTORY_FILE
 
   #----------
   if [[ ${REPLAY} -eq 0 ]]
@@ -4844,14 +4928,13 @@ do
   # Watch for new log activity, then resume watching QSOs.
   echo -e "\n${RED}${DBL_LINE}${WHI}${SGR0}${CLR_EL}"
   echo "${RED}$(basename "${WORKING_LOG}") LOG ACTIVITY HAS STOPPED.${WHI}${SGR0}"
-  echo -n "${YEL}WATCHING FOR NEW LOG ACTIVITY...${WHI}${SGR0} "
 
   #----------
   if [[ ${REPLAY} -eq 1 ]]
   then
     if [[ ! "$(sudo fuser -v "${WORKING_LOG}" 2>&1)" =~ "cat" ]]
     then
-      echo "${BOLD}${WHI}"
+      echo -n "${BOLD}${WHI}"
       fnSEPARATOR
       fnSEPARATOR
       echo -n "${SGR0}${GRE}"
@@ -4869,6 +4952,8 @@ do
       exit
     fi
   fi
+
+  echo -n "${YEL}WATCHING FOR NEW LOG ACTIVITY...${WHI}${SGR0} "
 
   #----------
   OLD_LOG="${WORKING_LOG}"
@@ -4897,8 +4982,6 @@ do
     echo "${GRE}${DIM}Service bounce detected (pi-star update, user reconfig, or other restart.)${WHI}${SGR0}"
     BOUNCE_MSG="-SVCS RESTARTED-"
   fi
-
-  fnLOAD_HISTORY_FILE
 
   #----------
   # Reexamine the activated modes, in case the log was bounced due to

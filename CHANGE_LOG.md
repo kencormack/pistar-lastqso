@@ -1,11 +1,10 @@
 ```
-    I'm still looking for someone with an NXDN
-    radio to share a bit of their log, showing
-    the log entries for NXDN RF transmissions.
-    With such sample log entries, I can add the
-    necessary parsing for RF traffic for that
-    mode.  Until then, pistar-lastqso will only
-    show network traffic, for the NXDN mode.
+CHANGES: V3.07
+ 1. Added NXDN support for RF voice transmissions.
+ 2. Add overlooked RF "late" entries, for DMR.
+ 3. Filter a few more strings the script doesn't
+    need to waste time parsing, in fnMAIN_LOOP.
+ 4. Misc. minor tweaks.
 
 CHANGES: V3.06
  1. Added P25 support for RF voice transmissions.
