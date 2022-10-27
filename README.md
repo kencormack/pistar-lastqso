@@ -36,14 +36,7 @@
 ## About
 pistar-lastqso is a tool to monitor DMR, YSF (including DMR2YSF and YSF2DMR cross-modes), D-Star, NXDN, and P25 traffic on a PI-STAR node, either via SSH, or, on an HDMI-connected console.  Written as a bash shell script (with a few lines of python), no web browser or other GUI client is required.
 
-**VERSION 3.06 ADDS SUPPORT FOR P25 RF TRAFFIC (BOTH NETWORK AND RF TRAFFIC ARE DISPLAYED).**
-**NXDN IS ONLY PARTIALLY SUPPORTED AT THE MOMENT - ONLY NETWORK TRAFFIC IS DISPLAYED (NOT RF TRAFFIC).**
-
-As I do not own an appropriate radio to create the RF-based log entries, support for NXDN is, for the moment, limited to network-based traffic only.  Your own RF traffic to the hotspot will not, at present, be displayed.
-
-**IF YOU OWN AN NXDN RADIO, AND CAN SEND ME A SNIPPET OF YOUR LOG SHOWING YOUR RF TRANSMISSIONS (TRAFFIC FROM YOUR RADIO TO THE HOTSPOT), I CAN WORK FROM THOSE LOG ENTRIES, TO COMPLETE THE NEEDED PARSING IN PISTAR-LASTQSO.**
-
-Note: Some screenshots below may not reflect the latest version of the script.  I'll get those updated as time permits.  However, the ones below will suffice for now.
+**AS OF VERSION 3.07, PARSING OF NXDN RF VOICE TRAFFIC IS NOW IN PLACE.**
 
 **For each QSO (all modes), the program can display the following data:**
 - The localized Time and Date of the contact
@@ -695,7 +688,7 @@ The **ansi_shadow** font pre-dates figlet.  It appears to have been created usin
 
 **Beautysh** (https://github.com/lovesegfault/beautysh) is another tool that has been called upon from time to time, in the development of **pistar-lastqso**.  To quote it's developer: *"This program takes upon itself the hard task of beautifying Bash scripts (yeesh)."*
 
-**pistar-lastqso** itself was developed on a Raspberry Pi Zero WH Rev 1.1 equipped with a 16GB eMMC module for reliability (and backed up via rsync, to USB storage).  Multiple generic Chinese MMDVM boards (including Duplex and Simplex models) have been used, along with TYT MD-UV390/GPS and YAESU FT-70DR handheld radios.  Development of **pistar-lastqso** began with PI-STAR 4.1.4, and has continued through all PI-STAR updates to date.  Testing the output is performed on 1.) a Lenovo Thinkpad laptop running Windows 10 Pro via SSH with PuTTY and Xming (an X-server), with PuTTY running as term-type TERM=xterm, or 2.) direct HDMI connection from the Pi to a 40" flatscreen (TERM=linux).
+**pistar-lastqso** itself was developed on a Raspberry Pi Zero WH Rev 1.1 (now upgraded to a Pi Zero 2 WH Rev 1.0) equipped with a 16GB eMMC module for reliability (and backed up via rsync, to USB storage).  Multiple generic Chinese MMDVM boards (including Duplex and Simplex models) have been used, along with TYT MD-UV390/GPS and YAESU FT-70DR handheld radios.  Development of **pistar-lastqso** began with PI-STAR 4.1.4, and has continued through all PI-STAR updates to date.  Testing the output is performed on 1.) a Lenovo Thinkpad laptop running Windows 10 Pro via SSH with PuTTY and Xming (an X-server), with PuTTY running as term-type TERM=xterm, or 2.) direct HDMI connection from the Pi to a 40" flatscreen (TERM=linux).
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
