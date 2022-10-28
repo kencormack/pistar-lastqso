@@ -198,13 +198,13 @@ If a callsign is determined to be one issued by the United States Federal Commun
 **Valid Options and Parameters...**
 ```
 Short Form:
-  [-12] [-c] [-d] [-D] [-e] [-f <1-5>] [-h] [-i]
+  [-12] [-c] [-d] [-D] [-e] [-f <1-5>] [-g] [-h] [-i]
   [-l] [-m] [-n] [-r /full/path/to/file] [-t [integer]] [-v] [-w]
 
 Long Form:
-  [--12hr] [--csv] [--dat] [--DXCC] [--errors] [--font <1-5>] [--help] [--info]
-  [--logo] [--mono] [--nobig] [--replay /full/path/to/file] [--top [integer]]
-  [--version] [--wrap]
+  [--12hr] [--csv] [--dat] [--DXCC] [--errors] [--font <1-5>] [--grid]
+  [-help] [-info] [--logo] [--mono] [--nobig] [--replay /full/path/to/file]
+  [--top [integer]] [--version] [--wrap]
 ```
 
 Also, options that take a parameter (-f|--font, -t|--top, and -r|--replay) will accept either a space, or an equal sign (=) between the option, and it's parameter.  For example, all of the following are valid forms:
