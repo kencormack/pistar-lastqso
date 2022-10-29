@@ -654,7 +654,7 @@ The rest of the program is mainly parsing the log entries, managing the history 
 
 **pistar-lastqso's operation is dependent upon a fully operational PI-STAR configuration.  If your PI-STAR setup has problems, those problems cannot be solved here.  [Please visit the PI-STAR forums](https://forum.pistar.uk/) instead.  pistar-lastqso only reads the PI-STAR MMDVM log... What goes into that log is PI-STAR's doing.**
 
-**Likewise, please don't expect the PI-STAR forums to offer any assistance with pistar-lastqso.  They did not write this script, they do not bundle and distribute it with PI-STAR, and thus cannot be expected to know anything about it.  (For these reasons, they don't allow discussion of 3rd-party add-ons/tools on their forum.)**
+**Likewise, please don't expect the PI-STAR forums to offer any assistance with pistar-lastqso.  They did not write this script, they do not bundle and distribute it with PI-STAR, and thus they cannot be expected to know anything about it.  (For these reasons, they don't allow discussion of 3rd-party add-ons/tools on their forum.)**
 
 **WITH THAT HAVING BEEN SAID...** Every effort has been made to anticipate and address any questions users may have about **pistar-lastqso**, in this README.  Please read through the above carefully.  Should you have questions, or encounter a problem that is not addressed above, please use the "**[Issues](https://github.com/kencormack/pistar-lastqso/issues)**" tab at the top of this page, to report it.  There, you and others will be able to see if a problem has already been identified, and whether it's been resolved.
 
