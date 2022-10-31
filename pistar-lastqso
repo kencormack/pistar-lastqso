@@ -1,5 +1,5 @@
 #!/bin/bash
-# shellcheck disable=SC2206,SC2034
+# shellcheck disable=SC2206,SC2034,SC2154,SC2312
 #
 # pistar-lastqso
 # Written by:   Ken Cormack (KE8DPF), unixken@yahoo.com
@@ -13,7 +13,7 @@
 
 set -o allexport
 
-VERSION=3.07
+VERSION=3.08
 
 #----------
 if [[ "${EUID}" -eq 0 ]]
@@ -63,6 +63,15 @@ stty cbreak -echo
 # At heart, I'm a KSH guy.  Consequently, you may find "old fashioned"
 # ksh-like syntax in here (out of habbit), where a "modern"(?) bash-ism
 # might exist, but that I simply forgot to use.
+
+# NOTE #4: This was an effort to A.) eliminate the necessity of a second
+# computer from which to simply monitor traffic via use of an HDMI
+# console on the pi-star node - although it works terrifically via SSH,
+# B.) provide a great deal more information about the traffic being
+# observed than what pi-star's own dashboard provides, C.) be as well
+# documented as possible to allow anyone to customize the code as they
+# wish, and finally, D.) have my stuff be independent of Andy's great
+# work (ie: not steal any of his dashboard code.)
 
 #----------
 # NOTES ON GETTING RID OF SOME CUTS
@@ -530,6 +539,7 @@ fnCENTER()
   LENGTH=${#STRING}
   tput cup $((LINES / 2)) $(((COLUMNS / 2) - (LENGTH / 2)))
   echo "${STRING}"
+  return
 }
 
 # Look up Maidenhead Grid Square for US Callsigns,
@@ -568,6 +578,7 @@ fnGET_US_GRIDSQUARE()
         ;;
     esac
   fi
+  return
 }
 
 #-----------------------------------
@@ -602,6 +613,7 @@ fnGET_MODES()
   YSF2NXDN_ENABLED="${YSF2NXDN_ENABLED#*=}"
   YSF2P25_ENABLED="$(grep -A 1 "^\[Enabled\]" /etc/ysf2p25 | grep "^Enabled")"
   YSF2P25_ENABLED="${YSF2P25_ENABLED#*=}"
+  return
 }
 
 #-----------------------------------
@@ -621,6 +633,7 @@ fnCLEANUP()
   "${ERROR_COUNT_FILE}" \
   "${WARNING_COUNT_FILE}" \
   "${HISTORY_FILE}" 2>/dev/null || :
+  return
 }
 
 #-----------------------------------
@@ -632,6 +645,7 @@ fnCLOSE_FDS()
   exec 3>&- 2>/dev/null
   set +x 2>/dev/null
   exec 4>&- 2>/dev/null
+  return
 }
 
 #-----------------------------------
@@ -651,6 +665,7 @@ fnLARGE_FONT()
       ;;
   esac
   echo -n "${CLR_ED}"
+  return
 }
 
 #-----------------------------------
@@ -661,6 +676,7 @@ fnCOMPARE_FLOAT_LT()
 
   # Look for this to return "<" if FLOAT1 is less than FLOAT2
   awk -v FLOAT1="${1}" -v FLOAT2="${2}" 'BEGIN {printf "%s " (FLOAT1<FLOAT2?"<":">=") " %s\n", FLOAT1, FLOAT2}'
+  return
 }
 
 #-----------------------------------
@@ -671,6 +687,7 @@ fnCOMPARE_FLOAT_GT()
 
   # Look for this to return ">" if FLOAT1 is greater than FLOAT2
   awk -v FLOAT1="${1}" -v FLOAT2="${2}" 'BEGIN {printf "%s " (FLOAT1>FLOAT2?">":"<=") " %s\n", FLOAT1, FLOAT2}'
+  return
 }
 
 #-----------------------------------
@@ -778,6 +795,7 @@ fnDEFINE_BOXCHARS()
     FULL_SHADOW="#"
   fi
   DBL_LINE="$(printf "${DBOX_HL}%.0s" {1..76})"
+  return
 }
 
 #-----------------------------------
@@ -904,6 +922,7 @@ fnDRAW_BOX()
       printf "${HALF_SHADOW}%0.s"
     done
   fi
+  return
 }
 
 #-----------------------------------
@@ -925,6 +944,7 @@ fnDMR_BM_STATIC_TGS()
     STATIC_LIST="${STATIC_LIST} ${TALKGROUP}"
   done < "${STATIC_TG_FILE}"
   echo "${STATIC_LIST}"
+  return
 }
 
 #-----------------------------------
@@ -999,7 +1019,7 @@ fnTOP_DATA()
 
   #----------
   # GATHER LINE 4 DATA...
-  # shellcheck disable=SC2143
+  # shellcheck disable=SC2143,SC2243
   if [[ ! $(grep "${GTAB}${DMR_MASTER}${GTAB}" "${DMRHOSTS}" | grep -q "^BM_") ]] && [[ "${DMR_ENABLED}" -eq 1 ]]
   then
     STATIC_LIST="$(fnDMR_BM_STATIC_TGS)"
@@ -1064,6 +1084,7 @@ fnTOP_DATA()
   # NXDN reflector is gathered in fnNOSCROLL_ZONE
   # P25 reflector is gathered in fnNOSCROLL_ZONE
   # D-Star reflector is gathered in fnNOSCROLL_ZONE
+  return
 }
 
 #-----------------------------------
@@ -1124,6 +1145,7 @@ fnDEV_INFO()
     ((DEV_INDEX++))
   done
   echo -n "${SGR0}"
+  return
 }
 
 #-----------------------------------
@@ -1378,6 +1400,7 @@ fnRESET_SCROLLING()
 
   # Now return the cursor back to where it was.
   echo -n "${CUR_RC}${CUR_ON}"
+  return
 }
 
 #-----------------------------------
@@ -1396,6 +1419,7 @@ Long Form:
   [-help] [-info] [--logo] [--mono] [--nobig] [--replay /full/path/to/file]
   [--top [integer]] [--version] [--wrap]
   " >&2
+  return
 }
 
 #-----------------------------------
@@ -1619,6 +1643,7 @@ fnPARSE_CMDLINE()
         ;;
     esac
   done
+  return
 }
 
 #-----------------------------------
@@ -1876,6 +1901,7 @@ PISTAR-LASTQSO - HELP
 (Cursor Up/Down keys to scroll, Page Up/Dn to page, Q to quit help.)
 
 EOF
+  return
 }
 
 #-----------------------------------
@@ -1902,6 +1928,7 @@ Copyright © 2022 Ken Cormack, KE8DPF
   along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 EOF
+  return
 }
 
 #-----------------------------------
@@ -1914,6 +1941,7 @@ fnNO_LOGO()
   echo "Copyright © 2022 Ken Cormack - KE8DPF"
   echo "${DIM}https://github.com/kencormack/pistar-lastqso${SGR0}"
   echo
+  return
 }
 
 #-----------------------------------
@@ -2010,8 +2038,9 @@ EOF
   # The 5 mode names in random (yeah, I got bored) sequence
   local SEQUENCE
   local NUM
+  # shellcheck disable=SC2207
   SEQUENCE=($(shuf -i 1-5 -n 5))
-  for NUM in ${SEQUENCE[@]}
+  for NUM in "${SEQUENCE[@]}"
   do
     case "${NUM}" in
       1) tput cup 11 11 ; echo -n "${BOLD}${WHI}DMR${SGR0}" ;;
@@ -2019,14 +2048,16 @@ EOF
       3) tput cup 11 37 ; echo -n "${BOLD}${WHI}P25${SGR0}" ;;
       4) tput cup 11 49 ; echo -n "${BOLD}${WHI}DSTAR${SGR0}" ;;
       5) tput cup 11 63 ; echo -n "${BOLD}${WHI}YSF${SGR0}" ;;
+      *) true ;;
     esac
   done
 
   #----------
   # The 5 mode boxes in random (I'm still bored) sequence
   echo -n "${SGR0}${BLU}"
+  # shellcheck disable=SC2207
   SEQUENCE=($(shuf -i 1-5 -n 5))
-  for NUM in ${SEQUENCE[@]}
+  for NUM in "${SEQUENCE[@]}"
   do
     case "${NUM}" in
       1) fnDRAW_BOX 10  9 2 6 1 0 1 ;;
@@ -2034,8 +2065,10 @@ EOF
       3) fnDRAW_BOX 10 35 2 6 1 0 1 ;;
       4) fnDRAW_BOX 10 47 2 8 1 0 1 ;;
       5) fnDRAW_BOX 10 61 2 6 1 0 1 ;;
+      *) true ;;
     esac
   done
+  return
 }
 
 #-----------------------------------
@@ -2090,6 +2123,7 @@ fnCHECK_MODES_ENABLED()
     fnCLEANUP
     exit
   fi
+  return
 }
 
 #-----------------------------------
@@ -2196,6 +2230,7 @@ fnGOODBYE_BOX()
       echo -n "${SGR0}${DIM}${WHI}${WARNING_COUNT_COLOR}MMDVM Log WARNINGS: $(printf %05d "${WARNING_COUNT}")${SGR0}"
     fi
   fi
+  return
 }
 
 #-----------------------------------
@@ -2235,6 +2270,7 @@ fnMMDVMLOG_FUSER()
     # has the log open, sleep before checking again.
     sleep 2
   done
+  return
 }
 
 #-----------------------------------
@@ -2245,6 +2281,7 @@ fnSEPARATOR()
   trap fnWINCH WINCH
 
   echo -e "\r${CLR_EL}${DBL_LINE}${WHI}${SGR0}"
+  return
 }
 
 #-----------------------------------
@@ -2258,6 +2295,7 @@ fnLISTENING()
   echo -en "\r${CLR_EL}"
   echo -n "  ${GRE}${BOLD}Listening for Traffic... ${SGR0}${WHI}${CLR_EL}${CLR_ED}"
   TA_DISPLAYED=0
+  return
 }
 
 #-----------------------------------
@@ -2271,6 +2309,7 @@ fnQSO_IN_PROGRESS()
   echo -en "\r${CLR_EL}"
   echo -n "  ${YEL}${BOLD}QSO In Progress... ${SGR0}${WHI}${CLR_EL}${CLR_ED}"
   TA_DISPLAYED=0
+  return
 }
 
 #-----------------------------------
@@ -2324,6 +2363,7 @@ fnDMR_CSV_SEARCH()
   else
     GRIDSQUARE=""
   fi
+  return
 }
 
 #-----------------------------------
@@ -2346,6 +2386,7 @@ fnCONVERT_DATE_TIME()
     unset CUT_ARRAY
     AMPM="${AMPM:0:1}"
   fi
+  return
 }
 
 #-----------------------------------
@@ -2405,6 +2446,7 @@ fnDMR_GET_FROM()
       fnDMR_CSV_SEARCH
     fi
   fi
+  return
 }
 
 #-----------------------------------
@@ -2477,6 +2519,7 @@ fnDMR_GET_TO()
       fnDMR_CSV_SEARCH
     fi
   fi
+  return
 }
 
 #-----------------------------------
@@ -2571,6 +2614,7 @@ fnBANNER()
       ;;
   esac
   echo -n "${CLR_ED}"
+  return
 }
 
 #-----------------------------------
@@ -2617,6 +2661,7 @@ fnYSF_END_NETWORK_TRAFFIC()
   echo -n "${LINE_COLOR}"
   fnSEPARATOR
   fnLISTENING
+  return
 }
 
 #-----------------------------------
@@ -2653,6 +2698,7 @@ fnDSTAR_END_NETWORK_TRAFFIC()
   echo -n "${LINE_COLOR}"
   fnSEPARATOR
   fnLISTENING
+  return
 }
 
 #-----------------------------------
@@ -2687,6 +2733,7 @@ fnNXDN_END_NETWORK_TRAFFIC()
   echo -n "${LINE_COLOR}"
   fnSEPARATOR
   fnLISTENING
+  return
 }
 
 #-----------------------------------
@@ -2724,6 +2771,7 @@ fnP25_END_NETWORK_TRAFFIC()
   echo -n "${LINE_COLOR}"
   fnSEPARATOR
   fnLISTENING
+  return
 }
 
 #-----------------------------------
@@ -2961,6 +3009,7 @@ fnSHOW_CURRENT_CALL()
   fi
 
   fnQSO_IN_PROGRESS
+  return
 }
 
 #-----------------------------------
@@ -3029,6 +3078,7 @@ fnDMR_SHOW_CURRENT_CALL()
   echo -e "${DIM}Src:${SGR0} ${CYA}${BOLD}${SOURCE}${SGR0}${WHI}\t${DIM}Type:${SGR0} ${BOLD}${TYPE}${SGR0}${WHI}${CLR_ED}"
 
   fnQSO_IN_PROGRESS
+  return
 }
 
 #-----------------------------------
@@ -3051,6 +3101,7 @@ fnCOLORIZE_BER()
       BER_COLOR="${RED}"
     fi
   fi
+  return
 }
 
 #-----------------------------------
@@ -3073,6 +3124,7 @@ fnCOLORIZE_LOSS()
       LOSS_COLOR="${RED}"
     fi
   fi
+  return
 }
 
 #-----------------------------------
@@ -3147,6 +3199,7 @@ fnCOLORIZE_RSSI()
       fi
     fi
   fi
+  return
 }
 
 #-----------------------------------
@@ -3185,6 +3238,7 @@ fnDMR_DOWNLOAD_USERCSV()
     sync;sync;sync
     sudo mount -o remount,ro / 2>/dev/null
   fi
+  return
 }
 
 #-----------------------------------
@@ -3234,6 +3288,7 @@ fnYSF_DOWNLOAD_CTYDAT()
       sleep 2
     fi
   fi
+  return
 }
 
 #-----------------------------------
@@ -3335,6 +3390,7 @@ fnBUILD_HISTORY()
   DBM=""
   RSSI=""
   DATA=""
+  return
 }
 
 #-----------------------------------
@@ -3364,6 +3420,7 @@ fnTALLY_ERRORS()
     echo -n "${SGR0}${YEL}"
     fnSEPARATOR
   fi
+  return
 }
 
 #-----------------------------------
@@ -3390,6 +3447,7 @@ fnTALLY_WARNINGS()
 
   echo -n "${SGR0}${RED}"
   fnSEPARATOR
+  return
 }
 
 #-----------------------------------
@@ -3442,6 +3500,7 @@ fnDMR_MAIN()
   FIELD_6="${CUT_ARRAY[5]}"
   FIELD_8="${CUT_ARRAY[7]}"
   FIELD_9="${CUT_ARRAY[8]}"
+  FIELD_10="${CUT_ARRAY[9]}"
   FIELD_11="${CUT_ARRAY[10]}"
   FIELD_12="${CUT_ARRAY[11]}"
   FIELD_13="${CUT_ARRAY[12]}"
@@ -3486,7 +3545,6 @@ fnDMR_MAIN()
   SOURCE="${FIELD_5//network/NET}"
 
   #----------
-# if [[ "${LOGREC_REMAINING_DATA}" =~ "received network late entry from" ]]
   if [[ "${LOGREC_REMAINING_DATA}" =~ "late entry from" ]]
   then
     ((QSO_COUNT++))
@@ -3629,6 +3687,57 @@ fnDMR_MAIN()
   fi
 
   #----------
+  if [[ "${LOGREC_REMAINING_DATA}" =~ "network watchdog has expired" ]]
+  then
+    SECS="${FIELD_8}"
+
+    #----------
+    # Get the packet loss
+    IFS='%'; CUT_ARRAY=(${FIELD_10}); unset IFS;
+    LOSS="${CUT_ARRAY[0]}"
+    unset CUT_ARRAY
+    fnCOLORIZE_LOSS
+
+    #----------
+    # Get the BER
+    IFS='%'; CUT_ARRAY=(${FIELD_14}); unset IFS;
+    BER="${CUT_ARRAY[0]}"
+    unset CUT_ARRAY
+    fnCOLORIZE_BER
+
+    echo -en "\r${CLR_EL}"
+    echo -en "\r${DIM}Dur.:${SGR0} ${BLU}${BOLD}${SECS}${SGR0}${WHI} sec\r"
+    tput cuf 18
+    echo -en "${DIM}BER:${SGR0} ${BER_COLOR}${BOLD}${BER}%${SGR0}${WHI}\r"
+    tput cuf 32
+    echo -en "${DIM}Loss:${SGR0} ${LOSS_COLOR}${BOLD}${LOSS}%${SGR0}${WHI}\r"
+
+    #----------
+    # If call was less than 2 secs,
+    # and we know who it was from,
+    # then call it a kerchunk.
+    # Responses such as "disconnected",
+    # received with a 4000 disconnect
+    # are not counted.
+    if [[ -n "${FROM}" ]] && [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
+    then
+      ((KERCHUNK_COUNT++))
+      echo "${KERCHUNK_COUNT}" > "${KERCHUNK_COUNT_FILE}"
+      tput cuf 64
+      echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
+    else
+      echo
+    fi
+
+    #----------
+    fnBUILD_HISTORY
+    echo -n "${LINE_COLOR}"
+    fnSEPARATOR
+    fnLISTENING
+    return
+  fi
+
+  #----------
   # It was data traffic...
   if [[ "${LOGREC_REMAINING_DATA}" =~ "ended network data" ]] || [[ "${LOGREC_REMAINING_DATA}" =~ "ended RF data" ]]
   then
@@ -3654,9 +3763,10 @@ fnDMR_MAIN()
   fnSEPARATOR
   echo "Un-parsed DMR log entry..." >&2
   echo "${LOGREC_REMAINING_DATA}" >&2
-  echo "${LOGREC_REMAINING_DATA}" >>/tmp/unparsed_DMR
+  echo "${RECORD}" >>/tmp/unparsed_DMR
   echo -n "${LINE_COLOR}"
   fnSEPARATOR
+  return
 }
 
 #-----------------------------------
@@ -3911,9 +4021,10 @@ fnYSF_MAIN()
   fnSEPARATOR
   echo "Un-parsed YSF log entry..." >&2
   echo "${LOGREC_REMAINING_DATA}" >&2
-  echo "${LOGREC_REMAINING_DATA}" >>/tmp/unparsed_YSF
+  echo "${RECORD}" >>/tmp/unparsed_YSF
   echo -n "${LINE_COLOR}"
   fnSEPARATOR
+  return
 }
 
 #-----------------------------------
@@ -4066,9 +4177,10 @@ fnNXDN_MAIN()
   fnSEPARATOR
   echo "Un-parsed NXDN log entry..." >&2
   echo "${LOGREC_REMAINING_DATA}" >&2
-  echo "${LOGREC_REMAINING_DATA}" >>/tmp/unparsed_NXDN
+  echo "${RECORD}" >>/tmp/unparsed_NXDN
   echo -n "${LINE_COLOR}"
   fnSEPARATOR
+  return
 }
 
 #-----------------------------------
@@ -4344,9 +4456,10 @@ fnDSTAR_MAIN()
   fnSEPARATOR
   echo "Un-parsed DSTAR log entry..." >&2
   echo "${LOGREC_REMAINING_DATA}" >&2
-  echo "${LOGREC_REMAINING_DATA}" >>/tmp/unparsed_DSTAR
+  echo "${RECORD}" >>/tmp/unparsed_DSTAR
   echo -n "${LINE_COLOR}"
   fnSEPARATOR
+  return
 }
 
 #-----------------------------------
@@ -4534,9 +4647,10 @@ fnP25_MAIN()
   fnSEPARATOR
   echo "Un-parsed P25 log entry..." >&2
   echo "${LOGREC_REMAINING_DATA}" >&2
-  echo "${LOGREC_REMAINING_DATA}" >>/tmp/unparsed_P25
+  echo "${RECORD}" >>/tmp/unparsed_P25
   echo -n "${LINE_COLOR}"
   fnSEPARATOR
+  return
 }
 
 #-----------------------------------
@@ -4544,6 +4658,8 @@ fnMAIN_LOOP()
 {
   echo -e "\nenter: ${FUNCNAME[*]}" >&3
 
+  #----------
+  # For "live" logs, use tail.  For replay, use cat.
   if [[ ${REPLAY} -eq 0 ]]
   then
     CMD="tail -f -n 1"
@@ -4551,6 +4667,8 @@ fnMAIN_LOOP()
     CMD="cat"
   fi
 
+  #----------
+  # Filter the log, looking for lines we'll want to parse.
   eval "${CMD}" "${WORKING_LOG}" 2>/dev/null \
     | grep -v -E --line-buffered "^D:|^I:|0000:|Opening|Closing|Embedded|Downlink|is running|link status|Logged into" \
     | grep -E --line-buffered " DMR | YSF,| D-Star| NXDN| P25|MMDVMHOST-STOP" \
@@ -4581,6 +4699,9 @@ fnMAIN_LOOP()
     # FYI: Debug messages are logged in records beginning with "D:".
     # FYI: Information messages are logged in records beginning with "I:".
     # FYI: Modem Traffic messages are logged in records beginning with "M:".
+    # We filter out I: and D: records at the tail/cat, so no need to watch
+    # for them here.  We're interested in the errors, warnings, and modem
+    # traffic (M:) records.
     LOGREC_TYPE="${RECORD:0:2}"
     case "${LOGREC_TYPE}" in
       "E:")
@@ -4592,6 +4713,7 @@ fnMAIN_LOOP()
         continue
         ;;
       *)
+        # Everything else is an M: record
         :
         ;;
     esac
@@ -4611,6 +4733,7 @@ fnMAIN_LOOP()
     LOGREC_REMAINING_DATA="${RECORD//${LOGREC_TYPE} ${LOGREC_DATE} ${LOGREC_TIME} /}"
 
     #----------
+    # Now parse it accordingly.
     case "${LOGREC_MODE}" in
       "DMR")
         BANNER_COLOR="${WHI}"
@@ -4649,6 +4772,7 @@ fnMAIN_LOOP()
         ;;
     esac
   done
+  return
 }
 
 #-----------------------------------
@@ -4658,24 +4782,31 @@ fnABORT()
 
   fnRESET_SCROLLING
 
+  #----------
   # Clear the bottom line of the screen
   tput cup "${LINES}" 0
   echo -en "\r${CLR_EL}"
 
+  #----------
   # Re-Enable line-wrap, turn the cursor on, reset the terminal,
   # and switch back to the primary screen buffer
   echo -n "${WRAP_ON}${CUR_ON}${SGR0}${RMCUP}"
 
+  #----------
   if [[ ${HAS_BUFFER} -eq 0 ]]
   then
     fnLOGO
   fi
 
+  #----------
   fnGOODBYE_BOX
   tput cup "${LINES}" 0
 
+  #----------
   fnCLEANUP
   fnCLOSE_FDS
+
+  #----------
   # If debugging and/or profiling was used, show the names of the logs, at exit
   if [[ "${DEBUG_LOG}" != "/dev/null" ]] || [[ "${PROFILING_LOG}" != "/dev/null" ]]
   then
@@ -4691,6 +4822,7 @@ fnABORT()
     echo
   fi
 
+  #----------
   tput cup "${LINES}" 0
   echo -en "${TERM_RESET}"
   stty "${STTY}"
@@ -4702,11 +4834,13 @@ fnWINCH()
 {
   echo -e "\nenter: ${FUNCNAME[*]}" >&3
 
+  #----------
   # Get the screensize.  We'll be needing the number of lines.
   read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
   tput csr 0 $((LINES - 1))
   clear
 
+  #----------
   if [[ ${TOP} -eq 1 ]]
   then
     tput cup "${BELOW_NOSCROLL}" 0
@@ -4714,29 +4848,7 @@ fnWINCH()
     # Clear to end of display
     echo -n "${CLR_ED}"
   fi
-}
-
-#-----------------------------------
-fnLOAD_HISTORY_FILE()
-{
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
-
-  # If we are auto-restarting, load the previous history...
-  if [[ -f "${HISTORY_FILE}" ]]
-  then
-    # shellcheck disable=SC1090
-    . "${HISTORY_FILE}"
-
-    # Push them all down the list, one position.
-    HIST_COUNT=${HIST_MAX}
-    until [[ ${HIST_COUNT} -eq 0 ]]
-    do
-      HISTORY[HIST_COUNT]="${HISTORY[$((HIST_COUNT - 1))]}"
-      ((HIST_COUNT--))
-    done
-    # Insert a restart marker as the most recent history entry
-    HISTORY[1]="${CYA}$(date +%H:%M:%S) ${SGR0}${WHI}${SBOX_VL} ---------- ${SBOX_VL} ---------- ${SBOX_VL} ----- ${SBOX_VL} ----- ${SBOX_VL} --- ${SBOX_VL}${CYA} ${BOUNCE_MSG} ${SGR0}${WHI}"
-  fi
+  return
 }
 
 ###########################################################
@@ -4808,12 +4920,15 @@ VER_CHECK_COLOR="${WHI}${BOLD}"
 VER_CHECK="$(curl -s https://raw.githubusercontent.com/kencormack/pistar-lastqso/main/pistar-lastqso 2>/dev/null | grep -m 1 "^VERSION=")"
 VER_CHECK="${VER_CHECK#*=}"
 
+#----------
+# Indicator to me, when I'm working with test/development version.
 IS_DEV=""
 if fnCOMPARE_FLOAT_GT "${VERSION}" "${VER_CHECK}" | grep -q ">"
 then
   IS_DEV="*"
 fi
 
+#----------
 # See if the user is running a version older than the latest available
 if fnCOMPARE_FLOAT_LT "${VERSION}" "${VER_CHECK}" | grep -q "<"
 then
@@ -4864,15 +4979,6 @@ then
 fi
 
 #----------
-# By the time we've drawn the no-scroll zone, we've already
-# created a history file with a logging restart record.  Since
-# I want to start with a "clean" display, I'll delete the file
-# (thus it's "Watching Log" record) here.  The log restart
-# entry will be added once the loop that follows gets started,
-# after any QSOs are added and logging pauses/resumes.
-rm "${HISTORY_FILE}" 2>/dev/null
-
-#----------
 # Make the named function available for execution as a
 # seperate job that can be run in the background.
 export -f fnMMDVMLOG_FUSER
@@ -4892,8 +4998,6 @@ do
   KERCHUNK_COUNT=$(< "${KERCHUNK_COUNT_FILE}")
   ERROR_COUNT=$(< "${ERROR_COUNT_FILE}")
   WARNING_COUNT=$(< "${WARNING_COUNT_FILE}")
-
-  fnLOAD_HISTORY_FILE
 
   #----------
   if [[ ${REPLAY} -eq 0 ]]
@@ -4924,12 +5028,16 @@ do
   #----------
   # If we've exited fnMAIN_LOOP, it's because MMDVMHost is no longer writing
   # to the log that we've been watching.  Either the service was stopped
-  # during pi-star's nightly update, or it has rolled to a new day's log.
+  # during pi-star's nightly update, it has rolled to a new day's log, or the
+  # user has reconfiged or performed some other task that required pi-star to
+  # cycle the services.
+  #
   # Watch for new log activity, then resume watching QSOs.
-  echo -e "\n${RED}${DBL_LINE}${WHI}${SGR0}${CLR_EL}"
+  echo -e "\n\n${RED}${DBL_LINE}${WHI}${SGR0}${CLR_EL}"
   echo "${RED}$(basename "${WORKING_LOG}") LOG ACTIVITY HAS STOPPED.${WHI}${SGR0}"
 
   #----------
+  # See if we were replaying a log.  If so, we've reached the end of the log.
   if [[ ${REPLAY} -eq 1 ]]
   then
     if [[ ! "$(sudo fuser -v "${WORKING_LOG}" 2>&1)" =~ "cat" ]]
@@ -4953,9 +5061,10 @@ do
     fi
   fi
 
+  #----------
+  # If we weren't replaying, then watch for logging to restart.
   echo -n "${YEL}WATCHING FOR NEW LOG ACTIVITY...${WHI}${SGR0} "
 
-  #----------
   OLD_LOG="${WORKING_LOG}"
   while [[ ! "$(sudo fuser -v "${WORKING_LOG}" 2>&1)" =~ "MMDVMHost" ]]
   do
@@ -4974,6 +5083,7 @@ do
   echo -e "\n${GRE}LOG ACTIVITY HAS RESUMED USING $(basename "${WORKING_LOG}")...${WHI}${SGR0}"
 
   #----------
+  # Set the appropriate message for the history display, indicating why logging cycled.
   if [[ "${OLD_LOG}" != "${WORKING_LOG}" ]]
   then
     echo "${GRE}${DIM}Daily MMDVM log rotation detected.${WHI}${SGR0}"
@@ -4984,8 +5094,34 @@ do
   fi
 
   #----------
+  # Load the current history...
+  # shellcheck disable=SC1090
+  . "${HISTORY_FILE}"
+
+  # Push all the entries one position later, in the list.
+  # This opens the first position for the restart indicator.
+  HIST_COUNT=${HIST_MAX}
+  until [[ ${HIST_COUNT} -eq 0 ]]
+  do
+    HISTORY[HIST_COUNT]="${HISTORY[$((HIST_COUNT - 1))]}"
+    ((HIST_COUNT--))
+  done
+
+  # Insert the restart marker as the most recent history entry.
+  HISTORY[1]="${CYA}$(date +%H:%M:%S) ${SGR0}${WHI}${SBOX_VL} ---------- ${SBOX_VL} ---------- ${SBOX_VL} ----- ${SBOX_VL} ----- ${SBOX_VL} --- ${SBOX_VL}${CYA} ${BOUNCE_MSG} ${SGR0}${WHI}"
+
+  # Save the updated history to a file, newest through oldest.
+  : > "${HISTORY_FILE}" 2>/dev/null
+  HIST_COUNT=1
+  until [[ ${HIST_COUNT} -gt ${HIST_MAX} ]]
+  do
+    echo -e "HISTORY[${HIST_COUNT}]=\"${HISTORY[HIST_COUNT]}\"" >> "${HISTORY_FILE}"
+    ((HIST_COUNT++))
+  done
+
+  #----------
   # Reexamine the activated modes, in case the log was bounced due to
-  # user configuration changes made in the GUI's "Configuration" page.
+  # configuration changes made in the GUI's "Configuration" page.
   fnGET_MODES
 
   #----------
@@ -4993,7 +5129,7 @@ do
   # in case any values shown in the no-scroll zone have changed.
   fnTOP_DATA
 
-  echo -e "${GRE}${DBL_LINE}${WHI}${SGR0}${CLR_EL}"
+  echo -e "${GRE}${DBL_LINE}${WHI}${SGR0}${CLR_EL}\n"
 
   ((LOG_RESTARTS++))
 done

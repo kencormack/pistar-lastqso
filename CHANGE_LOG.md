@@ -1,4 +1,18 @@
 ```
+CHANGES: V3.08
+ 1. Reworked history initialization, moving the
+    logic of fnLOAD_HISTORY_FILE into the outer
+    "while true" loop, and fixed injection of the
+    restart entry into the history.  Fixes the
+    problems with history occasionally coming up
+    cleared after restart, and all the previous
+    restart indicators redisplaying in the history
+    upon restart.
+ 2. Added expired watchdog parsing, for DMR.
+ 3. For testing/development, the entire log record
+    is written to /tmp/unparsed_* now, rather than
+    just what follows the timestamp.
+
 CHANGES: V3.07
  1. Added NXDN support for RF voice transmissions.
  2. Add overlooked RF "late" entries, for DMR.
