@@ -101,10 +101,8 @@ The install script will perform the following tasks, as needed...
 - remount the rootfs as read-write
 - copy "pistar-lastqso" to /usr/local/bin and enable execute permission
 - copy "dxcc.pl" script to /usr/local/bin and enable execute permission
-- install the package "figlet" from the standard repositories using
-    "sudo apt-get -y install figlet"
-- install the package "jq" from the standard repositories using
-    "sudo apt-get -y install jq"
+- install the package "figlet" from the standard repositories using **"sudo apt-get -y install figlet"**
+- install the package "jq" from the standard repositories using **"sudo apt-get -y install jq"**
 - copy the supplemental "ansi_shadow.flf" font file to /usr/share/figlet
 - remount the rootfs as read-only
 
