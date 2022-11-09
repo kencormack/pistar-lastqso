@@ -105,9 +105,9 @@ fi
 #----------
 if [ -n "$(command -v jq)" ]
 then
-  echo -e "${GRE}Step 4. - jq is already installed.  Continuing...${WHI}"
+  echo -e "${GRE}Step 5. - jq is already installed.  Continuing...${WHI}"
 else
-  echo -e "${GRE}Step 4. - Installing jq from the repositories...${WHI}"
+  echo -e "${GRE}Step 5. - Installing jq from the repositories...${WHI}"
   sudo apt-get -y install jq
 fi
 
@@ -120,7 +120,7 @@ then
     echo -e "${RED}  Installation failed.\n${WHI}"
     exit
   else
-    echo -e "${GRE}Step 5. - Installing ansi_shadow font...${WHI}"
+    echo -e "${GRE}Step 6. - Installing ansi_shadow font...${WHI}"
     if [ "$(sudo cp ./ansi_shadow.flf /usr/share/figlet/ansi_shadow.flf 2> /dev/null)" ]
     then
       echo -e "${RED}\n  Unable to copy ansi_shadow.flf to /usr/share/figlet${WHI}"
@@ -129,11 +129,11 @@ then
     fi
   fi
 else
-  echo -e "${GRE}Step 5. - Font file is already installed.  Continuing...${WHI}"
+  echo -e "${GRE}Step 6. - Font file is already installed.  Continuing...${WHI}"
 fi
 
 #----------
-echo "${GRE}Step 6. - Returning rootfs filesystem to read-only...${WHI}"
+echo "${GRE}Step 7. - Returning rootfs filesystem to read-only...${WHI}"
 sync ; sync ; sync
 sudo mount -o remount,rw /
 
