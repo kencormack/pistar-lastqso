@@ -95,18 +95,20 @@ Change to the "pistar-lastqso" directory that was just created...
 
 Run the install script...
   $ ./install
+```
 
-  The install script will perform the following tasks, as needed...
-  1.) remount the rootfs as read-write
-  2.) copy "pistar-lastqso" to /usr/local/bin and enable execute permission
-  3.) copy "dxcc.pl" script to /usr/local/bin and enable execute permission
-  4.) install the package "figlet" from the standard repositories using
-      "sudo apt-get -y install figlet"
-  5.) install the package "jq" from the standard repositories using
-      "sudo apt-get -y install jq"
-  6.) copy the supplemental "ansi_shadow.flf" font file to /usr/share/figlet
-  7.) remount the rootfs as read-only
+The install script will perform the following tasks, as needed...
+- remount the rootfs as read-write
+- copy "pistar-lastqso" to /usr/local/bin and enable execute permission
+- copy "dxcc.pl" script to /usr/local/bin and enable execute permission
+- install the package "figlet" from the standard repositories using
+    "sudo apt-get -y install figlet"
+- install the package "jq" from the standard repositories using
+    "sudo apt-get -y install jq"
+- copy the supplemental "ansi_shadow.flf" font file to /usr/share/figlet
+- remount the rootfs as read-only
 
+```
 You are now ready to monitor traffic from the commandline.
   $ pistar-lastqso
 ```
