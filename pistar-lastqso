@@ -13,7 +13,7 @@
 
 set -o allexport
 
-VERSION=3.08
+VERSION=3.09
 
 #----------
 if [[ "${EUID}" -eq 0 ]]
@@ -40,9 +40,8 @@ stty cbreak -echo
 # configuring pi-star and watching the logs, network-traffic-only (no RF
 # traffic) was added for NXDN, D-Star, and P25.  When a D-Star user sent
 # me a sample of his logs, showing D-Star RF log entries, D-Star RF
-# support was added.  At this writing, support for NXDN and P25 remain
-# as network-traffic-only (no RF).  If someone would like to gift me
-# appropriate radios, I'd be happy to add full support for all modes.  ;)
+# support was added.  At this writing, support for NXDN and P25 RF
+# voice traffic have also been added.
 
 # NOTE #2: I've tried to write this script with readability in mind.
 # A year after having last touched a script, I like to look at it and
@@ -53,9 +52,9 @@ stty cbreak -echo
 # priority is understandability, rather than clever elegance or raw
 # performance, within reason.  I did, however, undertake a performance
 # minded sweep through the code, replacing well over a hundred calls
-# to external tools like awk, cut, grep and such, and replaced them
-# with bash variable expansion mechanisms.  This saves tremendous
-# overhead in loops such as this script, particularly on a Pi Zero.
+# to external tools like awk, cut, grep and such, with bash variable
+# expansion mechanisms.  This saves tremendous overhead in loops such
+# as this script, particularly on a Pi Zero.
 
 # NOTE #3: I cut my teeth on Sequent hardware and SVR3, 30+ years ago.
 # Over three decades, I've worked on nearly all commercial *nix variants.
@@ -405,9 +404,10 @@ else
 fi
 
 #----------
-# APIKEY="$(grep "^apikey=" /etc/bmapi.key 2>/dev/null | cut -f2 -d"=")"
-# APIKEY="$(grep "^apikey=" /etc/bmapi.key 2>/dev/null)"
-# APIKEY="${APIKEY#*=}"
+# BM_API_KEY="$(grep "^apikey=" /etc/bmapi.key 2>/dev/null | cut -f2 -d"=")"
+BM_API_KEY="$(grep "^apikey=" /etc/bmapi.key 2>/dev/null)"
+BM_API_KEY="${BM_API_KEY#*=}"
+
 HOTSPOT_ID="$(grep -A 13 "^\[DMR\]" /etc/mmdvmhost | grep "^Id=")"
 HOTSPOT_ID="${HOTSPOT_ID#*=}"
 
@@ -456,9 +456,6 @@ STATIC_TG_FILE="/tmp/lastqso-static-${MY_TTY}"
 # script, this file will NOT be deleted upon program exit.
 # This makes an already populated file immediately available,
 # if the script is stopped by the user and then restarted.
-# As the file is written to the ram-based "/tmp" filesystem,
-# it is, however, volatile, and will be deleted and rebuilt
-# from scratch, with every reboot.
 DXCC_CACHE_FILE="/tmp/lastqso-dxcc-cache-${MY_TTY}"
 touch "${DXCC_CACHE_FILE}"
 
@@ -468,9 +465,7 @@ touch "${DXCC_CACHE_FILE}"
 # But there's little point in continually querying the
 # remote server each time we see the same callsign.
 # So, we'll cache any learned results, in a manner
-# similar to caching of the dxcc lookups.  Also like
-# the dxcc cache, this file is not cleared on program
-# exit, but is removed at hotspot reboot.
+# similar to caching of the dxcc lookups.
 GRID_CACHE_FILE="/tmp/lastqso-grid-cache-${MY_TTY}"
 touch "${GRID_CACHE_FILE}"
 
@@ -527,6 +522,39 @@ echo -en "${WRAP_OFF}"
 ###########################################################
 # FUNCTIONS
 ###########################################################
+
+#-----------------------------------
+fnCOPY_CACHE()
+{
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
+  #----------
+  sudo mount -o remount,rw / 2>/dev/null
+  sleep .5
+
+  #----------
+  # Combine any current caches with anything previously saved.
+  # Put the groomed file in place as the live cache.
+  # Save a copy to the home directory.
+
+  cat "${DXCC_CACHE_FILE}" /home/pi-star/.lastqso-dxcc-cache 2>/dev/null \
+    | sort -u > /tmp/.cache_tmp 2>/dev/null
+  cat /tmp/.cache_tmp > "${DXCC_CACHE_FILE}" 2>/dev/null
+  cat /tmp/.cache_tmp > /home/pi-star/.lastqso-dxcc-cache 2>/dev/null
+  rm /tmp/.cache_tmp 2>/dev/null
+
+  cat "${GRID_CACHE_FILE}" /home/pi-star/.lastqso-grid-cache 2>/dev/null \
+    | grep -v "Unknown" | sort -u > /tmp/.cache_tmp 2>/dev/null
+  cat /tmp/.cache_tmp > "${GRID_CACHE_FILE}" 2>/dev/null
+  cat /tmp/.cache_tmp > /home/pi-star/.lastqso-grid-cache 2>/dev/null
+  rm /tmp/.cache_tmp 2>/dev/null
+
+  #----------
+  sync;sync;sync
+  sudo mount -o remount,ro / 2>/dev/null
+
+  return
+}
 
 # For possible future use
 #-----------------------------------
@@ -633,6 +661,8 @@ fnCLEANUP()
   "${ERROR_COUNT_FILE}" \
   "${WARNING_COUNT_FILE}" \
   "${HISTORY_FILE}" 2>/dev/null || :
+
+  fnCOPY_CACHE
   return
 }
 
@@ -931,9 +961,9 @@ fnDMR_BM_STATIC_TGS()
   echo -e "\nenter: ${FUNCNAME[*]}" >&3
 
   #----------
-  # This retrieves the TGs, and returns them one per line.
-  curl -s "https://api.brandmeister.network/v1.0/repeater/?action=profile&q=${HOTSPOT_ID}" \
-    | sed -u 's/"talkgroup":/\n/g' | grep "${HOTSPOT_ID}" | cut -f1 -d"," | sort -n -u \
+  # This retrieves the statuc TGs, and returns them one per line.
+  curl -s "https://api.brandmeister.network/v2/device/${HOTSPOT_ID}/profile" \
+    | jq -r .staticSubscriptions | grep talkgroup | cut -f4 -d"\"" \
     > "${STATIC_TG_FILE}"
 
   #----------
@@ -944,6 +974,7 @@ fnDMR_BM_STATIC_TGS()
     STATIC_LIST="${STATIC_LIST} ${TALKGROUP}"
   done < "${STATIC_TG_FILE}"
   echo "${STATIC_LIST}"
+
   return
 }
 
@@ -970,15 +1001,11 @@ fnTOP_DATA()
 
   # Datestamp of the user.csv file
   CSV_DATE="$(stat --print=%y /usr/local/etc/user.csv 2>/dev/null)"
-  IFS=' '; CUT_ARRAY=(${CSV_DATE}); unset IFS;
-  CSV_DATE="${CUT_ARRAY[0]}"
-  unset CUT_ARRAY
+  CSV_DATE="${CSV_DATE%%" "*}"
 
   # Datestamp of the cty.dat file
   DAT_DATE="$(stat --print=%y /usr/local/etc/cty.dat 2>/dev/null)"
-  IFS=' '; CUT_ARRAY=(${CSV_DATE}); unset IFS;
-  DAT_DATE="${CUT_ARRAY[0]}"
-  unset CUT_ARRAY
+  DAT_DATE="${DAT_DATE%%" "*}"
 
   #----------
   # GATHER LINE 1 DATA...
@@ -1112,7 +1139,7 @@ fnDEV_INFO()
   DEV_STRING[4]="  Modes and X-Modes: YSF=${YSF_ENABLED} DMR=${DMR_ENABLED} NXDN=${NXDN_ENABLED} DSTAR=${DSTAR_ENABLED} P25=${P25_ENABLED}"
   DEV_STRING[5]="  YSF2DMR=${YSF2DMR_ENABLED} YSF2NXDN=${YSF2NXDN_ENABLED} YSF2P25=${YSF2P25_ENABLED} DMR2YSR=${DMR2YSF_ENABLED} DMR2NXDN=${DMR2NXDN_ENABLED}"
   DEV_STRING[6]="  Traffic Counts: DMR=${DMR_COUNT} YSF=${YSF_COUNT} NXDN=${NXDN_COUNT} DSTAR=${DSTAR_COUNT} P25=${P25_COUNT}"
-  DEV_STRING[7]="  Other Counts: Kerchunks=${KERCHUNK_COUNT} Errors=${ERROR_COUNT} Warnings=${WARNING_COUNT} Restarts=${LOG_RESTARTS}"
+  DEV_STRING[7]="  Cache: DXCC=$(grep -c . ${DXCC_CACHE_FILE}) Grid=$(grep -c . ${GRID_CACHE_FILE}) Other Counts: K=${KERCHUNK_COUNT} E=${ERROR_COUNT} W=${WARNING_COUNT} R=${LOG_RESTARTS}"
 
   #----------
   # In replay mode, text is bright yellow.
@@ -1120,7 +1147,6 @@ fnDEV_INFO()
   if [[ ${REPLAY} -eq 1 ]]
   then
     echo -n "${BOLD}${YEL}"
-    DEV_STRING[7]="  *** REPLAY MODE *** REPLAY MODE *** REPLAY MODE *** REPLAY MODE ***"
   else
     echo -n "${DIM}${CYA}"
   fi
@@ -1353,9 +1379,10 @@ fnNOSCROLL_ZONE()
   fi
 
   #----------
+  # DISPLAY (AND STORE) THE COMPLETE CURRENT HISTORY
   # Print the QSO history lines... newest through oldest
   # Save the history to a file, as well, for auto-restarts.
-  : > "${HISTORY_FILE}" 2>/dev/null
+  rm "${HISTORY_FILE}" 2>/dev/null
   HIST_COUNT=1
   until [[ ${HIST_COUNT} -gt ${HIST_MAX} ]]
   do
@@ -1753,7 +1780,6 @@ PISTAR-LASTQSO - HELP
       For US callsigns only, enable Maidenhead Grid Square look-up for
       callsigns, based on the US FCC mailing address of record, for a
       callsign.  The grid square appears at the end of the QTH data.
-      Results of a lookup are cached until the hotspot is rebooted.
       This works only for US callsigns.
 
   -h|--help
@@ -1780,7 +1806,7 @@ PISTAR-LASTQSO - HELP
              Modes and X-Modes: YSF=0 DMR=0 NXDN=0 DSTAR=0 P25=1
              YSF2DMR=0 YSF2NXDN=0 YSF2P25=0 DMR2YSR=0 DMR2NXDN=0
                 Traffic Counts: DMR=0 YSF=0 NXDN=0 DSTAR=0 P25=0
-        Other Counts: Kerchunks=0 Errors=0 Warnings=0 Restarts=0
+              Cache: DXCC=0 Grid=0 Other Counts: K=0 E=0 W=0 R=0
 
       The first line shows the options and parameters passed to the
       script when launched.
@@ -1808,11 +1834,12 @@ PISTAR-LASTQSO - HELP
       of DMR, YSF, NXDN, DSTAR, and P25 messages seen since the program
       was launched.
 
-      The last line shows the number of Kerchunks, Errors, Warnings,
-      and log Restarts observed since program launch.  However, when
-      the "-r|--replay" option is used, the last line instead performs
-      a different function.  It displays a reminder indicating that the
-      program is in "replay mode" (not viewing live traffic).
+      The last line shows the number of records in the DXCC and Grid
+      Square caches, and the number of Kerchunks, Errors, Warnings,
+      and log Restarts observed since program launch.  When the script
+      is monitoring live data, the -i|--info data is shown in pale
+      blue.  When running in -r|--replay mode, the data is shown in
+      bright yellow, as a quick visual reminder.
 
   -l|--logo
       Disables the animated logo at startup.
@@ -1824,17 +1851,17 @@ PISTAR-LASTQSO - HELP
       Disable the large font display of callsigns and ID #s.  This
       conserves vertical screen-space.
 
-  -r|--replay /full/path/to/file
+  -r|--replay /path/to/file
       FOR DEVELOPMENT USE: This option allows the specified file to
       be "replayed" from the start, as if it were the current log.
       This aids testing of coding changes, against problematic log
-      entries, by replaying those log entries.  Troubleshooting
-      another user's log too, becomes possible.  A fully qualified
-      filename must be specified.
+      entries, by replaying those log entries.  Troubleshooting w/
+      another user's log too, becomes possible.  A fully qualified,
+      or relative path, to the filename, must be specified.
 
         Examples:
-                -r /full/path/to/file
-          --replay /full/path/to/file
+                -r /path/to/file
+          --replay /path/to/file
 
         Not:
                 -r filename
@@ -2138,55 +2165,55 @@ fnGOODBYE_BOX()
   echo "${BOLD}${WHI}THANK YOU FOR USING PISTAR-LASTQSO v${VERSION}${SGR0}${DEF}"
 
   #----------
-  tput cup 8 20
+  tput cup 7 20
   # shellcheck disable=SC2016
   ELAPSED=$(eval "echo $(date -ud "@${SECONDS}" +'$((%s/3600/24)) Days %H Hrs %M Mins %S Secs')")
   echo -n "${DIM}${CYA}Elapsed: ${ELAPSED}"
 
-  tput cup 9 31
+  tput cup 8 31
   echo -n "${DIM}${CYA}Log Restarts: "
   printf %02d "${LOG_RESTARTS}"
 
   #----------
   QSO_COUNT=$(< "${QSO_COUNT_FILE}")
-  tput cup 11 23
+  tput cup 10 23
   echo -n "${DIM}${WHI}QSOs Observed This Session: ${SGR0}${YEL}"
   printf %05d "${QSO_COUNT}"
 
   #----------
   DMR_COUNT=$(< "${DMR_COUNT_FILE}")
-  tput cup 12 22
+  tput cup 11 22
   echo -n "${DIM}${WHI}(DMR ${SGR0}${CYA}"
   printf %05d "${DMR_COUNT}"
-  tput cup 12 32
+  tput cup 11 32
   echo -n "${DIM}${WHI})${SGR0}"
 
   YSF_COUNT=$(< "${YSF_COUNT_FILE}")
-  tput cup 12 34
+  tput cup 11 34
   echo -n "${DIM}${WHI}(YSF ${SGR0}${CYA}"
   printf %05d "${YSF_COUNT}"
-  tput cup 12 44
+  tput cup 11 44
   echo -n "${DIM}${WHI})${SGR0}"
 
   P25_COUNT=$(< "${P25_COUNT_FILE}")
-  tput cup 12 46
+  tput cup 11 46
   echo -n "${DIM}${WHI}(P25 ${SGR0}${CYA}"
   printf %05d "${P25_COUNT}"
-  tput cup 12 56
+  tput cup 11 56
   echo -n "${DIM}${WHI})${SGR0}"
 
   DSTAR_COUNT=$(< "${DSTAR_COUNT_FILE}")
-  tput cup 13 27
+  tput cup 12 27
   echo -n "${DIM}${WHI}(DSTAR ${SGR0}${CYA}"
   printf %05d "${DSTAR_COUNT}"
-  tput cup 13 39
+  tput cup 12 39
   echo -n "${DIM}${WHI})${SGR0}"
 
   NXDN_COUNT=$(< "${NXDN_COUNT_FILE}")
-  tput cup 13 41
+  tput cup 12 41
   echo -n "${DIM}${WHI}(NXDN ${SGR0}${CYA}"
   printf %05d "${NXDN_COUNT}"
-  tput cup 13 52
+  tput cup 12 52
   echo -n "${DIM}${WHI})${SGR0}"
 
   #----------
@@ -2199,8 +2226,14 @@ fnGOODBYE_BOX()
     fi
     PERCENTAGE="$(awk -v KERCHUNK_COUNT="${KERCHUNK_COUNT}" -v QSO_COUNT="${QSO_COUNT}" 'BEGIN {print (KERCHUNK_COUNT / QSO_COUNT * 100)}')"
   fi
-  tput cup 14 24
+  tput cup 13 24
   echo -n "${DIM}${WHI}Includes ${SGR0}${YEL}$(printf %04d "${KERCHUNK_COUNT}")${DIM}${WHI} Kerchunks (${SGR0}${YEL}$(printf %.2f "${PERCENTAGE}")%${DIM}${WHI})${SGR0}"
+
+  #----------
+  tput cup 14 23
+  echo -n "${CYA}Cache Recs:  DXCC $(printf %04d $(grep -c . ${DXCC_CACHE_FILE}))"
+  tput cup 14 47
+  echo -n "${CYA}GRID $(printf %04d $(grep -c . ${GRID_CACHE_FILE}))"
 
   #----------
   if [[ -f "${ERROR_COUNT_FILE}" ]] || [[ -f "${WARNING_COUNT_FILE}" ]]
@@ -2626,14 +2659,8 @@ fnYSF_END_NETWORK_TRAFFIC()
 
   #----------
   # Fields to pass to the history...
-  IFS='%'; CUT_ARRAY=(${BER}); unset IFS;
-  BER="${CUT_ARRAY[0]}"
-  unset CUT_ARRAY
-
-  IFS='%'; CUT_ARRAY=(${LOSS}); unset IFS;
-  LOSS="${CUT_ARRAY[0]}"
-  unset CUT_ARRAY
-
+  BER="${BER%\%*}"
+  LOSS="${LOSS%\%*}"
   fnCOLORIZE_BER
   fnCOLORIZE_LOSS
 
@@ -2797,15 +2824,11 @@ fnSHOW_CURRENT_CALL()
   # For example, many YSF users will send things like
   # "KE8DPF-KEN" or "KE8DPF/KEN".  So we isolate just
   # the "KE8DPF" callsign, to perform our lookups.
-  IFS='-'; CUT_ARRAY=(${FROM}); unset IFS;
-  SEARCH_FROM="${CUT_ARRAY[0]}"
-  unset CUT_ARRAY
-  IFS='/'; CUT_ARRAY=(${SEARCH_FROM}); unset IFS;
-  SEARCH_FROM="${CUT_ARRAY[0]}"
-  unset CUT_ARRAY
+  SEARCH_FROM="${FROM%-*}"
+  SEARCH_FROM="${SEARCH_FROM%/*}"
 
   # Search the CSV files for the "From" name
-  FROM_NAME="$(grep ",${SEARCH_FROM}," "${USERCSV}" "${NXDNCSV}" | tail -1)"
+  FROM_NAME="$(grep ",${SEARCH_FROM}," "${NXDNCSV}" "${USERCSV}" | tail -1)"
   IFS=','; CUT_ARRAY=(${FROM_NAME}); unset IFS;
   FROM_NAME="${CUT_ARRAY[2]}"
   unset CUT_ARRAY
@@ -2930,8 +2953,7 @@ fnSHOW_CURRENT_CALL()
         # However, if I have to use dxcc.pl to resolve, I then
         # cache the result so that next time that callsign
         # appears, the country can be parsed from the cache
-        # to save time... A LOT of time!  (The cache persists
-        # until reboot.)
+        # to save time... A LOT of time!
 
         # Search the cache.
         DXCC_CACHE_RECORD="$(grep "^${SEARCH_FROM}:" "${DXCC_CACHE_FILE}")"
@@ -2949,7 +2971,7 @@ fnSHOW_CURRENT_CALL()
           {
             IFS=$'\n' read -r -d '' CAPTURED_STDERR;
             IFS=$'\n' read -r -d '' CAPTURED_STDOUT;
-          } < <( (printf '\0%s\0' "$(time dxcc.pl "${FROM}" | grep "^Country Name:" | awk '{ print substr($0, index($0,$3)) }')" 1>&2) 2>&1)
+          } < <( (printf '\0%s\0' "$(time dxcc.pl "${SEARCH_FROM}" | grep "^Country Name:" | awk '{ print substr($0, index($0,$3)) }')" 1>&2) 2>&1)
           #  ^--^--- These spaces are important for proper operation, for
           #          linting/beautifying, and for syntax highlighting in "vim".
           COUNTRY="${CAPTURED_STDOUT}"
@@ -3312,10 +3334,20 @@ fnBUILD_HISTORY()
       FROM_OR_SENDER="${FROM_OR_SENDER:0:11}"
 
       #----------
+      # Load the current history...
+      # shellcheck disable=SC1090
+      . "${HISTORY_FILE}"
+
+      #----------
+      # PUSH CURRENT HISTORY DOWN.  THIS DROPS THE OLDEST RECORD,
+      # AND LEAVES THE NEWEST SPOT EMPTY FOR THE RECORD WE ARE
+      # ABOUT TO ADD
+      rm "${HISTORY_FILE}" 2>/dev/null
       HIST_COUNT=${HIST_MAX}
       until [[ ${HIST_COUNT} -eq 0 ]]
       do
         HISTORY[HIST_COUNT]="${HISTORY[$((HIST_COUNT - 1))]}"
+        echo -e "HISTORY[${HIST_COUNT}]=\"${HISTORY[HIST_COUNT]}\"" >> "${HISTORY_FILE}"
         ((HIST_COUNT--))
       done
 
@@ -3358,6 +3390,7 @@ fnBUILD_HISTORY()
       fi
 
       #----------
+      # CONSTRUCT THE NEW RECORD WE'LL BE ADDING
       HISTORY[1]="${BOLD}${BLU}${HIST_TIME}${DIM}${AMPM}${BOLD}${WHI}${SGR0}${SBOX_VL} ${BOLD}${HIST_COLOR}${HIST_FROM}${SGR0}${SBOX_VL} ${BOLD}${HIST_COLOR}${HIST_TO}${SGR0} ${SBOX_VL} ${BOLD}${BLU}${HIST_SECS}${WHI}${SGR0} ${SBOX_VL} ${BOLD}${BER_COLOR}${HIST_BER}${WHI}${SGR0} ${SBOX_VL} ${BOLD}${CYA}${HIST_SRC}${WHI}"
 
       #----------
@@ -3390,6 +3423,18 @@ fnBUILD_HISTORY()
   DBM=""
   RSSI=""
   DATA=""
+
+  #----------
+  # STORE THE NEW HISTORY, INCLUDING THE RECORD WE'VE JUST BUILT
+  # Save the history
+  rm "${HISTORY_FILE}" 2>/dev/null
+  HIST_COUNT=1
+  until [[ ${HIST_COUNT} -gt ${HIST_MAX} ]]
+  do
+    echo -e "HISTORY[${HIST_COUNT}]=\"${HISTORY[HIST_COUNT]}\"" >> "${HISTORY_FILE}"
+    ((HIST_COUNT++))
+  done
+
   return
 }
 
@@ -3618,9 +3663,7 @@ fnDMR_MAIN()
       # Remove any comma
       BER="${FIELD_18%,*}"
       # Remove the "%" symbol
-      IFS='%'; CUT_ARRAY=(${BER}); unset IFS;
-      BER="${CUT_ARRAY[0]}"
-      unset CUT_ARRAY
+      BER="${BER%\%*}"
       fnCOLORIZE_BER
 
       #----------
@@ -3641,16 +3684,12 @@ fnDMR_MAIN()
       # BER is in different positions, for network and RF log entries
       BER="${FIELD_21%,*}"
       # Remove the "%" symbol
-      IFS='%'; CUT_ARRAY=(${BER}); unset IFS;
-      BER="${CUT_ARRAY[0]}"
-      unset CUT_ARRAY
+      BER="${BER%\%*}"
       fnCOLORIZE_BER
 
       #----------
       # Get the packet loss
-      IFS='%'; CUT_ARRAY=(${FIELD_17}); unset IFS;
-      LOSS="${CUT_ARRAY[0]}"
-      unset CUT_ARRAY
+      LOSS="${FIELD_17%\%*}"
       fnCOLORIZE_LOSS
 
       echo -en "\r${CLR_EL}"
@@ -3693,16 +3732,12 @@ fnDMR_MAIN()
 
     #----------
     # Get the packet loss
-    IFS='%'; CUT_ARRAY=(${FIELD_10}); unset IFS;
-    LOSS="${CUT_ARRAY[0]}"
-    unset CUT_ARRAY
+    LOSS="${LOSS%\%*}"
     fnCOLORIZE_LOSS
 
     #----------
     # Get the BER
-    IFS='%'; CUT_ARRAY=(${FIELD_14}); unset IFS;
-    BER="${CUT_ARRAY[0]}"
-    unset CUT_ARRAY
+    BER="${BER%\%*}"
     fnCOLORIZE_BER
 
     echo -en "\r${CLR_EL}"
@@ -3904,12 +3939,9 @@ fnYSF_MAIN()
 
     DG_ID_NUM="${DG_ID_NUM%,*}"
 
-    BER="${BER%,*}"
-
     # Fields to pass to the history...
-    IFS='%'; CUT_ARRAY=(${BER}); unset IFS;
-    BER="${CUT_ARRAY[0]}"
-    unset CUT_ARRAY
+    BER="${BER%,*}"
+    BER="${BER%\%*}"
 
     DBM="${RSSI%%/*}"
     DBM="${DBM#*-}"
@@ -3979,12 +4011,9 @@ fnYSF_MAIN()
 
     DG_ID_NUM="${DG_ID_NUM%,*}"
 
-    BER="${BER%,*}"
-
     # Fields to pass to the history...
-    IFS='%'; CUT_ARRAY=(${BER}); unset IFS;
-    BER="${CUT_ARRAY[0]}"
-    unset CUT_ARRAY
+    BER="${BER%,*}"
+    BER="${BER%\%*}"
 
     DBM="${RSSI%%/*}"
     DBM="${DBM#*-}"
@@ -4093,9 +4122,7 @@ fnNXDN_MAIN()
 
     BER="${FIELD_10}"
     BER="${BER%,*}"
-    IFS='%'; CUT_ARRAY=(${BER}); unset IFS;
-    BER="${CUT_ARRAY[0]}"
-    unset CUT_ARRAY
+    BER="${BER%\%*}"
 
     fnCOLORIZE_BER
 
@@ -4328,9 +4355,7 @@ fnDSTAR_MAIN()
     # BER
     BER="${FIELD_4#*:}"
     BER="${BER// /}"
-    IFS='%'; CUT_ARRAY=(${BER}); unset IFS;
-    BER="${CUT_ARRAY[0]}"
-    unset CUT_ARRAY
+    BER="${BER%\%*}"
 
     #----------
     # Get the RSSI
@@ -4401,16 +4426,12 @@ fnDSTAR_MAIN()
     unset CUT_ARRAY
 
     # loss
-    IFS='%'; CUT_ARRAY=(${FIELD_4}); unset IFS;
-    LOSS="${CUT_ARRAY[0]}"
-    unset CUT_ARRAY
+    LOSS="${FIELD_4%\%*}"
 
     # BER
     BER="${FIELD_5#*:}"
     BER="${BER// /}"
-    IFS='%'; CUT_ARRAY=(${BER}); unset IFS;
-    BER="${CUT_ARRAY[0]}"
-    unset CUT_ARRAY
+    BER="${BER%\%*}"
 
     fnDSTAR_END_NETWORK_TRAFFIC
     return
@@ -4430,16 +4451,12 @@ fnDSTAR_MAIN()
     SECS="${FIELD_6}"
 
     # loss
-    IFS='%'; CUT_ARRAY=(${FIELD_8}); unset IFS;
-    LOSS="${CUT_ARRAY[0]}"
-    unset CUT_ARRAY
+    LOSS="${FIELD_8%\%*}"
 
     # BER
     BER="${FIELD_12#*:}"
     BER="${BER// /}"
-    IFS='%'; CUT_ARRAY=(${BER}); unset IFS;
-    BER="${CUT_ARRAY[0]}"
-    unset CUT_ARRAY
+    BER="${BER%\%*}"
 
     fnDSTAR_END_NETWORK_TRAFFIC
     return
@@ -4569,9 +4586,7 @@ fnP25_MAIN()
     RSSI="${FIELD_13}"
 
     # Fields to pass to the history...
-    IFS='%'; CUT_ARRAY=(${BER}); unset IFS;
-    BER="${CUT_ARRAY[0]}"
-    unset CUT_ARRAY
+    BER="${BER%\%*}"
 
     DBM="${RSSI%%/*}"
     DBM="${DBM#*-}"
@@ -4611,9 +4626,7 @@ fnP25_MAIN()
     TG_LABEL="${FIELD_8}"
     TO="${FIELD_10%,*}"
     SECS="${FIELD_11}"
-    IFS='%'; CUT_ARRAY=(${FIELD_13}); unset IFS;
-    LOSS="${CUT_ARRAY[0]}"
-    unset CUT_ARRAY
+    LOSS="${FIELD_13%\%*}"
 
     fnP25_END_NETWORK_TRAFFIC
     return
@@ -4624,9 +4637,7 @@ fnP25_MAIN()
   if [[ "${LOGREC_REMAINING_DATA}" =~ "network end of transmission," ]]
   then
     SECS="${FIELD_6}"
-    IFS='%'; CUT_ARRAY=(${FIELD_8}); unset IFS;
-    LOSS="${CUT_ARRAY[0]}"
-    unset CUT_ARRAY
+    LOSS="${LOSS%\%*}"
 
     fnP25_END_NETWORK_TRAFFIC
     return
@@ -4671,7 +4682,7 @@ fnMAIN_LOOP()
   # Filter the log, looking for lines we'll want to parse.
   eval "${CMD}" "${WORKING_LOG}" 2>/dev/null \
     | grep -v -E --line-buffered "^D:|^I:|0000:|Opening|Closing|Embedded|Downlink|is running|link status|Logged into" \
-    | grep -E --line-buffered " DMR | YSF,| D-Star| NXDN| P25|MMDVMHOST-STOP" \
+    | grep -E --line-buffered "^M: |^W: |^E: |MMDVMHOST-STOP" \
     | while read -r RECORD
   do
     #----------
@@ -4946,19 +4957,28 @@ fnGET_MODES
 fnCHECK_MODES_ENABLED
 sleep .5
 
+#----------
+# Prime the cache files.
+# Also performed in fnCLEANUP, to preserve
+# copies of the caches in /home/pi-star.
+echo -en "\r${CLR_EL}${SGR0}${WHI}Priming Caches... "
+fnCOPY_CACHE
+
+#----------
 echo -en "\r${CLR_EL}${SGR0}${WHI}Initializing... "
 sleep .5
 
 #----------
+# CREATE A FRESH EMPTY HISTORY
 # These will store the history to be displayed, if the
 # no-scroll region is called upon.
 if [[ ${TOP} = 1 ]]
 then
-  # Start with a fresh history...
   HIST_COUNT=1
   until [[ ${HIST_COUNT} -gt ${HIST_MAX} ]]
   do
     HISTORY[HIST_COUNT]="         ${SBOX_VL}            ${SBOX_VL}            ${SBOX_VL}       ${SBOX_VL}       ${SBOX_VL}     ${SBOX_VL}${SGR0}${WHI}"
+    echo -e "HISTORY[${HIST_COUNT}]=\"${HISTORY[HIST_COUNT]}\"" >> "${HISTORY_FILE}"
     ((HIST_COUNT++))
   done
 fi
@@ -5080,15 +5100,16 @@ do
     done
     WORKING_LOG="${NEWEST}"
   done
-  echo -e "\n${GRE}LOG ACTIVITY HAS RESUMED USING $(basename "${WORKING_LOG}")...${WHI}${SGR0}"
 
   #----------
   # Set the appropriate message for the history display, indicating why logging cycled.
   if [[ "${OLD_LOG}" != "${WORKING_LOG}" ]]
   then
+    echo -e "\n${GRE}LOG ACTIVITY HAS RESUMED - NOW USING $(basename "${WORKING_LOG}")...${WHI}${SGR0}"
     echo "${GRE}${DIM}Daily MMDVM log rotation detected.${WHI}${SGR0}"
     BOUNCE_MSG="--LOG ROTATION--"
   else
+    echo -e "\n${GRE}LOG ACTIVITY HAS RESUMED - STILL USING $(basename "${WORKING_LOG}")...${WHI}${SGR0}"
     echo "${GRE}${DIM}Service bounce detected (pi-star update, user reconfig, or other restart.)${WHI}${SGR0}"
     BOUNCE_MSG="-SVCS RESTARTED-"
   fi
@@ -5111,7 +5132,7 @@ do
   HISTORY[1]="${CYA}$(date +%H:%M:%S) ${SGR0}${WHI}${SBOX_VL} ---------- ${SBOX_VL} ---------- ${SBOX_VL} ----- ${SBOX_VL} ----- ${SBOX_VL} --- ${SBOX_VL}${CYA} ${BOUNCE_MSG} ${SGR0}${WHI}"
 
   # Save the updated history to a file, newest through oldest.
-  : > "${HISTORY_FILE}" 2>/dev/null
+  rm "${HISTORY_FILE}" 2>/dev/null
   HIST_COUNT=1
   until [[ ${HIST_COUNT} -gt ${HIST_MAX} ]]
   do

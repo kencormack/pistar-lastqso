@@ -1,4 +1,38 @@
 ```
+CHANGES: V3.09
+ 1. Switched to the BM API V2 style of query, to
+    determine any BM static talkgroups, for DMR.
+    (Insurance for the day the v1 API goes away.)
+ 2. To make parsing the BM API's JSON output safer
+    and more reliable, the package "jq" is used.
+    Pistar-lastqso's "install" script now installs
+    the tool "jq" from the standard repos.
+ 3. Save any dxcc or grid caches upon exit, to
+    preserve populated caches across reboots.
+    Also preload caches from saved copies at launch.
+ 4. Updated "-i|--info" to display record counts
+    of both the DXCC and Grid Square caches, and
+    shorten the other counter lables to K, E, W,
+    and R, for Kerchunks, Errors, Warnings, and
+    Restarts.
+ 5. Changed the "-i|--info" block to retain the
+    counts on the 7th line, when in replay mode,
+    since the 1st line shows the replay option on
+    the commandline.  Only the color change to
+    yellow is preserved, as a quick reminder that
+    replay mode is active.
+ 6. More history cleanups.
+ 7. Updated filter on the main read loop, to spot
+    errors that were slipping through.
+ 8. Found a bug when looking up name/QTH data for
+    YSF callsigns with a hyphenated suffix such
+    as "-JIM" added to the callsign.
+ 9. Fixed similar bug with DXCC lookups.
+10. Modified a few BER and LOSS array-parsed cuts
+    with a less complex means.
+11. Modified date inspection of user.csv and
+    cty.dat files.
+
 CHANGES: V3.08
  1. Reworked history initialization, moving the
     logic of fnLOAD_HISTORY_FILE into the outer
