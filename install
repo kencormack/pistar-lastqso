@@ -26,10 +26,14 @@ following operations...
     the standard repositories using
     "sudo apt-get -y install figlet"
 
-5.) copy the supplemental "ansi_shadow.flf"
+5.) install the package "jq" from
+    the standard repositories using
+    "sudo apt-get -y install jq"
+
+6.) copy the supplemental "ansi_shadow.flf"
     font file to /usr/share/figlet
 
-6.) remount the rootfs as read-only
+7.) remount the rootfs as read-only
 
 EOF
 echo -en "Press ENTER to proceed, or Ctrl-C to abort... "
@@ -37,9 +41,11 @@ read FOO
 
 echo -e "Beginning install."
 
+#----------
 echo -e "${GRE}Step 1. - Mounting rootfs filesystem as read-write...${WHI}"
 sudo mount -o remount,rw /
 
+#----------
 echo -e "${GRE}Step 2. - Installing the pistar-lastqso script...${WHI}"
 if [ ! -f ./pistar-lastqso ]
 then
@@ -65,6 +71,7 @@ else
   fi
 fi
 
+#----------
 echo -e "${GRE}Step 3. - Installing the dxcc.pl script...${WHI}"
 if [ ! -f ./dxcc.pl ]
 then
@@ -86,16 +93,25 @@ else
   fi
 fi
 
+#----------
 if [ -n "$(command -v figlet)" ]
 then
   echo -e "${GRE}Step 4. - Figlet is already installed.  Continuing...${WHI}"
 else
-  echo -e "${GRE}Step 4. - Installing figlet from repositories...${WHI}"
-  sudo apt-get update
+  echo -e "${GRE}Step 4. - Installing figlet from the repositories...${WHI}"
   sudo apt-get -y install figlet
-  sudo apt-get clean
 fi
 
+#----------
+if [ -n "$(command -v jq)" ]
+then
+  echo -e "${GRE}Step 4. - jq is already installed.  Continuing...${WHI}"
+else
+  echo -e "${GRE}Step 4. - Installing jq from the repositories...${WHI}"
+  sudo apt-get -y install jq
+fi
+
+#----------
 if [ ! -f /usr/share/figlet/ansi_shadow.flf ]
 then
   if [ ! -f ./ansi_shadow.flf ]
@@ -116,10 +132,12 @@ else
   echo -e "${GRE}Step 5. - Font file is already installed.  Continuing...${WHI}"
 fi
 
+#----------
 echo "${GRE}Step 6. - Returning rootfs filesystem to read-only...${WHI}"
 sync ; sync ; sync
 sudo mount -o remount,rw /
 
+#----------
 echo -e "${WHI}\nInstallation complete."
 tput sgr0
 
