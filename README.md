@@ -186,7 +186,7 @@ If the **cty.dat** file is already present on your hotspot, but is older than 30
 ## Maidenhead Grid Square Lookups for US Callsigns (All Modes)
 If a callsign is determined to be one issued by the United States Federal Communications Commission (FCC), a query is sent to the remote server at **callook.info**, to determine the Maidenhead Grid Square location of the callsign.  The Grid Square, once retrieved, is cached locally to prevent multiple appearances by a given callsign resulting in needless, already-satisfied queries to the remote server.  The Grid Square location is displayed in parenthesis, directly following the QTH data described above.  Because this feature relies on queries to a remote server, and could potentially introduce lag due to network connectivity or other issues, this feature is disabled, by default.  To enable Maidenhead Grid Square lookups for US callsigns, use the "-g|--grid" commandline option, as described in the Help Text, below.
 
-*Occasionally, the remote **callook.info** server may return "Unknown", null, or other unexpected result.  This can happen when **callook.info** is unable to determine the latitude/longitude necessary to generate the Maidenhead location.  These negative results ("Unknown") are not cached.  When the remote issues are corrected, proper Grid Square responses will resume.  Already cached data persists across pistar-lastqso sessions if the hotspot is not rebooted, but is cleared upon reboot.*
+*Occasionally, the remote **callook.info** server may return "Unknown", null, or other unexpected result.  This can happen when **callook.info** is unable to determine the latitude/longitude necessary to generate the Maidenhead location.  These negative results ("Unknown") are not cached.  When the remote issues are corrected, proper Grid Square responses will resume.*
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
@@ -322,7 +322,6 @@ PISTAR-LASTQSO - HELP
       For US callsigns only, enable Maidenhead Grid Square look-up for
       callsigns, based on the US FCC mailing address of record, for a
       callsign.  The grid square appears at the end of the QTH data.
-      Results of a lookup are cached until the hotspot is rebooted.
       This works only for US callsigns.
 
   -h|--help
@@ -350,6 +349,7 @@ PISTAR-LASTQSO - HELP
              YSF2DMR=0 YSF2NXDN=0 YSF2P25=0 DMR2YSR=0 DMR2NXDN=0
                 Traffic Counts: DMR=0 YSF=0 NXDN=0 DSTAR=0 P25=0
         Other Counts: Kerchunks=0 Errors=0 Warnings=0 Restarts=0
+              Cache: DXCC=0 Grid=0 Other Counts: K=0 E=0 W=0 R=0
 
       The first line shows the options and parameters passed to the
       script when launched.
@@ -377,11 +377,12 @@ PISTAR-LASTQSO - HELP
       of DMR, YSF, NXDN, DSTAR, and P25 messages seen since the program
       was launched.
 
-      The last line shows the number of Kerchunks, Errors, Warnings,
-      and log Restarts observed since program launch.  However, when
-      the "-r|--replay" option is used, the last line instead performs
-      a different function.  It displays a reminder indicating that the
-      program is in "replay mode" (not viewing live traffic).
+      The last line shows the number of records in the DXCC and Grid
+      Square caches, and the number of Kerchunks, Errors, Warnings,
+      and log Restarts observed since program launch.  When the script
+      is monitoring live data, the -i|--info data is shown in pale
+      blue.  When running in -r|--replay mode, the data is shown in
+      bright yellow, as a quick visual reminder.
 
   -l|--logo
       Disables the animated logo at startup.
@@ -397,9 +398,9 @@ PISTAR-LASTQSO - HELP
       FOR DEVELOPMENT USE: This option allows the specified file to
       be "replayed" from the start, as if it were the current log.
       This aids testing of coding changes, against problematic log
-      entries, by replaying those log entries.  Troubleshooting
+      entries, by replaying those log entries.  Troubleshooting w/
       another user's log too, becomes possible.  A fully qualified
-      filename must be specified.
+      or relative path, to the filename, must be specified.
 
         Examples:
                 -r /full/path/to/file
