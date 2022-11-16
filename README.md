@@ -205,12 +205,12 @@ If a callsign is determined to be one issued by the United States Federal Commun
 **Valid Options and Parameters...**
 ```
 Short Form:
-  [-12] [-c] [-d] [-D] [-e] [-f <1-5>] [-g] [-h] [-i]
-  [-l] [-m] [-n] [-r /full/path/to/file] [-t [integer]] [-v] [-w]
+  [-12] [-c] [-d] [-D] [-e] [-f <1-5>] [-g] [-h] [-i] [-l]
+  [-m] [-n] [-p] [-r /path/to/file] [-t [integer]] [-v] [-w]
 
 Long Form:
   [--12hr] [--csv] [--dat] [--DXCC] [--errors] [--font <1-5>] [--grid]
-  [-help] [-info] [--logo] [--mono] [--nobig] [--replay /full/path/to/file]
+  [-help] [-info] [--logo] [--mono] [--nobig] [--poll] [--replay /path/to/file]
   [--top [integer]] [--version] [--wrap]
 ```
 
@@ -401,6 +401,31 @@ PISTAR-LASTQSO - HELP
       Disable the large font display of callsigns and ID #s.  This
       conserves vertical screen-space.
 
+  -p|--poll
+      For DMR users configured to use Brandmeister master servers,
+      pistar-lastqso will ordinarily query the BM servers ONCE at
+      startup, to see which talkgroups (both static AND dynamic) you
+      are linked to.  Those TGs will be shown in the non-scrolling
+      region, when -t|--top is used.  Adding or removing talkgroups,
+      through PTT, TG 4000, the pi-star admin screen, Brandmeister's
+      "My Devices", or by any other means, will not be reflected on
+      screen until pistar-lastqso is stopped and run again, from the
+      command line.
+
+      However, if the "-p|--poll" option is used, this causes the
+      program to "poll" Brandmeister between every communication
+      displayed, resulting in a screen that will effectively track
+      your currently linked TGs.  This is especially helpful for
+      users who jump around a lot between dynamic TGs, as it will
+      track these TGs as they are linked or unlinked.
+
+      Note that because there is a network connection made to the
+      BM server, and a query made, every time the data is polled,
+      this *can* induce a slight delay, especially on single-core
+      Raspberry Pi Zero-based hotspots, or on slow networks.  On
+      multi-core Pis (including the new Raspberry Pi Zero 2), with
+      a decent network connection, this delay isn't a problem.
+
   -r|--replay /full/path/to/file
       FOR DEVELOPMENT USE: This option allows the specified file to
       be "replayed" from the start, as if it were the current log.
@@ -429,9 +454,10 @@ PISTAR-LASTQSO - HELP
       the Modem's device node (port), the computer platform/model,
       the elapsed time since the script was launched, the system
       load averages for the last 1, 5, and 15 minutes, the DMR
-      Master and (if Brandmeister) the first few statically defined
-      BrandMeister TalkGroups.  The last line shows the current
-      reflectors in effect for the other modes.
+      Master and (if Brandmeister) the first few Static & Dynamic
+      BrandMeister TalkGroups (dynamics are marked with an asterisk).
+      The last line shows the current reflectors in effect for the
+      other modes.
 
       By default, the use of "-t|--top" also provides a history of
       the last 5 QSOs observed.  However, by specifying an integer
