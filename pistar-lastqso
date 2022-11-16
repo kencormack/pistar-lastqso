@@ -13,7 +13,7 @@
 
 set -o allexport
 
-VERSION=3.09
+VERSION=3.10
 
 #----------
 if [[ "${EUID}" -eq 0 ]]
@@ -31,7 +31,7 @@ fi
 STTY="$(stty -g)"
 # Turn off character/word/line erase, and
 # turn off echo of chars as they are typed
-stty cbreak -echo 
+stty cbreak -echo
 
 #----------
 # NOTE #1: Originally written for pi-star >= 4.1.4, for DMR mode ONLY.
@@ -191,10 +191,6 @@ PS4='+\011\t ${LINENO}\011'
 #----------
 # Defaults that can be overridden with cmdline options...
 #
-# Maidenhead lookups on US callsigns disabled by default.
-# Can be activated with "-g|--grid" cmdline option.
-GRID=0
-
 # Timestamps now default to 24Hr format.  To go back
 # to 12Hr am/pm timestamps, use "-12|--12hr" option.
 MIL_TIME=1
@@ -217,6 +213,10 @@ USE_DXCC=1
 # Can be overridden with "-e|--errors" cmdline option
 SHOW_LOG_ERRORS=1
 #
+# Maidenhead lookups on US callsigns disabled by default.
+# Can be activated with "-g|--grid" cmdline option.
+GRID=0
+#
 # *IF* your display is greater than 130 columns wide,
 # *AND* you use the "-t|--top" option, *AND* you add
 # the "-i|--info" option, a few helpful details are
@@ -225,26 +225,38 @@ SHOW_LOG_ERRORS=1
 # than that, it serves little use.
 SHOW_DEV_INFO=0
 #
+# By default, display logo screen.
+# Can be disabled with "-l|--logo" cmdline option
+LOGO=1
+#
 # Display Callsigns & TGs/DG-IDs, etc., in large font.
 # Can be overridden with "-n|--nobig" cmdline option
 USE_BANNER=1
 #
-# Allow figlet to auto-wrap as needed.
-# Can be overridden with "-w|--wrap" cmdline option
-NO_WRAP=0
+# By default, the script will query Brandmeister ONLY ONCE
+# at startup, to determine currently linked talkgroups.
+# This "-p|--poll" option tells the script to frequently
+# poll Brandmeister to refresh the linked TG list.  This is
+# most helpful to people who like to bounce around between
+# dynamically linked TGs, but can slow the script down a bit
+# between each QSO, as that is when the polling to refresh
+# the list will occur.  This delay will be more noticable on
+# Raspberry Pi Zero-based hotspots.  The quad-core models
+# (including the new Pi Zero 2) won't generally notice a delay.
+BM_POLL=0
+#
+# By default, the script will parse the current "live" log
+# using "tail".  But if testing, "-r|--replay" will use the
+# "cat" command instead, to replay a user-specified log.
+REPLAY=0
 #
 # Don't display the config and history section at top of screen.
 # Can be overridden with "-t|--top" cmdline option
 TOP=0
 #
-# By default, display logo screen.
-# Can be disabled with "-l|--logo" cmdline option
-LOGO=1
-#
-# By default, the script will parse the current "live" log
-# using "tail".  But if testing, this option will use the
-# "cat" command instead, to replay a user-specified log.
-REPLAY=0
+# Allow figlet to auto-wrap as needed.
+# Can be overridden with "-w|--wrap" cmdline option
+NO_WRAP=0
 
 #----------
 # Define some ways to make things bold, use different colors, control
@@ -443,9 +455,12 @@ LOG_RESTARTS=0
 #----------
 HISTORY_FILE="/tmp/lastqso-history-${MY_TTY}"
 
-# When we query Brandmeister to learn a hotspot's statically
-# linked TGs, the findings are written to this tmpfile.
-STATIC_TG_FILE="/tmp/lastqso-static-${MY_TTY}"
+# When we query Brandmeister to learn a hotspot's TGs,
+# the findings are written to this tmpfile.
+BM_TG_FILE="/tmp/lastqso-tgs-${MY_TTY}"
+# We make sure any file left behind by a previous run is
+# deleted, so that we build a fresh copy with this run.
+rm "${BM_TG_FILE}" 2>/dev/null
 
 # When dxcc.pl is called to find the country that issued
 # a callsign, the result will be stored in this cache
@@ -530,7 +545,6 @@ fnCOPY_CACHE()
 
   #----------
   sudo mount -o remount,rw / 2>/dev/null
-  sleep .5
 
   #----------
   # Combine any current caches with anything previously saved.
@@ -590,7 +604,7 @@ fnGET_US_GRIDSQUARE()
     GRIDSQUARE=" (${RESULT#*:})"
   else
     # Otherwise, we need to query the remote host.
-    read -r -a RESULT <<< "$(curl -s --fail --max-time 2 https://callook.info/"${US_CALL}"/text 2>/dev/null | grep "Square:" | cut -f2 -d":")"
+    read -r -a RESULT <<< "$(curl -s --fail --max-time 2 "https://callook.info/${US_CALL}/text" 2>/dev/null | grep "Square:" | cut -f2 -d":")"
     # Dont cache an "Unknown" or null response
     case "${RESULT}" in
       "Unknown")
@@ -650,7 +664,7 @@ fnCLEANUP()
   echo -e "\nenter: ${FUNCNAME[*]}" >&3
 
   # Delete everything except the dxcc cache file
-  rm "${STATIC_TG_FILE}" \
+  rm "${BM_TG_FILE}" \
   "${DMR_COUNT_FILE}" \
   "${YSF_COUNT_FILE}" \
   "${NXDN_COUNT_FILE}" \
@@ -956,29 +970,6 @@ fnDRAW_BOX()
 }
 
 #-----------------------------------
-fnDMR_BM_STATIC_TGS()
-{
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
-
-  #----------
-  # This retrieves the statuc TGs, and returns them one per line.
-  curl -s "https://api.brandmeister.network/v2/device/${HOTSPOT_ID}/profile" \
-    | jq -r .staticSubscriptions | grep talkgroup | cut -f4 -d"\"" \
-    > "${STATIC_TG_FILE}"
-
-  #----------
-  # This takes the multiple lines, and puts them all on one line.
-  STATIC_LIST=""
-  while FS='' read -r TALKGROUP
-  do
-    STATIC_LIST="${STATIC_LIST} ${TALKGROUP}"
-  done < "${STATIC_TG_FILE}"
-  echo "${STATIC_LIST}"
-
-  return
-}
-
-#-----------------------------------
 fnTOP_DATA()
 {
   echo -e "\nenter: ${FUNCNAME[*]}" >&3
@@ -1046,35 +1037,8 @@ fnTOP_DATA()
 
   #----------
   # GATHER LINE 4 DATA...
-  # shellcheck disable=SC2143,SC2243
-  if [[ ! $(grep "${GTAB}${DMR_MASTER}${GTAB}" "${DMRHOSTS}" | grep -q "^BM_") ]] && [[ "${DMR_ENABLED}" -eq 1 ]]
-  then
-    STATIC_LIST="$(fnDMR_BM_STATIC_TGS)"
-
-    # See if the total characters is wider than what we can show
-    # within the line-length limit of the no-scroll region.
-    STATIC_LENGTH=${#STATIC_LIST}
-    if [[ ${STATIC_LENGTH} -gt 28 ]]
-    then
-      # If so, take only the first 25 chars and add an elipsis (...)
-      # to show we are aware there's more, but it just won't fit.
-      #
-      # Most would recommend against too many statically linked talk-
-      # groups (including the BM admins), and that dynamically linked
-      # talkgroups should suffice for most people's needs.
-      STATIC_LIST="${STATIC_LIST:0:25}${CYA}${DIM}..."
-    fi
-    STATIC_LIST="${STATIC_LIST}${TOP_PAD}"
-    STATIC_LIST="${STATIC_LIST:0:26}"
-
-    STATIC_COUNT="$(printf %02d "$(grep -c . "${STATIC_TG_FILE}")")"
-    STATIC_LINE="${CYA}STATIC TGs(${WHI}${BOLD}${STATIC_COUNT}${SGR0}${CYA}):${SGR0}${WHI}${BOLD}${STATIC_LIST}${SGR0}"
-  else
-    STATIC_LINE="${CYA}STATIC TGs: No API available${SGR0}"
-  fi
-
-  #----------
-  # GATHER LINE 5 DATA...
+  # brandmeister static and dynamic talkgroups are fetched in fnNOSCROLL_ZONE,
+  # where they can be updated frequently, rather than in this function.
   if [[ "${DMR_ENABLED}" = "1" ]]
   then
     DMR_MASTER="$(grep -A 10 "^\[DMR Network\]" /etc/mmdvmhost | grep "^Address")"
@@ -1139,7 +1103,7 @@ fnDEV_INFO()
   DEV_STRING[4]="  Modes and X-Modes: YSF=${YSF_ENABLED} DMR=${DMR_ENABLED} NXDN=${NXDN_ENABLED} DSTAR=${DSTAR_ENABLED} P25=${P25_ENABLED}"
   DEV_STRING[5]="  YSF2DMR=${YSF2DMR_ENABLED} YSF2NXDN=${YSF2NXDN_ENABLED} YSF2P25=${YSF2P25_ENABLED} DMR2YSR=${DMR2YSF_ENABLED} DMR2NXDN=${DMR2NXDN_ENABLED}"
   DEV_STRING[6]="  Traffic Counts: DMR=${DMR_COUNT} YSF=${YSF_COUNT} NXDN=${NXDN_COUNT} DSTAR=${DSTAR_COUNT} P25=${P25_COUNT}"
-  DEV_STRING[7]="  Cache: DXCC=$(grep -c . ${DXCC_CACHE_FILE}) Grid=$(grep -c . ${GRID_CACHE_FILE}) Other Counts: K=${KERCHUNK_COUNT} E=${ERROR_COUNT} W=${WARNING_COUNT} R=${LOG_RESTARTS}"
+  DEV_STRING[7]="  Cache: DXCC=$(grep -c . "${DXCC_CACHE_FILE}") Grid=$(grep -c . "${GRID_CACHE_FILE}") Other Counts: K=${KERCHUNK_COUNT} E=${ERROR_COUNT} W=${WARNING_COUNT} R=${LOG_RESTARTS}"
 
   #----------
   # In replay mode, text is bright yellow.
@@ -1196,6 +1160,71 @@ fnNOSCROLL_ZONE()
   # below the no-scroll region, to the bottom of screen.
   # (Screen lines are numbered beginning with line 0.)
   tput csr "${BELOW_NOSCROLL}" $((LINES - 1))
+
+  #----------
+  # Fetch BM TGs for line 5
+  # shellcheck disable=SC2143,SC2243
+  if [[ ! $(grep "${GTAB}${DMR_MASTER}${GTAB}" "${DMRHOSTS}" | grep -q "^BM_") ]] && [[ "${DMR_ENABLED}" -eq 1 ]]
+  then
+    #----------
+    # Query BM about your hotspot's TGs
+    # If BM_POLL=0, the query is performed only once.
+    # If BM_POLL=1, it's performed every time.
+    if [[ ! -f "${BM_TG_FILE}" ]] || [[ "${BM_POLL}" -eq 1 ]]
+    then
+      curl -s --fail --max-time 2 "https://api.brandmeister.network/v2/device/${HOTSPOT_ID}/profile" > "${BM_TG_FILE}"
+    fi
+
+    BM_TG_LIST=""
+
+    #----------
+    # Parse the json for any static TGs
+    # shellcheck disable=SC2046
+    while read -r TALKGROUP
+    do
+      if [[ -n "${TALKGROUP}" ]]
+      then
+        BM_TG_LIST="${BM_TG_LIST} ${TALKGROUP}"
+      fi
+    done <<< $(jq -r .staticSubscriptions "${BM_TG_FILE}" | grep talkgroup | cut -f2 -d":" | sed -e 's/"//g' -e 's/,//' -e 's/ //')
+
+    #----------
+    # Parse again, for any dynamic TGs
+    # shellcheck disable=SC2046
+    while read -r TALKGROUP
+    do
+      if [[ -n "${TALKGROUP}" ]]
+      then
+        # We indicate a dynamic TG by marking it with an asterisk
+        BM_TG_LIST="${BM_TG_LIST} ${TALKGROUP}*"
+      fi
+    done <<< $(jq -r .dynamicSubscriptions "${BM_TG_FILE}" | grep talkgroup | cut -f2 -d":" | sed -e 's/"//g' -e 's/,//' -e 's/ //')
+
+    #----------
+    # See if the total characters is wider than what we can show
+    # within the line-length limit of the no-scroll region.
+    BM_TG_LENGTH=${#BM_TG_LIST}
+    if [[ ${BM_TG_LENGTH} -gt 28 ]]
+    then
+      # If so, take only the first 28 chars and add an elipsis (...)
+      # to show we are aware there's more, but it just won't fit.
+      #
+      # Most people (including the BM admins) would recommend against
+      # too many statically linked talkgroups.  Dynamically linked
+      # talkgroups should suffice for most people's needs.
+      BM_TG_LIST="${BM_TG_LIST:0:26}..."
+    fi
+    BM_TG_LIST="${BM_TG_LIST}${TOP_PAD}"
+    BM_TG_LIST="${BM_TG_LIST:0:29}"
+
+    #----------
+    # Get the number of TGs linked (static and dynamic, combined)
+    BM_TG_COUNT="$(printf %02d "$(jq -r . "${BM_TG_FILE}" | grep -c "talkgroup")")"
+
+    BM_TG_LINE="${CYA}TALKGROUPS(${WHI}${BOLD}${BM_TG_COUNT}${SGR0}${CYA}):${SGR0}${WHI}${BOLD}${BM_TG_LIST}${SGR0}"
+  else
+    BM_TG_LINE="${CYA}TALKGROUPS: No API available${SGR0}"
+  fi
 
   #----------
   # Print line 0
@@ -1292,17 +1321,7 @@ fnNOSCROLL_ZONE()
   echo "${CYA}Load Avg (1,5,15 mins):${SGR0} ${WHI}${BOLD}${LOAD_AVG}${SGR0}"
 
   #----------
-  # Print line 4
-  DMR_MASTER_NAME="${DMR_MASTER_NAME}${TOP_PAD}"
-  DMR_MASTER_NAME="${DMR_MASTER_NAME:0:19}"
-  echo -en "${CYA}DMR MASTER:${SGR0} ${WHI}${BOLD}${DMR_MASTER_NAME}${SGR0}\r"
-
-  # Print static talkgroups
-  tput cuf 31
-  echo " ${STATIC_LINE}"
-
-  #----------
-  # Get Reflectors
+  # Get Reflectors for line 4
   NXDN_REFLECTOR="null"
   if [[ "${NXDN_ENABLED}" = "1" ]]
   then
@@ -1354,7 +1373,7 @@ fnNOSCROLL_ZONE()
   fi
 
   #----------
-  # Print line 5
+  # Print line 4
   YSF_STARTUP="${YSF_STARTUP}${TOP_PAD}"
   YSF_STARTUP="${YSF_STARTUP:0:11}"
 
@@ -1370,6 +1389,16 @@ fnNOSCROLL_ZONE()
   echo "${CYA}REFLECTORS....  YSF:${WHI}${BOLD}${YSF_STARTUP}${SGR0} ${CYA}NXDN:${WHI}${BOLD}${NXDN_REFLECTOR}${SGR0}${CYA}DSTAR:${WHI}${BOLD}${DSTAR_REFLECTOR}${SGR0}${CYA}P25:${WHI}${BOLD}${P25_REFLECTOR}${SGR0}"
 
   #----------
+  # Print line 5
+  DMR_MASTER_NAME="${DMR_MASTER_NAME}${TOP_PAD}"
+  DMR_MASTER_NAME="${DMR_MASTER_NAME:0:19}"
+  echo -en "${CYA}DMR MASTER:${SGR0} ${WHI}${BOLD}${DMR_MASTER_NAME}${SGR0}\r"
+
+  # Print the talkgroups
+  tput cuf 32
+  echo "${BM_TG_LINE}"
+
+  #----------
   # The history column headings
   if [[ ${HIST_MAX} -gt 0 ]]
   then
@@ -1377,6 +1406,11 @@ fnNOSCROLL_ZONE()
   else
     echo "${REV}${CYA}          History not enabled - 0 lines specified on the commandline        ${SGR0}${WHI}"
   fi
+
+  #----------
+  # Load the current history...
+  # shellcheck disable=SC1090
+  . "${HISTORY_FILE}" 2>/dev/null
 
   #----------
   # DISPLAY (AND STORE) THE COMPLETE CURRENT HISTORY
@@ -1438,12 +1472,12 @@ fnUSAGE()
   echo "USAGE:  Valid options and parameters include:
 
 Short Form:
-  [-12] [-c] [-d] [-D] [-e] [-f <1-5>] [-g] [-h] [-i]
-  [-l] [-m] [-n] [-r /full/path/to/file] [-t [integer]] [-v] [-w]
+  [-12] [-c] [-d] [-D] [-e] [-f <1-5>] [-g] [-h] [-i] [-l]
+  [-m] [-n] [-p] [-r /path/to/file] [-t [integer]] [-v] [-w]
 
 Long Form:
   [--12hr] [--csv] [--dat] [--DXCC] [--errors] [--font <1-5>] [--grid]
-  [-help] [-info] [--logo] [--mono] [--nobig] [--replay /full/path/to/file]
+  [-help] [-info] [--logo] [--mono] [--nobig] [--poll] [--replay /path/to/file]
   [--top [integer]] [--version] [--wrap]
   " >&2
   return
@@ -1593,6 +1627,11 @@ fnPARSE_CMDLINE()
         continue
         ;;
 
+      -p|--poll)
+        BM_POLL=1
+        continue
+        ;;
+
       -r|--replay)
         # If this option is given, see if the next value
         # is a file we can read
@@ -1664,6 +1703,7 @@ fnPARSE_CMDLINE()
         echo -n "${BELL}${FLASH}"
         echo -e "\nERROR:  \"${OPTION}\" is not a valid option.\n" >&2
         fnUSAGE
+        echo -e "See \"pistart-lastqso --help\" for detailed descriptions of the above.\n"
         stty "${STTY}"
         fnCLEANUP
         exit 1
@@ -1851,6 +1891,31 @@ PISTAR-LASTQSO - HELP
       Disable the large font display of callsigns and ID #s.  This
       conserves vertical screen-space.
 
+  -p|--poll
+      For DMR users configured to use Brandmeister master servers,
+      pistar-lastqso will ordinarily query the BM servers ONCE at
+      startup, to see which talkgroups (both static AND dynamic) you
+      are linked to.  Those TGs will be shown in the non-scrolling
+      region, when -t|--top is used.  Adding or removing talkgroups,
+      through PTT, TG 4000, the pi-star admin screen, Brandmeister's
+      "My Devices", or by any other means, will not be reflected on
+      screen until pistar-lastqso is stopped and run again, from the
+      command line.
+
+      However, if the "-p|--poll" option is used, this causes the
+      program to "poll" Brandmeister between every communication
+      displayed, resulting in a screen that will effectively track
+      your currently linked TGs.  This is especially helpful for
+      users who jump around a lot between dynamic TGs, as it will
+      track these TGs as they are linked or unlinked.
+
+      Note that because there is a network connection made to the
+      BM server, and a query made, every time the data is polled,
+      this *can* induce a slight delay, especially on single-core
+      Raspberry Pi Zero-based hotspots, or on slow networks.  On
+      multi-core Pis (including the new Raspberry Pi Zero 2), with
+      a decent network connection, this delay isn't a problem.
+
   -r|--replay /path/to/file
       FOR DEVELOPMENT USE: This option allows the specified file to
       be "replayed" from the start, as if it were the current log.
@@ -1879,9 +1944,10 @@ PISTAR-LASTQSO - HELP
       the Modem's device node (port), the computer platform/model,
       the elapsed time since the script was launched, the system
       load averages for the last 1, 5, and 15 minutes, the DMR
-      Master and (if Brandmeister) the first few statically defined
-      BrandMeister TalkGroups.  The last line shows the current
-      reflectors in effect for the other modes.
+      Master and (if Brandmeister) the first few Static & Dynamic
+      BrandMeister TalkGroups (dynamics are marked with an asterisk).
+      The last line shows the current reflectors in effect for the
+      other modes.
 
       By default, the use of "-t|--top" also provides a history of
       the last 5 QSOs observed.  However, by specifying an integer
@@ -2231,9 +2297,9 @@ fnGOODBYE_BOX()
 
   #----------
   tput cup 14 23
-  echo -n "${CYA}Cache Recs:  DXCC $(printf %04d $(grep -c . ${DXCC_CACHE_FILE}))"
+  echo -n "${CYA}Cache Recs:  DXCC $(printf %04d "$(grep -c . "${DXCC_CACHE_FILE}")")"
   tput cup 14 47
-  echo -n "${CYA}GRID $(printf %04d $(grep -c . ${GRID_CACHE_FILE}))"
+  echo -n "${CYA}GRID $(printf %04d "$(grep -c . "${GRID_CACHE_FILE}")")"
 
   #----------
   if [[ -f "${ERROR_COUNT_FILE}" ]] || [[ -f "${WARNING_COUNT_FILE}" ]]
@@ -2338,7 +2404,7 @@ fnQSO_IN_PROGRESS()
 
   trap fnWINCH WINCH
 
-  fnNOSCROLL_ZONE
+# fnNOSCROLL_ZONE
   echo -en "\r${CLR_EL}"
   echo -n "  ${YEL}${BOLD}QSO In Progress... ${SGR0}${WHI}${CLR_EL}${CLR_ED}"
   TA_DISPLAYED=0
@@ -3235,7 +3301,7 @@ fnDMR_DOWNLOAD_USERCSV()
   then
     echo -e "\nDownloading latest DMR user.csv file..."
     sudo mount -o remount,rw / 2>/dev/null
-    if sudo wget -q --show-progress --progress=bar:force:noscroll https://database.radioid.net/static/user.csv -O "${USERCSV}.tmp"
+    if sudo wget -t 1 -q --show-progress --progress=bar:force:noscroll https://database.radioid.net/static/user.csv -O "${USERCSV}.tmp"
     then
       # Check for a too-small (possibly corrupt) file
       # Make sure it's at least ~10K in size
@@ -3275,11 +3341,11 @@ fnYSF_DOWNLOAD_CTYDAT()
     echo -e "\nDownloading latest DXCC cty.dat file..."
     sudo mount -o remount,rw / 2>/dev/null
 
-    BIGCTYZIP="$(curl -s "https://www.country-files.com/category/big-cty/" | grep "\[download\]" | sort -nr | head -1 | cut -f2 -d"\"")"
+    BIGCTYZIP="$(curl -s --fail --max-time 2 "https://www.country-files.com/category/big-cty/" | grep "\[download\]" | sort -nr | head -1 | cut -f2 -d"\"")"
     if [[ -n "${BIGCTYZIP}" ]]
     then
       mkdir /tmp/bigctydir 2>/dev/null
-      if sudo wget -q --show-progress --progress=bar:force:noscroll "${BIGCTYZIP}" -O "/tmp/bigctydir/bigcty.zip"
+      if sudo wget -t 1 -q --show-progress --progress=bar:force:noscroll "${BIGCTYZIP}" -O "/tmp/bigctydir/bigcty.zip"
       then
         # Check for a too-small (possibly corrupt) file
         # Make sure it's at least ~10K in size
@@ -3336,7 +3402,7 @@ fnBUILD_HISTORY()
       #----------
       # Load the current history...
       # shellcheck disable=SC1090
-      . "${HISTORY_FILE}"
+      . "${HISTORY_FILE}" 2>/dev/null
 
       #----------
       # PUSH CURRENT HISTORY DOWN.  THIS DROPS THE OLDEST RECORD,
@@ -3412,6 +3478,17 @@ fnBUILD_HISTORY()
       fi
     fi
   fi
+
+  #----------
+  # STORE THE NEW HISTORY, INCLUDING THE RECORD WE'VE JUST BUILT
+  # Save the history
+  HIST_COUNT=1
+  until [[ ${HIST_COUNT} -gt ${HIST_MAX} ]]
+  do
+    echo -e "HISTORY[${HIST_COUNT}]=\"${HISTORY[HIST_COUNT]}\"" >> "${HISTORY_FILE}"
+    ((HIST_COUNT++))
+  done
+
   #----------
   TIME=""
   FROM=""
@@ -3423,17 +3500,6 @@ fnBUILD_HISTORY()
   DBM=""
   RSSI=""
   DATA=""
-
-  #----------
-  # STORE THE NEW HISTORY, INCLUDING THE RECORD WE'VE JUST BUILT
-  # Save the history
-  rm "${HISTORY_FILE}" 2>/dev/null
-  HIST_COUNT=1
-  until [[ ${HIST_COUNT} -gt ${HIST_MAX} ]]
-  do
-    echo -e "HISTORY[${HIST_COUNT}]=\"${HISTORY[HIST_COUNT]}\"" >> "${HISTORY_FILE}"
-    ((HIST_COUNT++))
-  done
 
   return
 }
@@ -4637,7 +4703,7 @@ fnP25_MAIN()
   if [[ "${LOGREC_REMAINING_DATA}" =~ "network end of transmission," ]]
   then
     SECS="${FIELD_6}"
-    LOSS="${LOSS%\%*}"
+    LOSS="${FIELD_8%\%*}"
 
     fnP25_END_NETWORK_TRAFFIC
     return
@@ -4681,8 +4747,8 @@ fnMAIN_LOOP()
   #----------
   # Filter the log, looking for lines we'll want to parse.
   eval "${CMD}" "${WORKING_LOG}" 2>/dev/null \
+    | grep -E --line-buffered "^M: |^W: |^E: |^MMDVMHOST-STOP" \
     | grep -v -E --line-buffered "^D:|^I:|0000:|Opening|Closing|Embedded|Downlink|is running|link status|Logged into" \
-    | grep -E --line-buffered "^M: |^W: |^E: |MMDVMHOST-STOP" \
     | while read -r RECORD
   do
     #----------
@@ -4928,7 +4994,7 @@ fi
 # If github has a later version, tell the user.
 echo -en "\r${CLR_EL}${SGR0}${WHI}Performing Version Check... "
 VER_CHECK_COLOR="${WHI}${BOLD}"
-VER_CHECK="$(curl -s https://raw.githubusercontent.com/kencormack/pistar-lastqso/main/pistar-lastqso 2>/dev/null | grep -m 1 "^VERSION=")"
+VER_CHECK="$(curl -s --fail --max-time 2 "https://raw.githubusercontent.com/kencormack/pistar-lastqso/main/pistar-lastqso" 2>/dev/null | grep -m 1 "^VERSION=")"
 VER_CHECK="${VER_CHECK#*=}"
 
 #----------
@@ -4945,6 +5011,7 @@ if fnCOMPARE_FLOAT_LT "${VERSION}" "${VER_CHECK}" | grep -q "<"
 then
   echo -e "\r${GRE}${BOLD}AN UPDATE TO THIS SCRIPT IS AVAILABLE AT:"
   echo "${GRE}${DIM}https://github.com/kencormack/pistar-lastqso"
+  echo "See the CHANGE_LOG for details"
   echo "${WHI}${DIM}    Your Version: ${VERSION}${SGR0}"
   echo -e "${WHI}${BOLD}Available Update: ${VER_CHECK}${SGR0}${WHI}\n"
   VER_CHECK_COLOR="${RED}"
@@ -5046,17 +5113,6 @@ do
   # set +x
 
   #----------
-  # If we've exited fnMAIN_LOOP, it's because MMDVMHost is no longer writing
-  # to the log that we've been watching.  Either the service was stopped
-  # during pi-star's nightly update, it has rolled to a new day's log, or the
-  # user has reconfiged or performed some other task that required pi-star to
-  # cycle the services.
-  #
-  # Watch for new log activity, then resume watching QSOs.
-  echo -e "\n\n${RED}${DBL_LINE}${WHI}${SGR0}${CLR_EL}"
-  echo "${RED}$(basename "${WORKING_LOG}") LOG ACTIVITY HAS STOPPED.${WHI}${SGR0}"
-
-  #----------
   # See if we were replaying a log.  If so, we've reached the end of the log.
   if [[ ${REPLAY} -eq 1 ]]
   then
@@ -5080,6 +5136,17 @@ do
       exit
     fi
   fi
+
+  #----------
+  # If we've exited fnMAIN_LOOP, it's because MMDVMHost is no longer writing
+  # to the log that we've been watching.  Either the service was stopped
+  # during pi-star's nightly update, it has rolled to a new day's log, or the
+  # user has reconfiged or performed some other task that required pi-star to
+  # cycle the services.
+  #
+  # Watch for new log activity, then resume watching QSOs.
+  echo -e "\n\n${RED}${DBL_LINE}${WHI}${SGR0}${CLR_EL}"
+  echo "${RED}$(basename "${WORKING_LOG}") LOG ACTIVITY HAS STOPPED.${WHI}${SGR0}"
 
   #----------
   # If we weren't replaying, then watch for logging to restart.
@@ -5139,6 +5206,9 @@ do
     echo -e "HISTORY[${HIST_COUNT}]=\"${HISTORY[HIST_COUNT]}\"" >> "${HISTORY_FILE}"
     ((HIST_COUNT++))
   done
+
+  #----------
+  fnCOPY_CACHE
 
   #----------
   # Reexamine the activated modes, in case the log was bounced due to

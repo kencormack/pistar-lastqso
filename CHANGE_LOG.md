@@ -1,4 +1,23 @@
 ```
+CHANGES: V3.10
+ 1. For DMR users, BM Talkgroups shown in the
+    "-t|--top" section now include dynamic, as
+    well as static TGs.  Dynamic TGs are marked
+    with an asterisk(*).
+ 2. In addition to the above, a new "-p|--poll"
+    commandline option has been added.  This
+    causes the script to poll the Brandmeister
+    servers frequently, to keep the displayed
+    list of linked TGs current, as a user links
+    to, and disconnects from, dynamic TGs.  This
+    can be a great help to folks who like to hop
+    around between TGs.  See the help screen for
+    details.
+ 3. Cache snapshots are saved any time logging
+    stops and restarts.
+ 4. Fixed P25 network Loss% bug.
+ 5. shellcheck and beauty passes.
+
 CHANGES: V3.09
  1. Switched to the BM API V2 style of query, to
     determine any BM static talkgroups, for DMR.
