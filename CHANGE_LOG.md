@@ -1,4 +1,13 @@
 ```
+CHANGES: V3.11
+ 1. A more specific json query, and a variable
+    expansion, removes two-each 'grep','cut',
+    and 'sed' commands every time BM TGs are
+    queried.  Eliminated a third call to 'jq'
+    and 'grep' to determine number of TGs.
+ 2. Improved determination of linked reflectors
+    for NXDN and P25.
+
 CHANGES: V3.10
  1. For DMR users, BM Talkgroups shown in the
     "-t|--top" section now include dynamic, as

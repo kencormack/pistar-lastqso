@@ -13,7 +13,7 @@
 
 set -o allexport
 
-VERSION=3.10
+VERSION=3.11
 
 #----------
 if [[ "${EUID}" -eq 0 ]]
@@ -663,7 +663,7 @@ fnCLEANUP()
 {
   echo -e "\nenter: ${FUNCNAME[*]}" >&3
 
-  # Delete everything except the dxcc cache file
+  # Delete everything except the dxcc and grid cache files
   rm "${BM_TG_FILE}" \
   "${DMR_COUNT_FILE}" \
   "${YSF_COUNT_FILE}" \
@@ -1163,8 +1163,7 @@ fnNOSCROLL_ZONE()
 
   #----------
   # Fetch BM TGs for line 5
-  # shellcheck disable=SC2143,SC2243
-  if [[ ! $(grep "${GTAB}${DMR_MASTER}${GTAB}" "${DMRHOSTS}" | grep -q "^BM_") ]] && [[ "${DMR_ENABLED}" -eq 1 ]]
+  if [[ "$(grep "${GTAB}${DMR_MASTER}${GTAB}" "${DMRHOSTS}")" =~ "BM_" ]] && [[ "${DMR_ENABLED}" -eq 1 ]]
   then
     #----------
     # Query BM about your hotspot's TGs
@@ -1175,9 +1174,9 @@ fnNOSCROLL_ZONE()
       curl -s --fail --max-time 2 "https://api.brandmeister.network/v2/device/${HOTSPOT_ID}/profile" > "${BM_TG_FILE}"
     fi
 
-    BM_TG_LIST=""
-
     #----------
+    BM_TG_LIST=""
+    BM_TG_COUNT=0
     # Parse the json for any static TGs
     # shellcheck disable=SC2046
     while read -r TALKGROUP
@@ -1185,10 +1184,9 @@ fnNOSCROLL_ZONE()
       if [[ -n "${TALKGROUP}" ]]
       then
         BM_TG_LIST="${BM_TG_LIST} ${TALKGROUP}"
+        ((BM_TG_COUNT++))
       fi
-    done <<< $(jq -r .staticSubscriptions "${BM_TG_FILE}" | grep talkgroup | cut -f2 -d":" | sed -e 's/"//g' -e 's/,//' -e 's/ //')
-
-    #----------
+    done <<< $(jq '.staticSubscriptions[] | {talkgroup} | join(" ")' "${BM_TG_FILE}")
     # Parse again, for any dynamic TGs
     # shellcheck disable=SC2046
     while read -r TALKGROUP
@@ -1197,8 +1195,13 @@ fnNOSCROLL_ZONE()
       then
         # We indicate a dynamic TG by marking it with an asterisk
         BM_TG_LIST="${BM_TG_LIST} ${TALKGROUP}*"
+        ((BM_TG_COUNT++))
       fi
-    done <<< $(jq -r .dynamicSubscriptions "${BM_TG_FILE}" | grep talkgroup | cut -f2 -d":" | sed -e 's/"//g' -e 's/,//' -e 's/ //')
+    done <<< $(jq '.dynamicSubscriptions[] | {talkgroup} | join(" ")' "${BM_TG_FILE}")
+    # Get the number of TGs linked (static and dynamic, combined),
+    # and remove quote marks from the resulting list of talkgroups
+    BM_TG_COUNT="$(printf %02d "${BM_TG_COUNT}")"
+    BM_TG_LIST="${BM_TG_LIST//\"}"
 
     #----------
     # See if the total characters is wider than what we can show
@@ -1216,10 +1219,6 @@ fnNOSCROLL_ZONE()
     fi
     BM_TG_LIST="${BM_TG_LIST}${TOP_PAD}"
     BM_TG_LIST="${BM_TG_LIST:0:29}"
-
-    #----------
-    # Get the number of TGs linked (static and dynamic, combined)
-    BM_TG_COUNT="$(printf %02d "$(jq -r . "${BM_TG_FILE}" | grep -c "talkgroup")")"
 
     BM_TG_LINE="${CYA}TALKGROUPS(${WHI}${BOLD}${BM_TG_COUNT}${SGR0}${CYA}):${SGR0}${WHI}${BOLD}${BM_TG_LIST}${SGR0}"
   else
@@ -1325,7 +1324,7 @@ fnNOSCROLL_ZONE()
   NXDN_REFLECTOR="null"
   if [[ "${NXDN_ENABLED}" = "1" ]]
   then
-    SEARCH="$(grep --no-filename "reflector" /var/log/pi-star/NXDNGateway*.log | tail -1)"
+    SEARCH="$(grep --no-filename "reflector " /var/log/pi-star/NXDNGateway*.log | tail -1)"
     IFS=' '; CUT_ARRAY=(${SEARCH}); unset IFS;
     NXDNSWITCHED="${CUT_ARRAY[6]}"
     NXDNSTATIC="${CUT_ARRAY[7]}"
@@ -1345,7 +1344,7 @@ fnNOSCROLL_ZONE()
   P25_REFLECTOR="null"
   if [[ "${P25_ENABLED}" = "1" ]]
   then
-    SEARCH="$(grep --no-filename "reflector" /var/log/pi-star/P25Gateway*.log | tail -1)"
+    SEARCH="$(grep --no-filename "reflector " /var/log/pi-star/P25Gateway*.log | tail -1)"
     IFS=' '; CUT_ARRAY=(${SEARCH}); unset IFS;
     P25LINKED="${CUT_ARRAY[6]}"
     P25STATIC="${CUT_ARRAY[7]}"
@@ -2390,6 +2389,16 @@ fnLISTENING()
 
   trap fnWINCH WINCH
 
+  # If DMR is enabled... AND master is Brandmeister...
+  if [[ "$(grep "${GTAB}${DMR_MASTER}${GTAB}" "${DMRHOSTS}")" =~ "BM_" ]] && [[ "${DMR_ENABLED}" -eq 1 ]]
+  then
+    # ...AND the TG file doesn't exist... OR polling is enabled...
+    if [[ ! -f "${BM_TG_FILE}" ]] || [[ "${BM_POLL}" -eq 1 ]]
+    then
+      echo -en "\r${CLR_EL}"
+      echo -n "  ${CYA}${BOLD}Polling BM Talkgroups... ${SGR0}${WHI}${CLR_EL}${CLR_ED}"
+    fi
+  fi
   fnNOSCROLL_ZONE
   echo -en "\r${CLR_EL}"
   echo -n "  ${GRE}${BOLD}Listening for Traffic... ${SGR0}${WHI}${CLR_EL}${CLR_ED}"
@@ -2404,7 +2413,6 @@ fnQSO_IN_PROGRESS()
 
   trap fnWINCH WINCH
 
-# fnNOSCROLL_ZONE
   echo -en "\r${CLR_EL}"
   echo -n "  ${YEL}${BOLD}QSO In Progress... ${SGR0}${WHI}${CLR_EL}${CLR_ED}"
   TA_DISPLAYED=0
