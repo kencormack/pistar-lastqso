@@ -357,7 +357,6 @@ PISTAR-LASTQSO - HELP
              Modes and X-Modes: YSF=0 DMR=0 NXDN=0 DSTAR=0 P25=1
              YSF2DMR=0 YSF2NXDN=0 YSF2P25=0 DMR2YSR=0 DMR2NXDN=0
                 Traffic Counts: DMR=0 YSF=0 NXDN=0 DSTAR=0 P25=0
-        Other Counts: Kerchunks=0 Errors=0 Warnings=0 Restarts=0
               Cache: DXCC=0 Grid=0 Other Counts: K=0 E=0 W=0 R=0
 
       The first line shows the options and parameters passed to the
