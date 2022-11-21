@@ -1,6 +1,6 @@
 # pistar-lastqso
 ## A Tool to Monitor DMR, YSF, D-STAR, NXDN, and P25 Traffic, on Pi-Star
-Note: Some screenshots shown below may not always reflect the latest version, and will be updated as time allows.
+Note: Some screenshots shown below may not always reflect the latest version, differing only in minor cosmetics from the tool's current version.
 
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/title-screen.jpg)
 
