@@ -1,4 +1,14 @@
 ```
+CHANGES: V3.12
+ 1. Found and fixed bug in BM TG jq queries.
+ 2. Reworked Grid Square lookup as json query.
+ 3. Handle DMR "network user has timed out"
+    log entries.
+ 4. Updated the README to demonstrate polling
+    of Brandmeister, to track Talkgroups in the
+    non-scrolling "-t|--top" portion of the
+    screen, via the "-p|--poll" cmdline option.
+
 CHANGES: V3.11
  1. A more specific json query, and a variable
     expansion, removes two-each 'grep','cut',

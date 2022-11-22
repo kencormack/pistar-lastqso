@@ -13,7 +13,7 @@
 
 set -o allexport
 
-VERSION=3.11
+VERSION=3.12
 
 #----------
 if [[ "${EUID}" -eq 0 ]]
@@ -604,7 +604,9 @@ fnGET_US_GRIDSQUARE()
     GRIDSQUARE=" (${RESULT#*:})"
   else
     # Otherwise, we need to query the remote host.
-    read -r -a RESULT <<< "$(curl -s --fail --max-time 2 "https://callook.info/${US_CALL}/text" 2>/dev/null | grep "Square:" | cut -f2 -d":")"
+#KPC
+#   read -r -a RESULT <<< "$(curl -s --fail --max-time 2 "https://callook.info/${US_CALL}/text" 2>/dev/null | grep "Square:" | cut -f2 -d":")"
+    read -r -a RESULT <<< "$(curl -s --fail --max-time 2 "https://callook.info/${US_CALL}/json" 2>/dev/null | jq -r '.location.gridsquare')"
     # Dont cache an "Unknown" or null response
     case "${RESULT}" in
       "Unknown")
@@ -1186,7 +1188,7 @@ fnNOSCROLL_ZONE()
         BM_TG_LIST="${BM_TG_LIST} ${TALKGROUP}"
         ((BM_TG_COUNT++))
       fi
-    done <<< $(jq '.staticSubscriptions[] | {talkgroup} | join(" ")' "${BM_TG_FILE}")
+    done <<< $(jq '.staticSubscriptions[] .talkgroup' "${BM_TG_FILE}" 2>/dev/null)
     # Parse again, for any dynamic TGs
     # shellcheck disable=SC2046
     while read -r TALKGROUP
@@ -1197,7 +1199,7 @@ fnNOSCROLL_ZONE()
         BM_TG_LIST="${BM_TG_LIST} ${TALKGROUP}*"
         ((BM_TG_COUNT++))
       fi
-    done <<< $(jq '.dynamicSubscriptions[] | {talkgroup} | join(" ")' "${BM_TG_FILE}")
+    done <<< $(jq '.dynamicSubscriptions[] .talkgroup' "${BM_TG_FILE}" 2>/dev/null)
     # Get the number of TGs linked (static and dynamic, combined),
     # and remove quote marks from the resulting list of talkgroups
     BM_TG_COUNT="$(printf %02d "${BM_TG_COUNT}")"
@@ -3861,6 +3863,16 @@ fnDMR_MAIN()
 
     #----------
     fnBUILD_HISTORY
+    echo -n "${LINE_COLOR}"
+    fnSEPARATOR
+    fnLISTENING
+    return
+  fi
+
+  #----------
+  if [[ "${LOGREC_REMAINING_DATA}" =~ "network user has timed out" ]]
+  then
+    echo "Network user has timed out"
     echo -n "${LINE_COLOR}"
     fnSEPARATOR
     fnLISTENING
