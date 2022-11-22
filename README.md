@@ -25,6 +25,7 @@ Note: Some screenshots shown below may not always reflect the latest version, di
 - **[QSO, Kerchunk, and MMDVM Error Counts](https://github.com/kencormack/pistar-lastqso#qso-kerchunk-and-mmdvm-error-and-warning-counts)**
 - **[More About the Large Font Support](https://github.com/kencormack/pistar-lastqso#more-about-the-large-font-support)**
 - **[One More Thing About Large Fonts](https://github.com/kencormack/pistar-lastqso#one-more-thing-about-large-fonts)**
+- **[Tracking Brandmeister Talkgroups](https://github.com/kencormack/pistar-lastqso#tracking-brandmeister-talkgroups)**
 - **[Replaying a Log](https://github.com/kencormack/pistar-lastqso#replaying-a-log)**
 - **[Sample Screenshots](https://github.com/kencormack/pistar-lastqso#sample-screenshots)**
 - **[Other Notes](https://github.com/kencormack/pistar-lastqso#other-notes)**
@@ -628,6 +629,15 @@ Introduced with version 2.35, **pistar-lastqso** now has the ability to replay a
 Here is an example demonstrating the replay mode...
 
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/replay-demo.gif)
+
+- **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
+-------------------------------------------------------------------
+## Tracking Brandmeister Talkgroups
+
+With the "-p|--poll" option, the script has the ability to track and display both static and dynamically linked Talkgroups, when a DMR user is connected to a Brandmeister Master Server.  In the animation below, notice the bottom line of the non-scrolling information zone at the top of the screen, just above the History column headings.  The "TALKGROUPS" section shows I am statically linked to TGs 91 and 98.  As I PTT to dynamically link TGs 903, 902, and 901 (as shown by the scrolling region of the screen), notice each dynamically linked TG then appears in turn, after "TALKGROUPS", at the top.  Talkgroups 901, 902, and 903 are displayed with an asterisk, to indicate that they are dynamically linked (as opposed to the example TGs 91 and 98, which are statically linked, and thus are not marked with an asterisk.)  As I PTT on TG 4000, notice the TALKGROUPS section removes the dynamically linked TGs 901, 902, and 903, while the statically linked TGs 91 and 98 remain.
+
+![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/bm-polling.gif)
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
