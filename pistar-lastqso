@@ -13,7 +13,7 @@
 
 set -o allexport
 
-VERSION=3.12
+VERSION=3.13
 
 #----------
 if [[ "${EUID}" -eq 0 ]]
@@ -544,9 +544,6 @@ fnCOPY_CACHE()
   echo -e "\nenter: ${FUNCNAME[*]}" >&3
 
   #----------
-  sudo mount -o remount,rw / 2>/dev/null
-
-  #----------
   # Combine any current caches with anything previously saved.
   # Put the groomed file in place as the live cache.
   # Save a copy to the home directory.
@@ -554,12 +551,14 @@ fnCOPY_CACHE()
   cat "${DXCC_CACHE_FILE}" /home/pi-star/.lastqso-dxcc-cache 2>/dev/null \
     | sort -u > /tmp/.cache_tmp 2>/dev/null
   cat /tmp/.cache_tmp > "${DXCC_CACHE_FILE}" 2>/dev/null
+  sudo mount -o remount,rw / 2>/dev/null
   cat /tmp/.cache_tmp > /home/pi-star/.lastqso-dxcc-cache 2>/dev/null
   rm /tmp/.cache_tmp 2>/dev/null
 
   cat "${GRID_CACHE_FILE}" /home/pi-star/.lastqso-grid-cache 2>/dev/null \
     | grep -v "Unknown" | sort -u > /tmp/.cache_tmp 2>/dev/null
   cat /tmp/.cache_tmp > "${GRID_CACHE_FILE}" 2>/dev/null
+  sudo mount -o remount,rw / 2>/dev/null
   cat /tmp/.cache_tmp > /home/pi-star/.lastqso-grid-cache 2>/dev/null
   rm /tmp/.cache_tmp 2>/dev/null
 
@@ -604,8 +603,6 @@ fnGET_US_GRIDSQUARE()
     GRIDSQUARE=" (${RESULT#*:})"
   else
     # Otherwise, we need to query the remote host.
-#KPC
-#   read -r -a RESULT <<< "$(curl -s --fail --max-time 2 "https://callook.info/${US_CALL}/text" 2>/dev/null | grep "Square:" | cut -f2 -d":")"
     read -r -a RESULT <<< "$(curl -s --fail --max-time 2 "https://callook.info/${US_CALL}/json" 2>/dev/null | jq -r '.location.gridsquare')"
     # Dont cache an "Unknown" or null response
     case "${RESULT}" in
@@ -841,6 +838,7 @@ fnDEFINE_BOXCHARS()
     FULL_SHADOW="#"
   fi
   DBL_LINE="$(printf "${DBOX_HL}%.0s" {1..76})"
+
   return
 }
 
@@ -1179,7 +1177,7 @@ fnNOSCROLL_ZONE()
     #----------
     BM_TG_LIST=""
     BM_TG_COUNT=0
-    # Parse the json for any static TGs
+    # Parse the JSON for any static TGs
     # shellcheck disable=SC2046
     while read -r TALKGROUP
     do
@@ -1188,7 +1186,7 @@ fnNOSCROLL_ZONE()
         BM_TG_LIST="${BM_TG_LIST} ${TALKGROUP}"
         ((BM_TG_COUNT++))
       fi
-    done <<< $(jq '.staticSubscriptions[] .talkgroup' "${BM_TG_FILE}" 2>/dev/null)
+    done <<< $(jq -r '.staticSubscriptions[] .talkgroup' "${BM_TG_FILE}" 2>/dev/null)
     # Parse again, for any dynamic TGs
     # shellcheck disable=SC2046
     while read -r TALKGROUP
@@ -1199,7 +1197,7 @@ fnNOSCROLL_ZONE()
         BM_TG_LIST="${BM_TG_LIST} ${TALKGROUP}*"
         ((BM_TG_COUNT++))
       fi
-    done <<< $(jq '.dynamicSubscriptions[] .talkgroup' "${BM_TG_FILE}" 2>/dev/null)
+    done <<< $(jq -r '.dynamicSubscriptions[] .talkgroup' "${BM_TG_FILE}" 2>/dev/null)
     # Get the number of TGs linked (static and dynamic, combined),
     # and remove quote marks from the resulting list of talkgroups
     BM_TG_COUNT="$(printf %02d "${BM_TG_COUNT}")"
@@ -3930,6 +3928,13 @@ fnYSF_MAIN()
   unset CUT_ARRAY
 
   #----------
+  # Don't waste any time with these...
+  if [[ "${LOGREC_REMAINING_DATA}" =~ "invalid access attempt from" ]]
+  then
+    return
+  fi
+
+  #----------
   # Start of YSF network traffic
   if [[ "${LOGREC_REMAINING_DATA}" =~ "received network data from" ]]
   then
@@ -4768,7 +4773,7 @@ fnMAIN_LOOP()
   # Filter the log, looking for lines we'll want to parse.
   eval "${CMD}" "${WORKING_LOG}" 2>/dev/null \
     | grep -E --line-buffered "^M: |^W: |^E: |^MMDVMHOST-STOP" \
-    | grep -v -E --line-buffered "^D:|^I:|0000:|Opening|Closing|Embedded|Downlink|is running|link status|Logged into" \
+    | grep -v -E --line-buffered "0000:|Opening|Closing|Embedded|Downlink|is running|link status|Logged into" \
     | while read -r RECORD
   do
     #----------
@@ -5231,7 +5236,7 @@ do
   fnCOPY_CACHE
 
   #----------
-  # Reexamine the activated modes, in case the log was bounced due to
+  # Reexamine the activated modes, in case services were bounced due to
   # configuration changes made in the GUI's "Configuration" page.
   fnGET_MODES
 

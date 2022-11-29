@@ -1,4 +1,11 @@
 ```
+CHANGES: V3.13
+ 1. Removed two unneeded search strings from
+    the main loop tail/cat filter.
+ 2. Add overlooked "-r" to BM jq queries.
+ 3. Handle YSF "invalid access attempt from"
+    log entries.
+
 CHANGES: V3.12
  1. Found and fixed bug in BM TG jq queries.
  2. Reworked Grid Square lookup as json query.
