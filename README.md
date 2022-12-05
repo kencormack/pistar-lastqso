@@ -690,7 +690,7 @@ Key elements of the tool's operation include:
 - a trigger phrase written to the log by that fork, which signals the main loop to exit
 - automatically pause & resume monitoring when the current log has been closed/re-opened, or a new log started
 
-The rest of the program is mainly parsing the log entries, managing the history and counters, and presenting the data on-screen.  The two most-used commands in the script are "tput" and "echo".
+The rest of the program is mainly parsing the log entries, managing the history and counters, and presenting the data on-screen.  The two most-used commands in the script (by vast margins), are "tput" and "echo".
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
