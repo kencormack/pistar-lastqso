@@ -13,7 +13,7 @@
 
 set -o allexport
 
-VERSION=3.13
+VERSION=3.14
 
 #----------
 if [[ "${EUID}" -eq 0 ]]
@@ -100,8 +100,13 @@ PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 # Start the Elapsed Time clock
 SECONDS=0
 
+#----------
+# Get the full path to this script
+SCRIPT="$(readlink -f "${0}")"
+
 # For the -i|--info section
-MY_PID="$(pgrep -o -f "/bin/bash /usr/local/bin/pistar-lastqso")"
+#MY_PID="$(pgrep -o -f "/bin/bash /usr/local/bin/pistar-lastqso")"
+MY_PID="$(pgrep -o -f "${BASH} ${SCRIPT}")"
 
 #----------
 # For bash's built-in "time" command
@@ -121,10 +126,6 @@ TIMEFORMAT='%R'
 MY_CMDLINE="${*//=/ }"
 read -r -a ARG_LIST <<< "${MY_CMDLINE}"
 ARG_LIST_LENGTH=${#ARG_LIST[@]}
-
-#----------
-# Get the full path to this script
-SCRIPT="$(readlink -f "${0}")"
 
 #----------
 # Get the tty we're using.  Tmp filenames will be suffixed to keep
@@ -341,8 +342,8 @@ ESC=$(echo -n $'\e' 2>/dev/null)
 # "tput sgr0" fails to restore terminal settings under certain
 # circumstances.  This may(?) be a better choice, upon exit.
 TERM_RESET="$(echo -ne "${ESC}[0m" 2>/dev/null)"
-#
-# Wide character set
+
+# Single-height, double-width character set
 # 6 sets line double-width, with normal height
 WIDE_FONT="$(echo -n "${ESC}"#6 2>/dev/null)"
 # 5 sets line single-width (lines are set this way when cleared by ESC [ J)
@@ -369,7 +370,7 @@ TGLIST="$(grep "^TGLISTBM=" /usr/local/sbin/HostFilesUpdate.sh)"
 TGLIST="${TGLIST#*=}"
 
 # Unlike the two files above, all of pi-star's references to this file are
-# hard-coded, so I am safe to set this varible directly to the filename.
+# hard-coded, so I am safe to set this variable directly to the filename.
 DMRHOSTS=/usr/local/etc/DMR_Hosts.txt
 
 # Users can create this next file to contain any DMR talkgroup
@@ -424,32 +425,24 @@ HOTSPOT_ID="$(grep -A 13 "^\[DMR\]" /etc/mmdvmhost | grep "^Id=")"
 HOTSPOT_ID="${HOTSPOT_ID#*=}"
 
 #----------
-# All these tmpfiles preserve the counters manipulated in functions
+# This tmpfile preserves the counters manipulated in functions
 # and loops, that are needed by (but not otherwise "handed up" to)
 # calling functions and processes.
-DMR_COUNT_FILE="/tmp/lastqso-dmr-${MY_TTY}"
-YSF_COUNT_FILE="/tmp/lastqso-ysf-${MY_TTY}"
-NXDN_COUNT_FILE="/tmp/lastqso-nxdn-${MY_TTY}"
-DSTAR_COUNT_FILE="/tmp/lastqso-dstar-${MY_TTY}"
-P25_COUNT_FILE="/tmp/lastqso-p25-${MY_TTY}"
-QSO_COUNT_FILE="/tmp/lastqso-qso-${MY_TTY}"
-KERCHUNK_COUNT_FILE="/tmp/lastqso-kerchunk-${MY_TTY}"
-ERROR_COUNT_FILE="/tmp/lastqso-error-${MY_TTY}"
-WARNING_COUNT_FILE="/tmp/lastqso-warning-${MY_TTY}"
-for FILE in "${DMR_COUNT_FILE}" "${YSF_COUNT_FILE}" "${NXDN_COUNT_FILE}" "${DSTAR_COUNT_FILE}" "${P25_COUNT_FILE}" "${QSO_COUNT_FILE}" "${KERCHUNK_COUNT_FILE}" "${ERROR_COUNT_FILE}" "${WARNING_COUNT_FILE}"
-do
-  echo "0" > "${FILE}"
-done
-# Initialize all the counters to zero
-DMR_COUNT=$(< "${DMR_COUNT_FILE}")
-YSF_COUNT=$(< "${YSF_COUNT_FILE}")
-NXDN_COUNT=$(< "${NXDN_COUNT_FILE}")
-DSTAR_COUNT=$(< "${DSTAR_COUNT_FILE}")
-P25_COUNT=$(< "${P25_COUNT_FILE}")
-QSO_COUNT=$(< "${QSO_COUNT_FILE}")
-KERCHUNK_COUNT=$(< "${KERCHUNK_COUNT_FILE}")
-ERROR_COUNT=$(< "${ERROR_COUNT_FILE}")
-WARNING_COUNT=$(< "${WARNING_COUNT_FILE}")
+COUNT_FILE="/tmp/lastqso-count-${MY_TTY}"
+
+# The various counters that will be stored and recalled
+# to/from the above file
+DMR_COUNT=0
+YSF_COUNT=0
+NXDN_COUNT=0
+DSTAR_COUNT=0
+P25_COUNT=0
+QSO_COUNT=0
+KERCHUNK_COUNT=0
+ERROR_COUNT=0
+WARNING_COUNT=0
+
+# This tracks when logging is cycled
 LOG_RESTARTS=0
 
 #----------
@@ -538,6 +531,26 @@ echo -en "${WRAP_OFF}"
 # FUNCTIONS
 ###########################################################
 
+#----------
+fnWRITE_COUNTER_FILE()
+{
+  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+
+  echo "#
+DMR_COUNT=${DMR_COUNT}
+YSF_COUNT=${YSF_COUNT}
+NXDN_COUNT=${NXDN_COUNT}
+DSTAR_COUNT=${DSTAR_COUNT}
+P25_COUNT=${P25_COUNT}
+#
+QSO_COUNT=${QSO_COUNT}
+KERCHUNK_COUNT=${KERCHUNK_COUNT}
+#
+ERROR_COUNT=${ERROR_COUNT}
+WARNING_COUNT=${WARNING_COUNT}" \
+  > "${COUNT_FILE}"
+}
+
 #-----------------------------------
 fnCOPY_CACHE()
 {
@@ -546,25 +559,32 @@ fnCOPY_CACHE()
   #----------
   # Combine any current caches with anything previously saved.
   # Put the groomed file in place as the live cache.
-  # Save a copy to the home directory.
+  # Save a copy to the home directory.  Do this, only if the
+  # active and saved files are different.  If they are the
+  # same, skip the merge/sort/write/copy/delete operations.
 
-  cat "${DXCC_CACHE_FILE}" /home/pi-star/.lastqso-dxcc-cache 2>/dev/null \
-    | sort -u > /tmp/.cache_tmp 2>/dev/null
-  cat /tmp/.cache_tmp > "${DXCC_CACHE_FILE}" 2>/dev/null
-  sudo mount -o remount,rw / 2>/dev/null
-  cat /tmp/.cache_tmp > /home/pi-star/.lastqso-dxcc-cache 2>/dev/null
-  rm /tmp/.cache_tmp 2>/dev/null
+  if ! cmp --silent -- "${DXCC_CACHE_FILE}" /home/pi-star/.lastqso-dxcc-cache 2>/dev/null
+  then
+    cat "${DXCC_CACHE_FILE}" /home/pi-star/.lastqso-dxcc-cache 2>/dev/null \
+      | sort -u > /tmp/.cache_tmp 2>/dev/null
+    cat /tmp/.cache_tmp > "${DXCC_CACHE_FILE}" 2>/dev/null
+    sudo mount -o remount,rw / 2>/dev/null
+    cat /tmp/.cache_tmp > /home/pi-star/.lastqso-dxcc-cache 2>/dev/null
+    rm /tmp/.cache_tmp 2>/dev/null
+  fi
 
-  cat "${GRID_CACHE_FILE}" /home/pi-star/.lastqso-grid-cache 2>/dev/null \
-    | grep -v "Unknown" | sort -u > /tmp/.cache_tmp 2>/dev/null
-  cat /tmp/.cache_tmp > "${GRID_CACHE_FILE}" 2>/dev/null
-  sudo mount -o remount,rw / 2>/dev/null
-  cat /tmp/.cache_tmp > /home/pi-star/.lastqso-grid-cache 2>/dev/null
-  rm /tmp/.cache_tmp 2>/dev/null
+  if ! cmp --silent -- "${GRID_CACHE_FILE}" /home/pi-star/.lastqso-grid-cache 2>/dev/null
+  then
+    cat "${GRID_CACHE_FILE}" /home/pi-star/.lastqso-grid-cache 2>/dev/null \
+      | grep -v "Unknown" | sort -u > /tmp/.cache_tmp 2>/dev/null
+    cat /tmp/.cache_tmp > "${GRID_CACHE_FILE}" 2>/dev/null
+    sudo mount -o remount,rw / 2>/dev/null
+    cat /tmp/.cache_tmp > /home/pi-star/.lastqso-grid-cache 2>/dev/null
+    rm /tmp/.cache_tmp 2>/dev/null
+  fi
 
   #----------
   sync;sync;sync
-  sudo mount -o remount,ro / 2>/dev/null
 
   return
 }
@@ -664,15 +684,7 @@ fnCLEANUP()
 
   # Delete everything except the dxcc and grid cache files
   rm "${BM_TG_FILE}" \
-  "${DMR_COUNT_FILE}" \
-  "${YSF_COUNT_FILE}" \
-  "${NXDN_COUNT_FILE}" \
-  "${DSTAR_COUNT_FILE}" \
-  "${P25_COUNT_FILE}" \
-  "${QSO_COUNT_FILE}" \
-  "${KERCHUNK_COUNT_FILE}" \
-  "${ERROR_COUNT_FILE}" \
-  "${WARNING_COUNT_FILE}" \
+  "${COUNT_FILE}" \
   "${HISTORY_FILE}" 2>/dev/null || :
 
   fnCOPY_CACHE
@@ -1408,7 +1420,7 @@ fnNOSCROLL_ZONE()
 
   #----------
   # Load the current history...
-  # shellcheck disable=SC1090
+  # shellcheck source=/dev/null
   . "${HISTORY_FILE}" 2>/dev/null
 
   #----------
@@ -2239,42 +2251,40 @@ fnGOODBYE_BOX()
   echo -n "${DIM}${CYA}Log Restarts: "
   printf %02d "${LOG_RESTARTS}"
 
+  # Get present value of all the counters
+  # shellcheck source=/dev/null
+  . "${COUNT_FILE}"
+
   #----------
-  QSO_COUNT=$(< "${QSO_COUNT_FILE}")
   tput cup 10 23
   echo -n "${DIM}${WHI}QSOs Observed This Session: ${SGR0}${YEL}"
   printf %05d "${QSO_COUNT}"
 
   #----------
-  DMR_COUNT=$(< "${DMR_COUNT_FILE}")
   tput cup 11 22
   echo -n "${DIM}${WHI}(DMR ${SGR0}${CYA}"
   printf %05d "${DMR_COUNT}"
   tput cup 11 32
   echo -n "${DIM}${WHI})${SGR0}"
 
-  YSF_COUNT=$(< "${YSF_COUNT_FILE}")
   tput cup 11 34
   echo -n "${DIM}${WHI}(YSF ${SGR0}${CYA}"
   printf %05d "${YSF_COUNT}"
   tput cup 11 44
   echo -n "${DIM}${WHI})${SGR0}"
 
-  P25_COUNT=$(< "${P25_COUNT_FILE}")
   tput cup 11 46
   echo -n "${DIM}${WHI}(P25 ${SGR0}${CYA}"
   printf %05d "${P25_COUNT}"
   tput cup 11 56
   echo -n "${DIM}${WHI})${SGR0}"
 
-  DSTAR_COUNT=$(< "${DSTAR_COUNT_FILE}")
   tput cup 12 27
   echo -n "${DIM}${WHI}(DSTAR ${SGR0}${CYA}"
   printf %05d "${DSTAR_COUNT}"
   tput cup 12 39
   echo -n "${DIM}${WHI})${SGR0}"
 
-  NXDN_COUNT=$(< "${NXDN_COUNT_FILE}")
   tput cup 12 41
   echo -n "${DIM}${WHI}(NXDN ${SGR0}${CYA}"
   printf %05d "${NXDN_COUNT}"
@@ -2282,7 +2292,6 @@ fnGOODBYE_BOX()
   echo -n "${DIM}${WHI})${SGR0}"
 
   #----------
-  KERCHUNK_COUNT=$(< "${KERCHUNK_COUNT_FILE}")
   if [[ ${QSO_COUNT} -gt 0 ]]
   then
     if [[ ${KERCHUNK_COUNT} -gt ${QSO_COUNT} ]]
@@ -2301,13 +2310,10 @@ fnGOODBYE_BOX()
   echo -n "${CYA}GRID $(printf %04d "$(grep -c . "${GRID_CACHE_FILE}")")"
 
   #----------
-  if [[ -f "${ERROR_COUNT_FILE}" ]] || [[ -f "${WARNING_COUNT_FILE}" ]]
+  ERROR_COUNT_COLOR=""
+  WARNING_COUNT_COLOR=""
+  if [[ ${ERROR_COUNT} -gt 0 ]] || [[ ${WARNING_COUNT} -gt 0 ]]
   then
-    ERROR_COUNT=$(< "${ERROR_COUNT_FILE}")
-    WARNING_COUNT=$(< "${WARNING_COUNT_FILE}")
-
-    ERROR_COUNT_COLOR=""
-    WARNING_COUNT_COLOR=""
     if [[ ${ERROR_COUNT} -gt 0 ]]
     then
       ERROR_COUNT_COLOR="${SGR0}${YEL}"
@@ -2350,7 +2356,7 @@ fnMMDVMLOG_FUSER()
   while true
   do
     # If the parent script goes away, exit this background task
-    if [[ "$(pgrep -f "/bin/bash /usr/local/bin/pistar-lastqso")" = "" ]]
+    if [[ "$(pgrep -f "${BASH} /usr/local/bin/pistar-lastqso")" = "" ]]
     then
       exit
     fi
@@ -2749,8 +2755,11 @@ fnYSF_END_NETWORK_TRAFFIC()
   #----------
   if [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
   then
+    # shellcheck source=/dev/null
+    . "${COUNT_FILE}"
     ((KERCHUNK_COUNT++))
-    echo "${KERCHUNK_COUNT}" > "${KERCHUNK_COUNT_FILE}"
+    fnWRITE_COUNTER_FILE
+
     tput cuf 64
     echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
   else
@@ -2786,8 +2795,11 @@ fnDSTAR_END_NETWORK_TRAFFIC()
   #----------
   if [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
   then
+    # shellcheck source=/dev/null
+    . "${COUNT_FILE}"
     ((KERCHUNK_COUNT++))
-    echo "${KERCHUNK_COUNT}" > "${KERCHUNK_COUNT_FILE}"
+    fnWRITE_COUNTER_FILE
+
     tput cuf 64
     echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
   else
@@ -2821,8 +2833,11 @@ fnNXDN_END_NETWORK_TRAFFIC()
   #----------
   if [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
   then
+    # shellcheck source=/dev/null
+    . "${COUNT_FILE}"
     ((KERCHUNK_COUNT++))
-    echo "${KERCHUNK_COUNT}" > "${KERCHUNK_COUNT_FILE}"
+    fnWRITE_COUNTER_FILE
+
     tput cuf 64
     echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
   else
@@ -2859,8 +2874,11 @@ fnP25_END_NETWORK_TRAFFIC()
   #----------
   if [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
   then
+    # shellcheck source=/dev/null
+    . "${COUNT_FILE}"
     ((KERCHUNK_COUNT++))
-    echo "${KERCHUNK_COUNT}" > "${KERCHUNK_COUNT_FILE}"
+    fnWRITE_COUNTER_FILE
+
     tput cuf 64
     echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
   else
@@ -2925,31 +2943,31 @@ fnSHOW_CURRENT_CALL()
 
   #----------
   # Increment the counter
+  # shellcheck source=/dev/null
+  . "${COUNT_FILE}"
+
   case "${LOGREC_MODE}" in
   "DMR")
     ((DMR_COUNT++))
-    echo "${DMR_COUNT}" > "${DMR_COUNT_FILE}"
     ;;
   "YSF")
     ((YSF_COUNT++))
-    echo "${YSF_COUNT}" > "${YSF_COUNT_FILE}"
     ;;
   "NXDN")
     ((NXDN_COUNT++))
-    echo "${NXDN_COUNT}" > "${NXDN_COUNT_FILE}"
     ;;
   "D-Star")
     ((DSTAR_COUNT++))
-    echo "${DSTAR_COUNT}" > "${DSTAR_COUNT_FILE}"
     ;;
   "P25")
     ((P25_COUNT++))
-    echo "${P25_COUNT}" > "${P25_COUNT_FILE}"
     ;;
   *)
     :
     ;;
   esac
+
+  fnWRITE_COUNTER_FILE
 
   #----------
   # Show the To
@@ -3130,8 +3148,11 @@ fnDMR_SHOW_CURRENT_CALL()
   P_FROM_NAME="$(printf "%-15s" "(${FROM_NAME})")"
   P_TO_NAME="$(printf "%-15s" "(${TO_NAME})")"
   echo -en "${DIM}From:${SGR0} ${BOLD}${FROM} ${P_FROM_NAME}${SGR0}\r"
+
+  # shellcheck source=/dev/null
+  . "${COUNT_FILE}"
   ((DMR_COUNT++))
-  echo "${DMR_COUNT}" > "${DMR_COUNT_FILE}"
+  fnWRITE_COUNTER_FILE
 
   tput cuf 31
   echo "${DIM} To..:${SGR0} ${BOLD}${TO} ${P_TO_NAME}${SGR0}${WHI}${CLR_ED}"
@@ -3409,7 +3430,7 @@ fnBUILD_HISTORY()
 
       #----------
       # Load the current history...
-      # shellcheck disable=SC1090
+      # shellcheck source=/dev/null
       . "${HISTORY_FILE}" 2>/dev/null
 
       #----------
@@ -3521,8 +3542,10 @@ fnTALLY_ERRORS()
 
   ERROR_MSG="$(echo "${RECORD}" | cut -f4- -d" ")"
 
+  # shellcheck source=/dev/null
+  . "${COUNT_FILE}"
   ((ERROR_COUNT++))
-  echo "${ERROR_COUNT}" > "${ERROR_COUNT_FILE}"
+  fnWRITE_COUNTER_FILE
 
   # If we've masked the reporting of logged errors by
   # using the "-e|--error" cmdline option, then
@@ -3551,8 +3574,10 @@ fnTALLY_WARNINGS()
 
   WARNING_MSG="$(echo "${RECORD}" | cut -f4- -d" ")"
 
+  # shellcheck source=/dev/null
+  . "${COUNT_FILE}"
   ((WARNING_COUNT++))
-  echo "${WARNING_COUNT}" > "${WARNING_COUNT_FILE}"
+  fnWRITE_COUNTER_FILE
 
   # Unlike errors, warnings will not be masked by
   # the "-e|--error" cmdline option.  They will
@@ -3666,8 +3691,10 @@ fnDMR_MAIN()
   #----------
   if [[ "${LOGREC_REMAINING_DATA}" =~ "late entry from" ]]
   then
+    # shellcheck source=/dev/null
+    . "${COUNT_FILE}"
     ((QSO_COUNT++))
-    echo "${QSO_COUNT}" > "${QSO_COUNT_FILE}"
+    fnWRITE_COUNTER_FILE
 
     # A QSO has started...
     QSO_START_TIME="${TIME}"
@@ -3690,8 +3717,10 @@ fnDMR_MAIN()
   #----------
   if [[ "${LOGREC_REMAINING_DATA}" =~ "header from" ]]
   then
+    # shellcheck source=/dev/null
+    . "${COUNT_FILE}"
     ((QSO_COUNT++))
-    echo "${QSO_COUNT}" > "${QSO_COUNT_FILE}"
+    fnWRITE_COUNTER_FILE
 
     # A QSO has started...
     QSO_START_TIME="${TIME}"
@@ -3783,8 +3812,11 @@ fnDMR_MAIN()
     # are not counted.
     if [[ -n "${FROM}" ]] && [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
     then
+      # shellcheck source=/dev/null
+      . "${COUNT_FILE}"
       ((KERCHUNK_COUNT++))
-      echo "${KERCHUNK_COUNT}" > "${KERCHUNK_COUNT_FILE}"
+      fnWRITE_COUNTER_FILE
+
       tput cuf 64
       echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
     else
@@ -3830,8 +3862,11 @@ fnDMR_MAIN()
     # are not counted.
     if [[ -n "${FROM}" ]] && [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
     then
+      # shellcheck source=/dev/null
+      . "${COUNT_FILE}"
       ((KERCHUNK_COUNT++))
-      echo "${KERCHUNK_COUNT}" > "${KERCHUNK_COUNT_FILE}"
+      fnWRITE_COUNTER_FILE
+
       tput cuf 64
       echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
     else
@@ -3961,8 +3996,11 @@ fnYSF_MAIN()
 
     SOURCE="NET"
 
+    # shellcheck source=/dev/null
+    . "${COUNT_FILE}"
     ((QSO_COUNT++))
-    echo "${QSO_COUNT}" > "${QSO_COUNT_FILE}"
+    fnWRITE_COUNTER_FILE
+
     fnSHOW_CURRENT_CALL
     return
   fi
@@ -4009,8 +4047,11 @@ fnYSF_MAIN()
 
     SOURCE="RF"
 
+    # shellcheck source=/dev/null
+    . "${COUNT_FILE}"
     ((QSO_COUNT++))
-    echo "${QSO_COUNT}" > "${QSO_COUNT_FILE}"
+    fnWRITE_COUNTER_FILE
+
     fnSHOW_CURRENT_CALL
     return
   fi
@@ -4050,8 +4091,11 @@ fnYSF_MAIN()
 
     if [[ -n "${FROM}" ]] && [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
     then
+      # shellcheck source=/dev/null
+      . "${COUNT_FILE}"
       ((KERCHUNK_COUNT++))
-      echo "${KERCHUNK_COUNT}" > "${KERCHUNK_COUNT_FILE}"
+      fnWRITE_COUNTER_FILE
+
       tput cuf 64
       echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
     else
@@ -4120,8 +4164,11 @@ fnYSF_MAIN()
 
     if [[ -n "${FROM}" ]] && [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
     then
+      # shellcheck source=/dev/null
+      . "${COUNT_FILE}"
       ((KERCHUNK_COUNT++))
-      echo "${KERCHUNK_COUNT}" > "${KERCHUNK_COUNT_FILE}"
+      fnWRITE_COUNTER_FILE
+
       tput cuf 64
       echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
     else
@@ -4199,8 +4246,11 @@ fnNXDN_MAIN()
 
     SOURCE="RF"
 
+    # shellcheck source=/dev/null
+    . "${COUNT_FILE}"
     ((QSO_COUNT++))
-    echo "${QSO_COUNT}" > "${QSO_COUNT_FILE}"
+    fnWRITE_COUNTER_FILE
+
     fnSHOW_CURRENT_CALL
     return
   fi
@@ -4226,8 +4276,11 @@ fnNXDN_MAIN()
 
     if [[ -n "${FROM}" ]] && [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
     then
+      # shellcheck source=/dev/null
+      . "${COUNT_FILE}"
       ((KERCHUNK_COUNT++))
-      echo "${KERCHUNK_COUNT}" > "${KERCHUNK_COUNT_FILE}"
+      fnWRITE_COUNTER_FILE
+
       tput cuf 64
       echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
     else
@@ -4259,8 +4312,11 @@ fnNXDN_MAIN()
 
     SOURCE="NET"
 
+    # shellcheck source=/dev/null
+    . "${COUNT_FILE}"
     ((QSO_COUNT++))
-    echo "${QSO_COUNT}" > "${QSO_COUNT_FILE}"
+    fnWRITE_COUNTER_FILE
+
     fnSHOW_CURRENT_CALL
     return
   fi
@@ -4361,8 +4417,10 @@ fnDSTAR_MAIN()
     echo -en "\r${CLR_EL}"
     fnBANNER
 
+    # shellcheck source=/dev/null
+    . "${COUNT_FILE}"
     ((QSO_COUNT++))
-    echo "${QSO_COUNT}" > "${QSO_COUNT_FILE}"
+    fnWRITE_COUNTER_FILE
 
     fnSHOW_CURRENT_CALL
     return
@@ -4400,8 +4458,10 @@ fnDSTAR_MAIN()
     echo -en "\r${CLR_EL}"
     fnBANNER
 
+    # shellcheck source=/dev/null
+    . "${COUNT_FILE}"
     ((QSO_COUNT++))
-    echo "${QSO_COUNT}" > "${QSO_COUNT_FILE}"
+    fnWRITE_COUNTER_FILE
 
     fnSHOW_CURRENT_CALL
     return
@@ -4466,8 +4526,11 @@ fnDSTAR_MAIN()
     #----------
     if [[ -n "${FROM}" ]] && [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
     then
+      # shellcheck source=/dev/null
+      . "${COUNT_FILE}"
       ((KERCHUNK_COUNT++))
-      echo "${KERCHUNK_COUNT}" > "${KERCHUNK_COUNT_FILE}"
+      fnWRITE_COUNTER_FILE
+
       tput cuf 64
       echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
     else
@@ -4636,8 +4699,11 @@ fnP25_MAIN()
 
     SOURCE="RF"
 
+    # shellcheck source=/dev/null
+    . "${COUNT_FILE}"
     ((QSO_COUNT++))
-    echo "${QSO_COUNT}" > "${QSO_COUNT_FILE}"
+    fnWRITE_COUNTER_FILE
+
     fnSHOW_CURRENT_CALL
     return
   fi
@@ -4659,8 +4725,11 @@ fnP25_MAIN()
 
     SOURCE="NET"
 
+    # shellcheck source=/dev/null
+    . "${COUNT_FILE}"
     ((QSO_COUNT++))
-    echo "${QSO_COUNT}" > "${QSO_COUNT_FILE}"
+    fnWRITE_COUNTER_FILE
+
     fnSHOW_CURRENT_CALL
     return
   fi
@@ -4693,8 +4762,11 @@ fnP25_MAIN()
 
     if [[ -n "${FROM}" ]] && [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
     then
+      # shellcheck source=/dev/null
+      . "${COUNT_FILE}"
       ((KERCHUNK_COUNT++))
-      echo "${KERCHUNK_COUNT}" > "${KERCHUNK_COUNT_FILE}"
+      fnWRITE_COUNTER_FILE
+
       tput cuf 64
       echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
     else
@@ -4956,6 +5028,8 @@ fnWINCH()
 ###########################################################
 # A few last items in the pre-flight checklist...
 
+fnWRITE_COUNTER_FILE
+
 # If user presses Ctrl-C, stop the program
 trap fnABORT SIGINT SIGTERM
 
@@ -5101,15 +5175,8 @@ while true
 do
   #----------
   # Read in the counter values
-  DMR_COUNT=$(< "${DMR_COUNT_FILE}")
-  YSF_COUNT=$(< "${YSF_COUNT_FILE}")
-  NXDN_COUNT=$(< "${NXDN_COUNT_FILE}")
-  DSTAR_COUNT=$(< "${DSTAR_COUNT_FILE}")
-  P25_COUNT=$(< "${P25_COUNT_FILE}")
-  QSO_COUNT=$(< "${QSO_COUNT_FILE}")
-  KERCHUNK_COUNT=$(< "${KERCHUNK_COUNT_FILE}")
-  ERROR_COUNT=$(< "${ERROR_COUNT_FILE}")
-  WARNING_COUNT=$(< "${WARNING_COUNT_FILE}")
+  # shellcheck source=/dev/null
+  . "${COUNT_FILE}"
 
   #----------
   if [[ ${REPLAY} -eq 0 ]]
@@ -5121,10 +5188,10 @@ do
     # fnMAIN_LOOP will spot this, and act on it to re-start the main loop.
     #
     # If the background job is already running, don't spawn another copy.
-    if [[ "$(pgrep -f "/bin/bash -c fnMMDVMLOG_FUSER")" = "" ]]
+    if [[ "$(pgrep -f "${BASH} -c fnMMDVMLOG_FUSER")" = "" ]]
     then
       /bin/bash -c fnMMDVMLOG_FUSER > /dev/null 2>&1 &
-      BG_PID="$(pgrep -o -f "/bin/bash -c fnMMDVMLOG_FUSER")"
+      BG_PID="$(pgrep -o -f "${BASH} -c fnMMDVMLOG_FUSER")"
     fi
   fi
 
@@ -5136,6 +5203,9 @@ do
   # set -x
   fnMAIN_LOOP
   # set +x
+
+  #----------
+  fnCOPY_CACHE
 
   #----------
   # See if we were replaying a log.  If so, we've reached the end of the log.
@@ -5208,7 +5278,7 @@ do
 
   #----------
   # Load the current history...
-  # shellcheck disable=SC1090
+  # shellcheck source=/dev/null
   . "${HISTORY_FILE}"
 
   # Push all the entries one position later, in the list.
@@ -5231,9 +5301,6 @@ do
     echo -e "HISTORY[${HIST_COUNT}]=\"${HISTORY[HIST_COUNT]}\"" >> "${HISTORY_FILE}"
     ((HIST_COUNT++))
   done
-
-  #----------
-  fnCOPY_CACHE
 
   #----------
   # Reexamine the activated modes, in case services were bounced due to

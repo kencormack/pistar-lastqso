@@ -1,4 +1,20 @@
 ```
+CHANGES: V3.14
+ 1. Consolidated the separate tmpfiles for
+    DMR, YSF, NXDN, DSTAR, P25, QSO, ERROR,
+    WARNING, and KERCHUNK counts, into a
+    single tmpfile.
+ 2. fnCOPY_CACHE now only acts when the current
+    active caches differ from the saved caches.
+    If the active and saved copies are the
+    same, then there's no need to act on them.
+    Also updated to avoid competition for file-
+    system rw/ro status possibly disrupting
+    whatever job is cycling the log.
+ 3. Tweaked the determination of PIDs, for
+    the -i|--info display and other needs.
+ 4. Shellcheck pass.
+
 CHANGES: V3.13
  1. Removed two unneeded search strings from
     the main loop tail/cat filter.
