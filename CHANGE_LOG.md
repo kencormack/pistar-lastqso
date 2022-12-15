@@ -1,4 +1,32 @@
 ```
+CHANGES: V3.15
+ 1. Fixed problem parsing RF transmissions
+    for P25 (Thanks, Jerry, for the sample
+    log entries!)
+ 2. Modified read syntax in BM TG queries,
+    double-quoted some variables, & tweaked
+    the curl command.
+ 3. Color changes in the -t|--top section:
+    Reflector names/Startup hosts are now
+    the same colors as both the large font
+    displays, and the From/To history data,
+    for a given mode.  Eg: Yellow is used
+    for the YSF startup host, the large font
+    display, and the history From/To, for all
+    YSF traffic.  Since cyan is used for NXDN,
+    all the field labels in the -t|--top
+    section are now shown in gray.  Users of
+    monochrome displays (-m|--mono) shouldn't
+    notice much of a difference.
+ 4. Small mod to the test for possible corrupt
+    download of user.csv.
+ 5. For test/dev - save unparsed records, to
+    later determine if script should act on
+    or ignore.
+ 6. Set LC_ALL=C for all "sort" operations.
+ 7. Improve fd3 debug log entry when entering
+    a function.
+
 CHANGES: V3.14
  1. Consolidated the separate tmpfiles for
     DMR, YSF, NXDN, DSTAR, P25, QSO, ERROR,
@@ -6,8 +34,6 @@ CHANGES: V3.14
     single tmpfile.
  2. fnCOPY_CACHE now only acts when the current
     active caches differ from the saved caches.
-    If the active and saved copies are the
-    same, then there's no need to act on them.
     Also updated to avoid competition for file-
     system rw/ro status possibly disrupting
     whatever job is cycling the log.

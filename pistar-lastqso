@@ -1,5 +1,5 @@
 #!/bin/bash
-# shellcheck disable=SC2206,SC2034,SC2154,SC2312
+# shellcheck disable=SC2206,SC2034
 #
 # pistar-lastqso
 # Written by:   Ken Cormack (KE8DPF), unixken@yahoo.com
@@ -13,7 +13,7 @@
 
 set -o allexport
 
-VERSION=3.14
+VERSION=3.15
 
 #----------
 if [[ "${EUID}" -eq 0 ]]
@@ -166,7 +166,7 @@ trap 'echo -e "line#: ${LINENO}...\t${BASH_COMMAND}" >&3' DEBUG
 trap 'echo -e "NON-0: LINE ${LINENO}: RETURN CODE: ${?}\t${BASH_COMMAND}" >&3' ERR
 # FOR DEBUGGING: THE RETURN TRAP
 # This trap logs the completion of each function, upon return.
-trap 'echo -e "leave: ${FUNCNAME} -> back to ${FUNCNAME[1]}\n" >&3' RETURN
+trap 'echo -e "leave: ${FUNCNAME[0]} -> back to ${FUNCNAME[1]}\n" >&3' RETURN
 
 #----------
 # SET UP THE PROFILING FILE DESCRIPTOR
@@ -527,6 +527,13 @@ TOP_PAD="                                                          "
 # (There's one entry in user.csv that is over 170 characters long!)
 echo -en "${WRAP_OFF}"
 
+DMR_COLOR="${BOLD}${WHI}"
+YSF_COLOR="${BOLD}${YEL}"
+NXDN_COLOR="${BOLD}${CYA}"
+DSTAR_COLOR="${BOLD}${GRE}"
+P25_COLOR="${BOLD}${MAG}"
+OTHER_COLOR="${BOLD}${BLU}"
+
 ###########################################################
 # FUNCTIONS
 ###########################################################
@@ -534,7 +541,7 @@ echo -en "${WRAP_OFF}"
 #----------
 fnWRITE_COUNTER_FILE()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   echo "#
 DMR_COUNT=${DMR_COUNT}
@@ -554,7 +561,7 @@ WARNING_COUNT=${WARNING_COUNT}" \
 #-----------------------------------
 fnCOPY_CACHE()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   #----------
   # Combine any current caches with anything previously saved.
@@ -566,7 +573,7 @@ fnCOPY_CACHE()
   if ! cmp --silent -- "${DXCC_CACHE_FILE}" /home/pi-star/.lastqso-dxcc-cache 2>/dev/null
   then
     cat "${DXCC_CACHE_FILE}" /home/pi-star/.lastqso-dxcc-cache 2>/dev/null \
-      | sort -u > /tmp/.cache_tmp 2>/dev/null
+      | LC_ALL=C sort -u >/tmp/.cache_tmp 2>/dev/null
     cat /tmp/.cache_tmp > "${DXCC_CACHE_FILE}" 2>/dev/null
     sudo mount -o remount,rw / 2>/dev/null
     cat /tmp/.cache_tmp > /home/pi-star/.lastqso-dxcc-cache 2>/dev/null
@@ -576,11 +583,24 @@ fnCOPY_CACHE()
   if ! cmp --silent -- "${GRID_CACHE_FILE}" /home/pi-star/.lastqso-grid-cache 2>/dev/null
   then
     cat "${GRID_CACHE_FILE}" /home/pi-star/.lastqso-grid-cache 2>/dev/null \
-      | grep -v "Unknown" | sort -u > /tmp/.cache_tmp 2>/dev/null
+      | grep -F -v "Unknown" | LC_ALL=C sort -u >/tmp/.cache_tmp 2>/dev/null
     cat /tmp/.cache_tmp > "${GRID_CACHE_FILE}" 2>/dev/null
     sudo mount -o remount,rw / 2>/dev/null
     cat /tmp/.cache_tmp > /home/pi-star/.lastqso-grid-cache 2>/dev/null
     rm /tmp/.cache_tmp 2>/dev/null
+  fi
+
+  # When I'm testing/developing, occasionally the script spots log
+  # entries it denotes as "unparsed".  Save those for me to look
+  # at, to determine if the script should parse or ignore them.
+  if [[ -n "${IS_DEV}" ]]
+  then
+    sudo mount -o remount,rw / 2>/dev/null
+    mv /tmp/unparsed_DMR   /home/pi-star 2>/dev/null
+    mv /tmp/unparsed_YSF   /home/pi-star 2>/dev/null
+    mv /tmp/unparsed_NXDN  /home/pi-star 2>/dev/null
+    mv /tmp/unparsed_DSTAR /home/pi-star 2>/dev/null
+    mv /tmp/unparsed_P25   /home/pi-star 2>/dev/null
   fi
 
   #----------
@@ -593,7 +613,7 @@ fnCOPY_CACHE()
 #-----------------------------------
 fnCENTER()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   # Use the python code to get screen size
   # before calling this function.
@@ -606,10 +626,9 @@ fnCENTER()
 # Look up Maidenhead Grid Square for US Callsigns,
 # based on address of record, in the FCC database.
 #-----------------------------------
-# shellcheck disable=SC2128,SC2178
 fnGET_US_GRIDSQUARE()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   US_CALL="${1}"
   GRIDSQUARE=""
@@ -623,7 +642,7 @@ fnGET_US_GRIDSQUARE()
     GRIDSQUARE=" (${RESULT#*:})"
   else
     # Otherwise, we need to query the remote host.
-    read -r -a RESULT <<< "$(curl -s --fail --max-time 2 "https://callook.info/${US_CALL}/json" 2>/dev/null | jq -r '.location.gridsquare')"
+    read -r RESULT <<< "$(curl -s --fail --max-time 2 "https://callook.info/${US_CALL}/json" 2>/dev/null | jq -r '.location.gridsquare')"
     # Dont cache an "Unknown" or null response
     case "${RESULT}" in
       "Unknown")
@@ -645,7 +664,7 @@ fnGET_US_GRIDSQUARE()
 #-----------------------------------
 fnGET_MODES()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   #----------
   # Primary modes
@@ -680,7 +699,7 @@ fnGET_MODES()
 #-----------------------------------
 fnCLEANUP()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   # Delete everything except the dxcc and grid cache files
   rm "${BM_TG_FILE}" \
@@ -694,7 +713,7 @@ fnCLEANUP()
 #-----------------------------------
 fnCLOSE_FDS()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   # Close the debugging and profiling file descriptors
   exec 3>&- 2>/dev/null
@@ -707,7 +726,7 @@ fnCLOSE_FDS()
 # Double high, double wide character set
 fnLARGE_FONT()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   echo -n "${SGR0}"
   case ${MY_FONT} in
@@ -727,7 +746,7 @@ fnLARGE_FONT()
 # Because bash can't do simple floating-point comparisons....
 fnCOMPARE_FLOAT_LT()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   # Look for this to return "<" if FLOAT1 is less than FLOAT2
   awk -v FLOAT1="${1}" -v FLOAT2="${2}" 'BEGIN {printf "%s " (FLOAT1<FLOAT2?"<":">=") " %s\n", FLOAT1, FLOAT2}'
@@ -738,7 +757,7 @@ fnCOMPARE_FLOAT_LT()
 # Because bash can't do simple floating-point comparisons....
 fnCOMPARE_FLOAT_GT()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   # Look for this to return ">" if FLOAT1 is greater than FLOAT2
   awk -v FLOAT1="${1}" -v FLOAT2="${2}" 'BEGIN {printf "%s " (FLOAT1>FLOAT2?">":"<=") " %s\n", FLOAT1, FLOAT2}'
@@ -753,7 +772,7 @@ fnCOMPARE_FLOAT_GT()
 #
 fnDEFINE_BOXCHARS()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   # Unicode box-drawing characters.  We'll use a few of these.
   #         0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
@@ -864,7 +883,7 @@ fnDEFINE_BOXCHARS()
 #   BOX_SHADOW = no drop-shadow [0] or add a drop-shadow [1]
 fnDRAW_BOX()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   #----------
   BOX_TOP=${1}
@@ -984,7 +1003,7 @@ fnDRAW_BOX()
 #-----------------------------------
 fnTOP_DATA()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   # This function deals with the optional non-scrolling zone,
   # created when the -t|--top option is specified on the cmdline.
@@ -1015,7 +1034,6 @@ fnTOP_DATA()
   # Hotspot TX & RX frequencies
   # <rant> I hate that bash can't do simple floating-point math without external help. </rant>
   TX="$(printf %.4f "$(echo print "$(grep -A 9 "\[Info\]" /etc/mmdvmhost | grep "^TXFrequency=" 2>/dev/null | cut -f2 -d"=" | sed -u 's/Hz//')"/1000000 | perl)")"
-
   RX="$(printf %.4f "$(echo print "$(grep -A 9 "\[Info\]" /etc/mmdvmhost | grep "^RXFrequency=" 2>/dev/null | cut -f2 -d"=" | sed -u 's/Hz//')"/1000000 | perl)")"
 
   # Details about the modem
@@ -1093,7 +1111,7 @@ fnTOP_DATA()
 #-----------------------------------
 fnDEV_INFO()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   trap fnWINCH WINCH
 
@@ -1153,7 +1171,7 @@ fnDEV_INFO()
 #-----------------------------------
 fnNOSCROLL_ZONE()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   if [[ "${TOP}" = "0" ]]
   then
@@ -1183,14 +1201,13 @@ fnNOSCROLL_ZONE()
     # If BM_POLL=1, it's performed every time.
     if [[ ! -f "${BM_TG_FILE}" ]] || [[ "${BM_POLL}" -eq 1 ]]
     then
-      curl -s --fail --max-time 2 "https://api.brandmeister.network/v2/device/${HOTSPOT_ID}/profile" > "${BM_TG_FILE}"
+      curl -s --fail --max-time 2 -X 'GET' "https://api.brandmeister.network/v2/device/${HOTSPOT_ID}/profile" -H 'accept: application/json' > "${BM_TG_FILE}"
     fi
 
     #----------
     BM_TG_LIST=""
     BM_TG_COUNT=0
     # Parse the JSON for any static TGs
-    # shellcheck disable=SC2046
     while read -r TALKGROUP
     do
       if [[ -n "${TALKGROUP}" ]]
@@ -1198,9 +1215,8 @@ fnNOSCROLL_ZONE()
         BM_TG_LIST="${BM_TG_LIST} ${TALKGROUP}"
         ((BM_TG_COUNT++))
       fi
-    done <<< $(jq -r '.staticSubscriptions[] .talkgroup' "${BM_TG_FILE}" 2>/dev/null)
+    done <<< "$(jq -r '.staticSubscriptions[] .talkgroup' "${BM_TG_FILE}" 2>/dev/null)"
     # Parse again, for any dynamic TGs
-    # shellcheck disable=SC2046
     while read -r TALKGROUP
     do
       if [[ -n "${TALKGROUP}" ]]
@@ -1209,7 +1225,7 @@ fnNOSCROLL_ZONE()
         BM_TG_LIST="${BM_TG_LIST} ${TALKGROUP}*"
         ((BM_TG_COUNT++))
       fi
-    done <<< $(jq -r '.dynamicSubscriptions[] .talkgroup' "${BM_TG_FILE}" 2>/dev/null)
+    done <<< "$(jq -r '.dynamicSubscriptions[] .talkgroup' "${BM_TG_FILE}" 2>/dev/null)"
     # Get the number of TGs linked (static and dynamic, combined),
     # and remove quote marks from the resulting list of talkgroups
     BM_TG_COUNT="$(printf %02d "${BM_TG_COUNT}")"
@@ -1232,9 +1248,9 @@ fnNOSCROLL_ZONE()
     BM_TG_LIST="${BM_TG_LIST}${TOP_PAD}"
     BM_TG_LIST="${BM_TG_LIST:0:29}"
 
-    BM_TG_LINE="${CYA}TALKGROUPS(${WHI}${BOLD}${BM_TG_COUNT}${SGR0}${CYA}):${SGR0}${WHI}${BOLD}${BM_TG_LIST}${SGR0}"
+    BM_TG_LINE="${DIM}${WHI}TALKGROUPS(${DMR_COLOR}${BM_TG_COUNT}${SGR0}${DIM}${WHI}):${SGR0}${DMR_COLOR}${BM_TG_LIST}${SGR0}"
   else
-    BM_TG_LINE="${CYA}TALKGROUPS: No API available${SGR0}"
+    BM_TG_LINE="${DIM}${WHI}TALKGROUPS: No API available${SGR0}"
   fi
 
   #----------
@@ -1251,13 +1267,13 @@ fnNOSCROLL_ZONE()
   MY_LOG="${MY_LOG}${TOP_PAD}"
   MY_LOG="${MY_LOG:0:23}"
 
-  echo -en "${CYA}LASTQSO:${SGR0} ${VER_CHECK_COLOR}${MY_VER}${SGR0}\r"
+  echo -en "${DIM}${WHI}LASTQSO:${SGR0} ${VER_CHECK_COLOR}${MY_VER}${SGR0}\r"
   tput cuf 16
-  echo -en "${CYA}DAT:${SGR0} ${WHI}${BOLD}${DAT_DATE}${SGR0}\r"
+  echo -en "${DIM}${WHI}DAT:${SGR0} ${WHI}${BOLD}${DAT_DATE}${SGR0}\r"
   tput cuf 32
-  echo -en "${CYA}CSV:${SGR0} ${WHI}${BOLD}${CSV_DATE}${SGR0}\r"
+  echo -en "${DIM}${WHI}CSV:${SGR0} ${WHI}${BOLD}${CSV_DATE}${SGR0}\r"
   tput cuf 48
-  echo "${CYA}LOG:${SGR0} ${WHI}${BOLD}${MY_LOG}${SGR0}"
+  echo "${DIM}${WHI}LOG:${SGR0} ${WHI}${BOLD}${MY_LOG}${SGR0}"
 
   #----------
   # Print line 1
@@ -1273,13 +1289,13 @@ fnNOSCROLL_ZONE()
   TCXO="${TCXO}${TOP_PAD}"
   TCXO="${TCXO:0:10}"
 
-  echo -en "${CYA}TX:${SGR0} ${WHI}${BOLD}${TX}${SGR0}\r"
+  echo -en "${DIM}${WHI}TX:${SGR0} ${WHI}${BOLD}${TX}${SGR0}\r"
   tput cuf 16
-  echo -en "${CYA}RX:${SGR0} ${WHI}${BOLD}${RX}${SGR0}\r"
+  echo -en "${DIM}${WHI}RX:${SGR0} ${WHI}${BOLD}${RX}${SGR0}\r"
   tput cuf 32
-  echo -en "${CYA}TCXO:${SGR0} ${WHI}${BOLD}${TCXO}${SGR0}\r"
+  echo -en "${DIM}${WHI}TCXO:${SGR0} ${WHI}${BOLD}${TCXO}${SGR0}\r"
   tput cuf 48
-  echo "${CYA}FW:${SGR0} ${WHI}${BOLD}${FW}${SGR0}"
+  echo "${DIM}${WHI}FW:${SGR0} ${WHI}${BOLD}${FW}${SGR0}"
 
   #----------
   # Print line 2
@@ -1311,11 +1327,11 @@ fnNOSCROLL_ZONE()
   PLATFORM="${PLATFORM}${TOP_PAD}"
   PLATFORM="${PLATFORM:0:34}"
 
-  echo -en "${CYA}Temp:${SGR0} ${CPU_TEMP_COLOR}${BOLD}${CPU_TEMP}${SGR0}\r"
+  echo -en "${DIM}${WHI}Temp:${SGR0} ${CPU_TEMP_COLOR}${BOLD}${CPU_TEMP}${SGR0}\r"
   tput cuf 16
-  echo -en "${CYA}Port:${SGR0} ${WHI}${BOLD}${MODEM_PORT}${SGR0}\r"
+  echo -en "${DIM}${WHI}Port:${SGR0} ${WHI}${BOLD}${MODEM_PORT}${SGR0}\r"
   tput cuf 32
-  echo "${CYA}Platform:${SGR0} ${WHI}${BOLD}${PLATFORM}${SGR0}"
+  echo "${DIM}${WHI}Platform:${SGR0} ${WHI}${BOLD}${PLATFORM}${SGR0}"
 
   #----------
   # Print line 3
@@ -1323,13 +1339,13 @@ fnNOSCROLL_ZONE()
   ELAPSED=$(eval "echo $(date -ud "@${SECONDS}" +'$((%s/3600/24)) Days %H Hrs %M Mins')")
   ELAPSED="${ELAPSED}${TOP_PAD}"
   ELAPSED="${ELAPSED:0:23}"
-  echo -en "${CYA}Elapsed:${SGR0} ${WHI}${BOLD}${ELAPSED}${SGR0}\r"
+  echo -en "${DIM}${WHI}Elapsed:${SGR0} ${WHI}${BOLD}${ELAPSED}${SGR0}\r"
 
   LOAD_AVG="$(uptime | awk '{ print $(NF-2)" "$(NF-1)" "$NF }')"
   LOAD_AVG="${LOAD_AVG}${TOP_PAD}"
   LOAD_AVG="${LOAD_AVG:0:20}"
   tput cuf 32
-  echo "${CYA}Load Avg (1,5,15 mins):${SGR0} ${WHI}${BOLD}${LOAD_AVG}${SGR0}"
+  echo "${DIM}${WHI}Load Avg (1,5,15 mins):${SGR0} ${WHI}${BOLD}${LOAD_AVG}${SGR0}"
 
   #----------
   # Get Reflectors for line 4
@@ -1397,13 +1413,21 @@ fnNOSCROLL_ZONE()
   P25_REFLECTOR="${P25_REFLECTOR}${TOP_PAD}"
   P25_REFLECTOR="${P25_REFLECTOR:0:11}"
 
-  echo "${CYA}REFLECTORS....  YSF:${WHI}${BOLD}${YSF_STARTUP}${SGR0} ${CYA}NXDN:${WHI}${BOLD}${NXDN_REFLECTOR}${SGR0}${CYA}DSTAR:${WHI}${BOLD}${DSTAR_REFLECTOR}${SGR0}${CYA}P25:${WHI}${BOLD}${P25_REFLECTOR}${SGR0}"
+  echo -en "${DIM}${WHI}REFLECTORS....${SGR0}\r"
+  tput cuf 16
+  echo -en "${DIM}${WHI}YSF:${SGR0}${YSF_COLOR}${YSF_STARTUP}${SGR0}\r"
+  tput cuf 32
+  echo -en "${DIM}${WHI}NXDN:${SGR0}${NXDN_COLOR}${NXDN_REFLECTOR}${SGR0}\r"
+  tput cuf 48
+  echo -en "${DIM}${WHI}DSTAR:${SGR0}${DSTAR_COLOR}${DSTAR_REFLECTOR}${SGR0}\r"
+  tput cuf 65
+  echo "${DIM}${WHI}P25:${SGR0}${P25_COLOR}${P25_REFLECTOR}${SGR0}"
 
   #----------
   # Print line 5
   DMR_MASTER_NAME="${DMR_MASTER_NAME}${TOP_PAD}"
   DMR_MASTER_NAME="${DMR_MASTER_NAME:0:19}"
-  echo -en "${CYA}DMR MASTER:${SGR0} ${WHI}${BOLD}${DMR_MASTER_NAME}${SGR0}\r"
+  echo -en "${DIM}${WHI}DMR MASTER:${SGR0} ${DMR_COLOR}${DMR_MASTER_NAME}${SGR0}\r"
 
   # Print the talkgroups
   tput cuf 32
@@ -1457,7 +1481,7 @@ fnNOSCROLL_ZONE()
 #-----------------------------------
 fnRESET_SCROLLING()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   if [[ "${TOP}" = "0" ]]
   then
@@ -1478,7 +1502,7 @@ fnRESET_SCROLLING()
 #-----------------------------------
 fnUSAGE()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   echo "USAGE:  Valid options and parameters include:
 
@@ -1497,7 +1521,7 @@ Long Form:
 #-----------------------------------
 fnPARSE_CMDLINE()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   # Loop through all the cmdline arguments.  It works like this...
   #
@@ -1727,7 +1751,7 @@ fnPARSE_CMDLINE()
 #-----------------------------------
 fnGET_HELP()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   cat <<'EOF' | less -M
 PISTAR-LASTQSO - HELP
@@ -2011,7 +2035,7 @@ EOF
 #-----------------------------------
 fnVERSION()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   clear
   echo "${BOLD}${WHI}$(basename "${0}") v${VERSION}${SGR0}"
@@ -2038,7 +2062,7 @@ EOF
 #-----------------------------------
 fnNO_LOGO()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   clear
   echo "${BOLD}${WHI}PISTAR-LASTQSO v${VERSION}${SGR0}"
@@ -2051,7 +2075,7 @@ fnNO_LOGO()
 #-----------------------------------
 fnLOGO()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   clear
   # Initialize screen, disable line-wrap, cursor off, color to white
@@ -2178,7 +2202,7 @@ EOF
 #-----------------------------------
 fnCHECK_MODES_ENABLED()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   if [[ ! "${DMR_ENABLED}${YSF_ENABLED}${NXDN_ENABLED}${DSTAR_ENABLED}${P25_ENABLED}" =~ "1" ]]
   then
@@ -2233,7 +2257,7 @@ fnCHECK_MODES_ENABLED()
 #-----------------------------------
 fnGOODBYE_BOX()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   echo -n "${SGR0}${BLU}"
   fnDRAW_BOX 4 15 12 47 2 1 1
@@ -2342,7 +2366,7 @@ fnGOODBYE_BOX()
 # to the working log (for the "while read" loop to catch.)
 fnMMDVMLOG_FUSER()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   # This function (exported and spawned later in the script) runs
   # as a background task, in a seperate process.
@@ -2380,7 +2404,7 @@ fnMMDVMLOG_FUSER()
 #-----------------------------------
 fnSEPARATOR()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   trap fnWINCH WINCH
 
@@ -2391,7 +2415,7 @@ fnSEPARATOR()
 #-----------------------------------
 fnLISTENING()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   trap fnWINCH WINCH
 
@@ -2415,7 +2439,7 @@ fnLISTENING()
 #-----------------------------------
 fnQSO_IN_PROGRESS()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   trap fnWINCH WINCH
 
@@ -2430,14 +2454,14 @@ fnQSO_IN_PROGRESS()
 # city, state, and country fields
 fnDMR_CSV_SEARCH()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   trap fnWINCH WINCH
 
   # Fields in the file:
   # RADIO_ID,CALLSIGN,FIRST_NAME,LAST_NAME,CITY,STATE,COUNTRY
   # We want the last three.
-  CSV_RECORD="$(grep ",${CSV_CALLSIGN}," "${USERCSV}" | sort -u | head -1)"
+  CSV_RECORD="$(grep ",${CSV_CALLSIGN}," "${USERCSV}" | LC_ALL=C sort -u | head -1)"
 
   # I've seen someone using the Malaysian Country Code of 5020386 as their
   # DMR ID, so the log contained only that number (not a callsign), thus
@@ -2449,7 +2473,7 @@ fnDMR_CSV_SEARCH()
   # for the DMR ID number, rather than the callsign.
   if [[ "${CSV_RECORD}" = "" ]]
   then
-    CSV_RECORD="$(grep "^${CSV_CALLSIGN}," "${USERCSV}" | sort -u | head -1)"
+    CSV_RECORD="$(grep "^${CSV_CALLSIGN}," "${USERCSV}" | LC_ALL=C sort -u | head -1)"
   fi
 
   if [[ "${CSV_RECORD}" != "" ]]
@@ -2482,7 +2506,7 @@ fnDMR_CSV_SEARCH()
 #-----------------------------------
 fnCONVERT_DATE_TIME()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   trap fnWINCH WINCH
 
@@ -2505,7 +2529,7 @@ fnCONVERT_DATE_TIME()
 #-----------------------------------
 fnDMR_GET_FROM()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   trap fnWINCH WINCH
 
@@ -2565,7 +2589,7 @@ fnDMR_GET_FROM()
 #-----------------------------------
 fnDMR_GET_TO()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   trap fnWINCH WINCH
 
@@ -2638,7 +2662,7 @@ fnDMR_GET_TO()
 #-----------------------------------
 fnBANNER()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   trap fnWINCH WINCH
 
@@ -2671,7 +2695,7 @@ fnBANNER()
   then
     # Font #5 is not a figlet font.  Do what we need to
     # do, and get out.
-    fnLARGE_FONT "${BOLD}${BANNER_COLOR}${FROM_OR_SENDER} ... ${TO}"
+    fnLARGE_FONT "${BOLD}${CONTACT_COLOR}${FROM_OR_SENDER} ... ${TO}"
     return
   fi
 
@@ -2712,7 +2736,7 @@ fnBANNER()
 
   #----------
   BANNER="$(figlet -w "${OUTPUT_WIDTH}" -f "${FONT}" "${FROM_OR_SENDER} ... ${TO}")"
-  echo "${BOLD}${BANNER_COLOR}${BANNER}${SGR0}"
+  echo "${BOLD}${CONTACT_COLOR}${BANNER}${SGR0}"
 
   #----------
   # Tighten up the leading with these two fonts.
@@ -2733,7 +2757,7 @@ fnBANNER()
 #-----------------------------------
 fnYSF_END_NETWORK_TRAFFIC()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   trap fnWINCH WINCH
 
@@ -2777,7 +2801,7 @@ fnYSF_END_NETWORK_TRAFFIC()
 #-----------------------------------
 fnDSTAR_END_NETWORK_TRAFFIC()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   trap fnWINCH WINCH
 
@@ -2817,7 +2841,7 @@ fnDSTAR_END_NETWORK_TRAFFIC()
 #-----------------------------------
 fnNXDN_END_NETWORK_TRAFFIC()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   trap fnWINCH WINCH
 
@@ -2855,7 +2879,7 @@ fnNXDN_END_NETWORK_TRAFFIC()
 #-----------------------------------
 fnP25_END_NETWORK_TRAFFIC()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   trap fnWINCH WINCH
 
@@ -2896,7 +2920,7 @@ fnP25_END_NETWORK_TRAFFIC()
 #-----------------------------------
 fnSHOW_CURRENT_CALL()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   trap fnWINCH WINCH
 
@@ -2995,13 +3019,13 @@ fnSHOW_CURRENT_CALL()
   # Lookup the QTH data for the callsign.
   # Try the DMR user.csv file first...
   QTH_SRC="user.csv"
-  CSV_RECORD="$(grep ",${SEARCH_FROM}," "${USERCSV}" | sort -u | head -1)"
+  CSV_RECORD="$(grep ",${SEARCH_FROM}," "${USERCSV}" | LC_ALL=C sort -u | head -1)"
 
   # If nothing found, try the NXDN.csv file...
   if [[ "${CSV_RECORD}" = "" ]]
   then
     QTH_SRC="NXDN.csv"
-    CSV_RECORD="$(grep ",${SEARCH_FROM}," "${NXDNCSV}" | sort -u | head -1)"
+    CSV_RECORD="$(grep ",${SEARCH_FROM}," "${NXDNCSV}" | LC_ALL=C sort -u | head -1)"
   fi
 
   #----------
@@ -3129,7 +3153,7 @@ fnSHOW_CURRENT_CALL()
 #-----------------------------------
 fnDMR_SHOW_CURRENT_CALL()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   trap fnWINCH WINCH
 
@@ -3201,7 +3225,7 @@ fnDMR_SHOW_CURRENT_CALL()
 #-----------------------------------
 fnCOLORIZE_BER()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   trap fnWINCH WINCH
 
@@ -3224,7 +3248,7 @@ fnCOLORIZE_BER()
 #-----------------------------------
 fnCOLORIZE_LOSS()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   trap fnWINCH WINCH
 
@@ -3247,7 +3271,7 @@ fnCOLORIZE_LOSS()
 #-----------------------------------
 fnCOLORIZE_RSSI()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   trap fnWINCH WINCH
 
@@ -3322,7 +3346,7 @@ fnCOLORIZE_RSSI()
 #-----------------------------------
 fnDMR_DOWNLOAD_USERCSV()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   # If the user.csv file is missing, or is older than 7 days,
   # then download a new one from the web.
@@ -3333,8 +3357,8 @@ fnDMR_DOWNLOAD_USERCSV()
     if sudo wget -t 1 -q --show-progress --progress=bar:force:noscroll https://database.radioid.net/static/user.csv -O "${USERCSV}.tmp"
     then
       # Check for a too-small (possibly corrupt) file
-      # Make sure it's at least ~10K in size
-      if [[ "$(sudo stat --format=%s "${USERCSV}.tmp")" -lt 10000 ]]
+      # Make sure it's at least ~10M in size
+      if [[ "$(sudo stat --format=%s "${USERCSV}.tmp")" -lt 10000000 ]]
       then
         echo -e "\nThe download appears corrupt.  Will continue without it.\n" >&2
         sleep 2
@@ -3361,7 +3385,7 @@ fnDMR_DOWNLOAD_USERCSV()
 #-----------------------------------
 fnYSF_DOWNLOAD_CTYDAT()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   # If the cty.dat file is missing, or is older than 30 days,
   # then download a new one from the web.
@@ -3370,7 +3394,7 @@ fnYSF_DOWNLOAD_CTYDAT()
     echo -e "\nDownloading latest DXCC cty.dat file..."
     sudo mount -o remount,rw / 2>/dev/null
 
-    BIGCTYZIP="$(curl -s --fail --max-time 2 "https://www.country-files.com/category/big-cty/" | grep "\[download\]" | sort -nr | head -1 | cut -f2 -d"\"")"
+    BIGCTYZIP="$(curl -s --fail --max-time 2 "https://www.country-files.com/category/big-cty/" | grep "\[download\]" | LC_ALL=C sort -nr | head -1 | cut -f2 -d"\"")"
     if [[ -n "${BIGCTYZIP}" ]]
     then
       mkdir /tmp/bigctydir 2>/dev/null
@@ -3411,7 +3435,7 @@ fnYSF_DOWNLOAD_CTYDAT()
 #-----------------------------------
 fnBUILD_HISTORY()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   trap fnWINCH WINCH
 
@@ -3486,7 +3510,7 @@ fnBUILD_HISTORY()
 
       #----------
       # CONSTRUCT THE NEW RECORD WE'LL BE ADDING
-      HISTORY[1]="${BOLD}${BLU}${HIST_TIME}${DIM}${AMPM}${BOLD}${WHI}${SGR0}${SBOX_VL} ${BOLD}${HIST_COLOR}${HIST_FROM}${SGR0}${SBOX_VL} ${BOLD}${HIST_COLOR}${HIST_TO}${SGR0} ${SBOX_VL} ${BOLD}${BLU}${HIST_SECS}${WHI}${SGR0} ${SBOX_VL} ${BOLD}${BER_COLOR}${HIST_BER}${WHI}${SGR0} ${SBOX_VL} ${BOLD}${CYA}${HIST_SRC}${WHI}"
+      HISTORY[1]="${BOLD}${BLU}${HIST_TIME}${DIM}${AMPM}${BOLD}${WHI}${SGR0}${SBOX_VL} ${BOLD}${CONTACT_COLOR}${HIST_FROM}${SGR0}${SBOX_VL} ${BOLD}${CONTACT_COLOR}${HIST_TO}${SGR0} ${SBOX_VL} ${BOLD}${BLU}${HIST_SECS}${WHI}${SGR0} ${SBOX_VL} ${BOLD}${BER_COLOR}${HIST_BER}${WHI}${SGR0} ${SBOX_VL} ${BOLD}${CYA}${HIST_SRC}${WHI}"
 
       #----------
       if [[ ${DATA} -eq 1 ]]
@@ -3536,7 +3560,7 @@ fnBUILD_HISTORY()
 #-----------------------------------
 fnTALLY_ERRORS()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   trap fnWINCH WINCH
 
@@ -3568,7 +3592,7 @@ fnTALLY_ERRORS()
 #-----------------------------------
 fnTALLY_WARNINGS()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   trap fnWINCH WINCH
 
@@ -3597,7 +3621,7 @@ fnTALLY_WARNINGS()
 #-----------------------------------
 fnDMR_MAIN()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   trap fnWINCH WINCH
 
@@ -3926,7 +3950,7 @@ fnDMR_MAIN()
 #-----------------------------------
 fnYSF_MAIN()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   trap fnWINCH WINCH
 
@@ -4197,7 +4221,7 @@ fnYSF_MAIN()
 #-----------------------------------
 fnNXDN_MAIN()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   trap fnWINCH WINCH
 
@@ -4360,7 +4384,7 @@ fnNXDN_MAIN()
 #-----------------------------------
 fnDSTAR_MAIN()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   trap fnWINCH WINCH
 
@@ -4636,7 +4660,7 @@ fnDSTAR_MAIN()
 #-----------------------------------
 fnP25_MAIN()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   trap fnWINCH WINCH
 
@@ -4671,6 +4695,8 @@ fnP25_MAIN()
   FIELD_10="${CUT_ARRAY[9]}"
   FIELD_11="${CUT_ARRAY[10]}"
   FIELD_13="${CUT_ARRAY[12]}"
+  FIELD_16="${CUT_ARRAY[15]}"
+  FIELD_18="${CUT_ARRAY[17]}"
   unset CUT_ARRAY
 
   #----------
@@ -4738,14 +4764,12 @@ fnP25_MAIN()
   # End of P25 RF traffic
   if [[ "${LOGREC_REMAINING_DATA}" =~ "received RF end of voice transmission" ]]
   then
-    SECS="${FIELD_8}"
-
-    BER="${FIELD_11}"
-    BER="${BER%,*}"
-
-    RSSI="${FIELD_13}"
+    SECS="${FIELD_13}"
+    BER="${FIELD_16}"
+    RSSI="${FIELD_18}"
 
     # Fields to pass to the history...
+    BER="${BER%,*}"
     BER="${BER%\%*}"
 
     DBM="${RSSI%%/*}"
@@ -4785,9 +4809,10 @@ fnP25_MAIN()
   # End of P25 network traffic (VARIANT A)
   if [[ "${LOGREC_REMAINING_DATA}" =~ "network end of transmission from" ]]
   then
-    FROM="${FIELD_7}"
-    TG_LABEL="${FIELD_8}"
-    TO="${FIELD_10%,*}"
+#KPC
+#   FROM="${FIELD_7}"
+#   TG_LABEL="${FIELD_8}"
+#   TO="${FIELD_10%,*}"
     SECS="${FIELD_11}"
     LOSS="${FIELD_13%\%*}"
 
@@ -4830,7 +4855,7 @@ fnP25_MAIN()
 #-----------------------------------
 fnMAIN_LOOP()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   #----------
   # For "live" logs, use tail.  For replay, use cat.
@@ -4910,38 +4935,32 @@ fnMAIN_LOOP()
     # Now parse it accordingly.
     case "${LOGREC_MODE}" in
       "DMR")
-        BANNER_COLOR="${WHI}"
-        HIST_COLOR="${WHI}"
+        CONTACT_COLOR="${DMR_COLOR}"
         LINE_COLOR="${BLU}"
         fnDMR_MAIN
         ;;
       "YSF")
-        BANNER_COLOR="${YEL}"
-        HIST_COLOR="${YEL}"
+        CONTACT_COLOR="${YSF_COLOR}"
         LINE_COLOR="${MAG}"
         fnYSF_MAIN
         ;;
       "NXDN")
-        BANNER_COLOR="${CYA}"
-        HIST_COLOR="${CYA}"
+        CONTACT_COLOR="${NXDN_COLOR}"
         LINE_COLOR="${DIM}${WHI}"
         fnNXDN_MAIN
         ;;
       "D-Star")
-        BANNER_COLOR="${GRE}"
-        HIST_COLOR="${GRE}"
+        CONTACT_COLOR="${DSTAR_COLOR}"
         LINE_COLOR="${CYA}"
         fnDSTAR_MAIN
         ;;
       "P25")
-        BANNER_COLOR="${MAG}"
-        HIST_COLOR="${MAG}"
+        CONTACT_COLOR="${P25_COLOR}"
         LINE_COLOR="${DIM}${YEL}"
         fnP25_MAIN
         ;;
       *)
-        BANNER_COLOR="${BLU}"
-        HIST_COLOR="${BLU}"
+        CONTACT_COLOR="${OTHER_COLOR}"
         LINE_COLOR="${WHI}"
         ;;
     esac
@@ -4952,7 +4971,7 @@ fnMAIN_LOOP()
 #-----------------------------------
 fnABORT()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   fnRESET_SCROLLING
 
@@ -5006,7 +5025,7 @@ fnABORT()
 #-----------------------------------
 fnWINCH()
 {
-  echo -e "\nenter: ${FUNCNAME[*]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   #----------
   # Get the screensize.  We'll be needing the number of lines.
