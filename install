@@ -12,19 +12,13 @@ PISTAR-LASTQSO INSTALLATION:
 This install script will perform the following operations...
 
 1.) remount the rootfs as read-write
-
 2.) copy "pistar-lastqso" to /usr/local/bin and enable execute permission
-
 3.) copy "dxcc.pl" script to /usr/local/bin and enable execute permission
-
 4.) install the package "figlet" from the standard repositories using
     "sudo apt-get -y install figlet"
-
 5.) install the package "jq" from the standard repositories using
     "sudo apt-get -y install jq"
-
 6.) copy the supplemental "ansi_shadow.flf" font file to /usr/share/figlet
-
 7.) remount the rootfs as read-only
 
 EOF
