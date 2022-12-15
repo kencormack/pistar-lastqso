@@ -747,7 +747,7 @@ I am in no way partnered with the original creator of PI-STAR, Andy Taylor (MW0M
 -------------------------------------------------------------------
 ## Special Thanks
 
-I want to offer a big "Vielen Dank!" to Wolfgang Wendefeuer (DC6LK), for the testing, input, discussion, ideas, and sample TG entries he provided.  Thanks also, to Cal Kutemeier (N9KO) for spotting a time-sensitive bug in the conversion of UTC date-stamps to local dates, Neil Redditch (M1CFK) for reporting a problem with Talker Alias, and Gaute Alstad (LB6YD) for providing sample log entries with which to add D-Star RF log message support.
+I want to offer a big "Vielen Dank!" to Wolfgang Wendefeuer (DC6LK), for the testing, input, discussion, ideas, and sample TG entries he provided.  Thanks also, to Cal Kutemeier (N9KO) for spotting a time-sensitive bug in the conversion of UTC date-stamps to local dates, Neil Redditch (M1CFK) for reporting a problem with Talker Alias, Gaute Alstad (LB6YD) for providing sample log entries with which to add D-Star RF log message support, and Jerry Kuhn (N8JLK) for reporting a problem parsing P25 RF transmissions and providing the sample log entries needed to correct.
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
