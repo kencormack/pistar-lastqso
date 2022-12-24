@@ -18,6 +18,7 @@ Note: Some screenshots shown below may not always reflect the latest version, di
 - **[City, State, Country Lookups for Callsigns (DMR only)](https://github.com/kencormack/pistar-lastqso#city-state-country-lookups-for-callsigns-dmr-only)**
 - **[City, State, Country Lookups for Callsigns (Other Modes)](https://github.com/kencormack/pistar-lastqso#city-state-country-lookups-for-callsigns-other-modes)**
 - **[Maidenhead Grid Square Lookups for US Callsigns (All Modes)](https://github.com/kencormack/pistar-lastqso#maidenhead-grid-square-lookups-for-us-callsigns-all-modes)**
+- **[License Level Lookups for US Callsigns (All Modes)](https://github.com/kencormack/pistar-lastqso#license-level-lookups-for-us-callsigns-all-modes)**
 - **[Commandline Options](https://github.com/kencormack/pistar-lastqso#commandline-options)**
 - **[The Help Text](https://github.com/kencormack/pistar-lastqso#the-help-text)**
 - **[Daily Log Rotation](https://github.com/kencormack/pistar-lastqso#daily-log-rotation)**
@@ -79,6 +80,8 @@ As several of the modes do not require that users be registered, there is no sin
 
 **Note #4:**
 Maidenhead Grid Square look-ups are only possible with US Callsigns at this time, as the API that fetches them is tied to the US FCC's database.  The Grid Squares are based on the Callsign's address.  Display of a Callsign's Grid Square requires use of the "-g|--grid" commandline option (see the help text, below.)
+
+Likewise, FCC license level lookups are only available for US Callsigns.  Display of a Callsign's FCC license level requires use of the "-F|--FCC" commandline option (see the help text, below.)
 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
@@ -201,6 +204,12 @@ If a callsign is determined to be one issued by the United States Federal Commun
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
+## License Level Lookups for US Callsigns (All Modes)
+Just as with Maidenhead Grid Square lookups described above, the script has the ability to lookup the level of licensing applicable to a US Callsign.  The license level, once received, is then cached locally, to prevent performing a lookup every time a given callsign appears.   Because this feature relies on queries to a remote server, and could potentially introduce lag due to network connectivity or other issues, this feature is disabled, by default.  To enable FCC License level lookups for US callsigns, use the "-F|--FCC" commandline option, as described in the Help Text, below.
+
+- **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
+-------------------------------------------------------------------
 ## Commandline Options
 
 **pistar-lastqso** supports a number of commandline options, as shown below, and described in **[the Help text](https://github.com/kencormack/pistar-lastqso#the-help-text)**.  Multiple options can be specified at the same time (though each option MUST be separated from the next, with a space).  For example, specifying "-c -n -t" (or "--csv --nobig --top") will download the latest updated **user.csv** file, disable the large font display of the Callsigns, and activate the non-scrolling information section at the top of the screen.
@@ -208,11 +217,11 @@ If a callsign is determined to be one issued by the United States Federal Commun
 **Valid Options and Parameters...**
 ```
 Short Form:
-  [-12] [-c] [-d] [-D] [-e] [-f <1-5>] [-g] [-h] [-i] [-l]
+  [-12] [-c] [-d] [-D] [-e] [-f <1-5>] [-F] [-g] [-h] [-i] [-l]
   [-m] [-n] [-p] [-r /path/to/file] [-t [integer]] [-v] [-w]
 
 Long Form:
-  [--12hr] [--csv] [--dat] [--DXCC] [--errors] [--font <1-5>] [--grid]
+  [--12hr] [--csv] [--dat] [--DXCC] [--errors] [--font <1-5>] [--FCC] [--grid]
   [-help] [-info] [--logo] [--mono] [--nobig] [--poll] [--replay /path/to/file]
   [--top [integer]] [--version] [--wrap]
 ```
@@ -327,6 +336,12 @@ PISTAR-LASTQSO - HELP
 
       Font # 5 may not work for everyone.  Not all terminal emulators
       or TERM-types support the ANSI control codes for this feature.
+
+  -F|--FCC
+      For US callsigns only, enable amateur radio license level lookup
+      for callsigns, based on FCC records.  The license can be one of
+      Novice, Technician, General, Advanced, or Extra.  When enabled,
+      the license level is displayed on a line following the QTH data.
 
   -g|--grid
       For US callsigns only, enable Maidenhead Grid Square look-up for
