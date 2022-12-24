@@ -13,7 +13,7 @@
 
 set -o allexport
 
-VERSION=3.15
+VERSION=3.16
 
 #----------
 if [[ "${EUID}" -eq 0 ]]
@@ -217,6 +217,12 @@ SHOW_LOG_ERRORS=1
 # Maidenhead lookups on US callsigns disabled by default.
 # Can be activated with "-g|--grid" cmdline option.
 GRID=0
+#
+# If callsign is US-based, FCC database queries to
+# determine if the license is Novice, Technician, General,
+# Advanced, or Extra levels, are disabled by default.
+# Can be activated with "-F|--FCC" cmdline option.
+FCC=0
 #
 # *IF* your display is greater than 130 columns wide,
 # *AND* you use the "-t|--top" option, *AND* you add
@@ -477,6 +483,10 @@ touch "${DXCC_CACHE_FILE}"
 GRID_CACHE_FILE="/tmp/lastqso-grid-cache-${MY_TTY}"
 touch "${GRID_CACHE_FILE}"
 
+# Ditto, for the FCC license class.
+LICENSE_CACHE_FILE="/tmp/lastqso-license-cache-${MY_TTY}"
+touch "${LICENSE_CACHE_FILE}"
+
 #----------
 # Finding a way to get the screen width of a window that can
 # be dynamically re-sized is funky, in bash.  Neither tput,
@@ -590,6 +600,16 @@ fnCOPY_CACHE()
     rm /tmp/.cache_tmp 2>/dev/null
   fi
 
+  if ! cmp --silent -- "${LICENSE_CACHE_FILE}" /home/pi-star/.lastqso-license-cache 2>/dev/null
+  then
+    cat "${LICENSE_CACHE_FILE}" /home/pi-star/.lastqso-license-cache 2>/dev/null \
+      | LC_ALL=C sort -u >/tmp/.cache_tmp 2>/dev/null
+    cat /tmp/.cache_tmp > "${LICENSE_CACHE_FILE}" 2>/dev/null
+    sudo mount -o remount,rw / 2>/dev/null
+    cat /tmp/.cache_tmp > /home/pi-star/.lastqso-license-cache 2>/dev/null
+    rm /tmp/.cache_tmp 2>/dev/null
+  fi
+
   # When I'm testing/developing, occasionally the script spots log
   # entries it denotes as "unparsed".  Save those for me to look
   # at, to determine if the script should parse or ignore them.
@@ -631,30 +651,68 @@ fnGET_US_GRIDSQUARE()
   echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   US_CALL="${1}"
-  GRIDSQUARE=""
 
   # Search the cache.
-  RESULT="$(grep "^${US_CALL}:" "${GRID_CACHE_FILE}")"
-  if [[ -n "${RESULT}" ]]
+  GRIDSQUARE="$(grep "^${US_CALL}:" "${GRID_CACHE_FILE}")"
+
+  if [[ -n "${GRIDSQUARE}" ]]
   then
     # If the cache delivered, we're done.
-    RESULT="${RESULT^^}"
-    GRIDSQUARE=" (${RESULT#*:})"
+    GRIDSQUARE="${GRIDSQUARE^^}"
+    GRIDSQUARE=" (${GRIDSQUARE#*:})"
   else
     # Otherwise, we need to query the remote host.
-    read -r RESULT <<< "$(curl -s --fail --max-time 2 "https://callook.info/${US_CALL}/json" 2>/dev/null | jq -r '.location.gridsquare')"
+    read -r GRIDSQUARE <<< "$(curl -s --fail --max-time 2 "https://callook.info/${US_CALL}/json" 2>/dev/null | jq -r '.location.gridsquare' | tr '\n' ' ')"
     # Dont cache an "Unknown" or null response
-    case "${RESULT}" in
+    case "${GRIDSQUARE}" in
       "Unknown")
-        GRIDSQUARE=" (${RESULT})"
+        GRIDSQUARE=" (${GRIDSQUARE})"
         ;;
       "")
         GRIDSQUARE=""
         ;;
       *)
-        RESULT="${RESULT^^}"
-        echo "${US_CALL}:${RESULT}" >> "${GRID_CACHE_FILE}"
-        GRIDSQUARE=" (${RESULT})"
+        GRIDSQUARE="${GRIDSQUARE^^}"
+        echo "${US_CALL}:${GRIDSQUARE}" >> "${GRID_CACHE_FILE}"
+        GRIDSQUARE=" (${GRIDSQUARE})"
+        ;;
+    esac
+  fi
+  return
+}
+
+# Look up FCC License level for US Callsigns,
+#-----------------------------------
+#KPC
+fnGET_US_LICENSE()
+{
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
+
+  US_CALL="${1}"
+
+  # Search the cache.
+  LICENSE="$(grep "^${US_CALL}:" "${LICENSE_CACHE_FILE}")"
+
+  if [[ -n "${LICENSE}" ]]
+  then
+    # If the cache delivered, we're done.
+    LICENSE="${LICENSE^^}"
+    LICENSE="${LICENSE#*:}"
+  else
+    # Otherwise, we need to query the remote host.
+#   read -r LICENSE STATUS <<< "$(curl -s --fail --max-time 2 "https://callook.info/${US_CALL}/json" 2>/dev/null | jq -r '.current.operClass, .status' | tr '\n' ' ')"
+    read -r LICENSE <<< "$(curl -s --fail --max-time 2 "https://callook.info/${US_CALL}/json" 2>/dev/null | jq -r '.current.operClass' | tr '\n' ' ')"
+    # Dont cache an "Unknown" or null response
+    case "${LICENSE}" in
+      "Unknown")
+        LICENSE="(${LICENSE})"
+        ;;
+      "")
+        LICENSE=""
+        ;;
+      *)
+        LICENSE="${LICENSE^^}"
+        echo "${US_CALL}:${LICENSE}" >> "${LICENSE_CACHE_FILE}"
         ;;
     esac
   fi
@@ -1133,7 +1191,7 @@ fnDEV_INFO()
   DEV_STRING[4]="  Modes and X-Modes: YSF=${YSF_ENABLED} DMR=${DMR_ENABLED} NXDN=${NXDN_ENABLED} DSTAR=${DSTAR_ENABLED} P25=${P25_ENABLED}"
   DEV_STRING[5]="  YSF2DMR=${YSF2DMR_ENABLED} YSF2NXDN=${YSF2NXDN_ENABLED} YSF2P25=${YSF2P25_ENABLED} DMR2YSR=${DMR2YSF_ENABLED} DMR2NXDN=${DMR2NXDN_ENABLED}"
   DEV_STRING[6]="  Traffic Counts: DMR=${DMR_COUNT} YSF=${YSF_COUNT} NXDN=${NXDN_COUNT} DSTAR=${DSTAR_COUNT} P25=${P25_COUNT}"
-  DEV_STRING[7]="  Cache: DXCC=$(grep -c . "${DXCC_CACHE_FILE}") Grid=$(grep -c . "${GRID_CACHE_FILE}") Other Counts: K=${KERCHUNK_COUNT} E=${ERROR_COUNT} W=${WARNING_COUNT} R=${LOG_RESTARTS}"
+  DEV_STRING[7]="  Cache: DXCC=$(grep -c . "${DXCC_CACHE_FILE}") Grid=$(grep -c . "${GRID_CACHE_FILE}") Lic=$(grep -c . "${LICENSE_CACHE_FILE}") Other: K=${KERCHUNK_COUNT} E=${ERROR_COUNT} W=${WARNING_COUNT} R=${LOG_RESTARTS}"
 
   #----------
   # In replay mode, text is bright yellow.
@@ -1507,11 +1565,11 @@ fnUSAGE()
   echo "USAGE:  Valid options and parameters include:
 
 Short Form:
-  [-12] [-c] [-d] [-D] [-e] [-f <1-5>] [-g] [-h] [-i] [-l]
+  [-12] [-c] [-d] [-D] [-e] [-f <1-5>] [-F] [-g] [-h] [-i] [-l]
   [-m] [-n] [-p] [-r /path/to/file] [-t [integer]] [-v] [-w]
 
 Long Form:
-  [--12hr] [--csv] [--dat] [--DXCC] [--errors] [--font <1-5>] [--grid]
+  [--12hr] [--csv] [--dat] [--DXCC] [--errors] [--font <1-5>] [--FCC] [--grid]
   [-help] [-info] [--logo] [--mono] [--nobig] [--poll] [--replay /path/to/file]
   [--top [integer]] [--version] [--wrap]
   " >&2
@@ -1606,6 +1664,11 @@ fnPARSE_CMDLINE()
           fnCLEANUP
           exit 1
         fi
+        continue
+        ;;
+
+      -F|--FCC)
+        FCC=1
         continue
         ;;
 
@@ -1850,6 +1913,12 @@ PISTAR-LASTQSO - HELP
 
       Font # 5 may not work for everyone.  Not all terminal emulators
       or TERM-types support the ANSI control codes for this feature.
+
+  -F|--FCC
+      For US callsigns only, enable amateur radio license level lookup
+      for callsigns, based on FCC records.  The license can be one of
+      Novice, Technician, General, Advanced, or Extra.  When enabled,
+      the license level is displayed on a line following the QTH data.
 
   -g|--grid
       For US callsigns only, enable Maidenhead Grid Square look-up for
@@ -2328,10 +2397,12 @@ fnGOODBYE_BOX()
   echo -n "${DIM}${WHI}Includes ${SGR0}${YEL}$(printf %04d "${KERCHUNK_COUNT}")${DIM}${WHI} Kerchunks (${SGR0}${YEL}$(printf %.2f "${PERCENTAGE}")%${DIM}${WHI})${SGR0}"
 
   #----------
-  tput cup 14 23
-  echo -n "${CYA}Cache Recs:  DXCC $(printf %04d "$(grep -c . "${DXCC_CACHE_FILE}")")"
-  tput cup 14 47
-  echo -n "${CYA}GRID $(printf %04d "$(grep -c . "${GRID_CACHE_FILE}")")"
+  tput cup 14 18
+  echo -n "${CYA}Caches:  DXCC $(printf %05d "$(grep -c . "${DXCC_CACHE_FILE}")")"
+  tput cup 14 39
+  echo -n "${CYA}GRID $(printf %05d "$(grep -c . "${GRID_CACHE_FILE}")")"
+  tput cup 14 51
+  echo -n "${CYA}FCC $(printf %05d "$(grep -c . "${LICENSE_CACHE_FILE}")")"
 
   #----------
   ERROR_COUNT_COLOR=""
@@ -3140,10 +3211,26 @@ fnSHOW_CURRENT_CALL()
     tput cuf 18
     if [[ "${QTH_SRC}" = "cty.dat" ]]
     then
-      echo "${DIM}QTH:${SGR0} ${SGR0}${BOLD}${MAG}${COUNTRY}${GRIDSQUARE} (DXCC: ${DXCC_TIME})${SGR0}${WHI}${CLR_ED}"
+      echo "${DIM}QTH:${SGR0} ${BOLD}${MAG}${COUNTRY}${GRIDSQUARE} (DXCC: ${DXCC_TIME})${SGR0}${WHI}${CLR_ED}"
     else
-      echo "${DIM}QTH:${SGR0} ${SGR0}${BOLD}${MAG}${CITY}, ${STATE}, ${COUNTRY}${GRIDSQUARE}${SGR0}${WHI}${CLR_ED}"
+      echo "${DIM}QTH:${SGR0} ${BOLD}${MAG}${CITY}, ${STATE}, ${COUNTRY}${GRIDSQUARE}${SGR0}${WHI}${CLR_ED}"
     fi
+  fi
+
+#KPC
+  #----------
+  if [[ "${COUNTRY}" = "United States" ]] && [[ "${FCC}" = "1" ]]
+  then
+    fnGET_US_LICENSE "${SEARCH_FROM}"
+    if [[ -n "${LICENSE}" ]]
+    then
+      echo "${DIM}FCC :${SGR0} ${BOLD}${MAG}${LICENSE} class license${SGR0}${WHI}${CLR_ED}"
+#     echo -en "${DIM}FCC :${SGR0} ${BOLD}${MAG}${LICENSE} class license${SGR0}${WHI}${CLR_ED}\r"
+#     tput cuf 32
+#     echo "${DIM}STATUS:${SGR0} ${BOLD}${MAG}${STATUS}${SGR0}${WHI}${CLR_ED}"
+    fi
+  else
+    LICENSE=""
   fi
 
   fnQSO_IN_PROGRESS
@@ -3210,6 +3297,22 @@ fnDMR_SHOW_CURRENT_CALL()
     then
       echo "${DIM}QTH:${SGR0} ${MAG}${BOLD}${CITY}, ${STATE}, ${COUNTRY}${GRIDSQUARE}${SGR0}${WHI}${CLR_ED}"
     fi
+  fi
+
+#KPC
+  #----------
+  if [[ "${COUNTRY}" = "United States" ]] && [[ "${FCC}" = "1" ]]
+  then
+    fnGET_US_LICENSE "${FROM}"
+    if [[ -n "${LICENSE}" ]]
+    then
+      echo "${DIM}FCC :${SGR0} ${BOLD}${MAG}${LICENSE} class license${SGR0}${WHI}${CLR_ED}"
+#     echo -en "${DIM}FCC :${SGR0} ${BOLD}${MAG}${LICENSE} class license${SGR0}${WHI}${CLR_ED}\r"
+#     tput cuf 32
+#     echo "${DIM}STATUS:${SGR0} ${BOLD}${MAG}${STATUS}${SGR0}${WHI}${CLR_ED}"
+    fi
+  else
+    LICENSE=""
   fi
 
   #----------
@@ -4809,10 +4912,6 @@ fnP25_MAIN()
   # End of P25 network traffic (VARIANT A)
   if [[ "${LOGREC_REMAINING_DATA}" =~ "network end of transmission from" ]]
   then
-#KPC
-#   FROM="${FIELD_7}"
-#   TG_LABEL="${FIELD_8}"
-#   TO="${FIELD_10%,*}"
     SECS="${FIELD_11}"
     LOSS="${FIELD_13%\%*}"
 
