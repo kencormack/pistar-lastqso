@@ -1,6 +1,6 @@
 ```
 CHANGES: V3.16
- 1. Added new cmdline option "-F|-FCC" to
+ 1. Added new cmdline option "-F|--FCC" to
     display the amateur radio license class
     for US-based callsigns.
 
