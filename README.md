@@ -2,8 +2,7 @@
 ## A Tool to Monitor DMR, YSF, D-STAR, NXDN, and P25 Traffic, on Pi-Star
 Note: Some screenshots shown below may not always reflect the latest version, differing only in minor cosmetics from the tool's current version.
 
-This program was written for the official pi-star version 4.1.4 and later only.  **NO testing has been done, nor will it ever be done, with earlier versions.**
-Likewise, no third-party "enhanced" dashboards or other user assembled hotspot concoctions are supported.
+**This program was written for the official pi-star version 4.1.4 and later only.  NO testing has been done, nor will it ever be done, with earlier versions.  Likewise, no third-party "enhanced" dashboards or other user assembled hotspot concoctions are supported.**
 
 ![Image](https://raw.githubusercontent.com/kencormack/pistar-lastqso/master/images/title-screen.jpg)
 
