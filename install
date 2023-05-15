@@ -14,11 +14,9 @@ This install script will perform the following operations...
 1.) remount the rootfs as read-write
 2.) copy "pistar-lastqso" to /usr/local/bin and enable execute permission
 3.) copy "dxcc.pl" script to /usr/local/bin and enable execute permission
-4.) install the package "figlet" from the standard repositories using
-    "sudo apt-get -y install figlet"
-5.) install the package "jq" from the standard repositories using
-    "sudo apt-get -y install jq"
-6.) copy the supplemental "ansi_shadow.flf" font file to /usr/share/figlet
+4.) install the packages "figlet" and "jq" from the standard repositories
+5.) copy the supplemental "ansi_shadow.flf" font file to /usr/share/figlet
+6.) populate the dxcc, license, and grid caches w/ data for US callsigns
 7.) remount the rootfs as read-only
 
 EOF
@@ -82,18 +80,18 @@ fi
 #----------
 if [ -n "$(command -v figlet)" ]
 then
-  echo -e "${GRE}Step 4. - Figlet is already installed.  Continuing...${WHI}"
+  echo -e "${GRE}Step 4a. - Figlet is already installed.  Continuing...${WHI}"
 else
-  echo -e "${GRE}Step 4. - Installing figlet from the repositories...${WHI}"
+  echo -e "${GRE}Step 4a. - Installing figlet from the repositories...${WHI}"
   sudo apt-get -y install figlet
 fi
 
 #----------
 if [ -n "$(command -v jq)" ]
 then
-  echo -e "${GRE}Step 5. - jq is already installed.  Continuing...${WHI}"
+  echo -e "${GRE}Step 4b. - jq is already installed.  Continuing...${WHI}"
 else
-  echo -e "${GRE}Step 5. - Installing jq from the repositories...${WHI}"
+  echo -e "${GRE}Step 4b. - Installing jq from the repositories...${WHI}"
   sudo apt-get -y install jq
 fi
 
@@ -106,7 +104,7 @@ then
     echo -e "${RED}  Installation failed.\n${WHI}"
     exit
   else
-    echo -e "${GRE}Step 6. - Installing ansi_shadow font...${WHI}"
+    echo -e "${GRE}Step 5. - Installing ansi_shadow font...${WHI}"
     if [ "$(sudo cp ./ansi_shadow.flf /usr/share/figlet/ansi_shadow.flf 2> /dev/null)" ]
     then
       echo -e "${RED}\n  Unable to copy ansi_shadow.flf to /usr/share/figlet${WHI}"
@@ -115,7 +113,25 @@ then
     fi
   fi
 else
-  echo -e "${GRE}Step 6. - Font file is already installed.  Continuing...${WHI}"
+  echo -e "${GRE}Step 5. - Font file is already installed.  Continuing...${WHI}"
+fi
+
+#----------
+echo -e "${GRE}Step 6. - Preloading grid square and license caches...${WHI}"
+if [ -f ./.lastqso-dxcc-cache ]
+then
+  rm /tmp/lastqso-dxcc-cache* 2>/dev/null
+  cp ./.lastqso-dxcc-cache /home/pi-star
+fi
+if [ -f ./.lastqso-grid-cache ]
+then
+  rm /tmp/lastqso-grid-cache* 2>/dev/null
+  cp ./.lastqso-grid-cache /home/pi-star
+fi
+if [ -f ./.lastqso-license-cache ]
+then
+  rm /tmp/lastqso-license-cache* 2>/dev/null
+  cp ./.lastqso-license-cache /home/pi-star
 fi
 
 #----------
