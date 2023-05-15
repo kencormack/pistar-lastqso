@@ -1,4 +1,38 @@
 ```
+CHANGES: V3.17
+ 1. Added a test to make sure a remote query
+    for a Maidenhead gridsquare returns an
+    actual gridsquare, not a null, error, or
+    other unwanted result.
+
+ 2. Added a test to make sure a remote query
+    for a U.S. license type returns a valid
+    type, not a null, error, or other unwanted
+    result.
+
+ 3. Ignore D-Star "invalid slow data header"
+    log entries.
+
+ 4. Eliminated calls to the external 'date'
+    command from elapsed time indicators.
+
+ 5. The install script preloads the dxcc,
+    grid, and license caches with US-based
+    callsigns, using FCC data from over 94000
+    callsigns (as of May 2023).  The dxcc
+    cache is also preloaded with several
+    hundred non-US callsigns observed/logged
+    during script testing and development.
+
+ 6. Add awareness of CLUB calls, for US-based
+    callsigns.
+
+ 7. Improved filtering of callsign, to strip
+    non-alphanumeric characters some people
+    use when appending their name to their
+    callsigns (KE8DPF/KEN, KE8DPF-KEN, and
+    so on), often seen with YSF users.
+
 CHANGES: V3.16
  1. Added new cmdline option "-F|--FCC" to
     display the amateur radio license class
