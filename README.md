@@ -109,8 +109,8 @@ The install script will perform the following tasks, as needed...
 - remount the rootfs as read-write
 - copy "pistar-lastqso" to /usr/local/bin and enable execute permission
 - copy "dxcc.pl" script to /usr/local/bin and enable execute permission
-- install the package "figlet" from the standard repositories using **"sudo apt-get -y install figlet"**
-- install the package "jq" from the standard repositories using **"sudo apt-get -y install jq"**
+- install the packages "figlet" and "jq" from the standard repositories
+- populate the dxcc, license, and grid caches w/ data for US callsigns
 - copy the supplemental "ansi_shadow.flf" font file to /usr/share/figlet
 - remount the rootfs as read-only
 
@@ -375,7 +375,7 @@ PISTAR-LASTQSO - HELP
              Modes and X-Modes: YSF=0 DMR=0 NXDN=0 DSTAR=0 P25=1
              YSF2DMR=0 YSF2NXDN=0 YSF2P25=0 DMR2YSR=0 DMR2NXDN=0
                 Traffic Counts: DMR=0 YSF=0 NXDN=0 DSTAR=0 P25=0
-              Cache: DXCC=0 Grid=0 Other Counts: K=0 E=0 W=0 R=0
+               Cache: DXCC=0 Grid=0 Lic=0 Other: K=0 E=0 W=0 R=0
 
       The first line shows the options and parameters passed to the
       script when launched.
@@ -403,8 +403,8 @@ PISTAR-LASTQSO - HELP
       of DMR, YSF, NXDN, DSTAR, and P25 messages seen since the program
       was launched.
 
-      The last line shows the number of records in the DXCC and Grid
-      Square caches, and the number of Kerchunks, Errors, Warnings,
+      The last line shows the number of records in the DXCC, Grid, and
+      License caches, and the number of Kerchunks, Errors, Warnings,
       and log Restarts observed since program launch.  When the script
       is monitoring live data, the -i|--info data is shown in pale
       blue.  When running in -r|--replay mode, the data is shown in
