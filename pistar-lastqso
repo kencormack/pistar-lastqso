@@ -1,9 +1,9 @@
 #!/bin/bash
-# shellcheck disable=SC2206,SC2034
+# shellcheck source=/dev/null disable=SC2206,SC2034
 #
 # pistar-lastqso
 # Written by:   Ken Cormack (KE8DPF), unixken@yahoo.com
-# Copyright © 2022, Ken Cormack
+# Copyright © 2023, Ken Cormack
 # github:       https://github.com/kencormack/pistar-lastqso
 # QRZ page:     https://www.qrz.com/db/KE8DPF
 
@@ -13,7 +13,7 @@
 
 set -o allexport
 
-VERSION=3.16
+VERSION=3.17
 
 #----------
 if [[ "${EUID}" -eq 0 ]]
@@ -90,8 +90,24 @@ stty cbreak -echo
 # overlap from another field
 
 #----------
+# POSSIBLE FUTURE ENHANCEMENTS TO CACHE UPDATING
+# Fast in-place edits using sed:
+#   deleting records...
+#     sed -i '/^${callsign}:/d' ${file}
+#   updating records...
+#     sed -i "s/^${callsign}:.*/${callsign}:${new_data}/" "${file}"
+# The potential complication is whether multiple instances
+# of the script are running, each with it's own cache files,
+# which currently then get re-merged and saved in $HOME.  This
+# would put stale records, as well as the updated records,
+# back into the saved/merged copies, resulting in multiple
+# records with no way to determine which record is then correct.
+# Some thinking will be required.  Easiest fix would be to
+# disallow multiple concurrent instances of the script.
+
+#----------
 # For whatever reason, "umask 0077" isn't locking down permissions
-# on files written to /tmp, the way symbolically setting it does.
+# on files written to /tmp, yet symbolically setting it does.
 # I'll need to look into that a bit more.
 umask u=rw,g=,o=
 
@@ -549,6 +565,55 @@ OTHER_COLOR="${BOLD}${BLU}"
 ###########################################################
 
 #----------
+#KPCKPC
+fnCHOP_CALL()
+{
+# echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
+
+  # Call with:
+  #   VAR_TO_CHOP="$(fnCHOP_CALL "${VAR_TO_CHOP}")"
+
+  # Attempt to isolate the call when we see things
+  # like "XX0XXX/BILL", reducing it to "XX0XXX".
+  # Any non-alphanumeric separator the person has
+  # inserted to append their name (often seen in
+  # YSF, such as a slash, dash, underscore or
+  # whatever), is changed to a known value we can
+  # parse on.  In this case, I change it to an
+  # underscore.  Then, I chop off that underscore
+  # along with anything that follows it, leaving
+  # only the callsign.
+
+  CHOP_CALL="${1}"
+  CHOP_CALL="${CHOP_CALL//[^[:alnum:]]/_}"
+  CHOP_CALL="${CHOP_CALL%%_*}"
+  echo "${CHOP_CALL}"
+
+  # TODO: Someday, I need to figure out a way to
+  # handle cases where no non-alphanumeric char
+  # was used, and the person just appended their
+  # name directly onto the call ("XX0XXXBILL").
+  # But that's for another day (maybe).
+}
+
+#----------
+fnSECONDS2TIME()
+{
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
+
+  local T="${SECONDS}"
+  local D=$((T/60/60/24))
+  local H=$((T/60/60%24))
+  local M=$((T/60%60))
+  local S=$((T%60))
+  [[ $D -ge 0 ]] && printf '%02d days ' $D
+  [[ $H -ge 0 ]] && printf '%02d hrs ' $H
+  [[ $M -ge 0 ]] && printf '%02d mins ' $M
+# [[ $D > 0 || $H > 0 || $M > 0 ]] && printf 'and '
+# printf '%d secs\n' $S
+}
+
+#----------
 fnWRITE_COUNTER_FILE()
 {
   echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
@@ -583,6 +648,7 @@ fnCOPY_CACHE()
   if ! cmp --silent -- "${DXCC_CACHE_FILE}" /home/pi-star/.lastqso-dxcc-cache 2>/dev/null
   then
     cat "${DXCC_CACHE_FILE}" /home/pi-star/.lastqso-dxcc-cache 2>/dev/null \
+      | sed 's/United States of America/United States/' \
       | LC_ALL=C sort -u >/tmp/.cache_tmp 2>/dev/null
     cat /tmp/.cache_tmp > "${DXCC_CACHE_FILE}" 2>/dev/null
     sudo mount -o remount,rw / 2>/dev/null
@@ -593,7 +659,8 @@ fnCOPY_CACHE()
   if ! cmp --silent -- "${GRID_CACHE_FILE}" /home/pi-star/.lastqso-grid-cache 2>/dev/null
   then
     cat "${GRID_CACHE_FILE}" /home/pi-star/.lastqso-grid-cache 2>/dev/null \
-      | grep -F -v "Unknown" | LC_ALL=C sort -u >/tmp/.cache_tmp 2>/dev/null
+      | grep -F -v "Unknown" \
+      | LC_ALL=C sort -u >/tmp/.cache_tmp 2>/dev/null
     cat /tmp/.cache_tmp > "${GRID_CACHE_FILE}" 2>/dev/null
     sudo mount -o remount,rw / 2>/dev/null
     cat /tmp/.cache_tmp > /home/pi-star/.lastqso-grid-cache 2>/dev/null
@@ -635,14 +702,14 @@ fnCENTER()
 {
   echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
-  # Use the python code to get screen size
-  # before calling this function.
+  read -r LINES COLUMNS <<< "$(python3 -c "${PY3_SCRIPT}")" 2>/dev/null
   LENGTH=${#STRING}
   tput cup $((LINES / 2)) $(((COLUMNS / 2) - (LENGTH / 2)))
   echo "${STRING}"
   return
 }
 
+#KPC
 # Look up Maidenhead Grid Square for US Callsigns,
 # based on address of record, in the FCC database.
 #-----------------------------------
@@ -662,28 +729,23 @@ fnGET_US_GRIDSQUARE()
     GRIDSQUARE=" (${GRIDSQUARE#*:})"
   else
     # Otherwise, we need to query the remote host.
-    read -r GRIDSQUARE <<< "$(curl -s --fail --max-time 2 "https://callook.info/${US_CALL}/json" 2>/dev/null | jq -r '.location.gridsquare' | tr '\n' ' ')"
-    # Dont cache an "Unknown" or null response
-    case "${GRIDSQUARE}" in
-      "Unknown")
-        GRIDSQUARE=" (${GRIDSQUARE})"
-        ;;
-      "")
-        GRIDSQUARE=""
-        ;;
-      *)
-        GRIDSQUARE="${GRIDSQUARE^^}"
-        echo "${US_CALL}:${GRIDSQUARE}" >> "${GRID_CACHE_FILE}"
-        GRIDSQUARE=" (${GRIDSQUARE})"
-        ;;
-    esac
+    read -r GRIDSQUARE <<< "$(curl -s --fail --max-time 2 "https://callook.info/${US_CALL}/json" 2>/dev/null | jq -r '.location.gridsquare' 2>/dev/null | tr '\n' ' ')"
+    GRIDSQUARE="${GRIDSQUARE^^}"
+
+#KPC
+    # Dont cache an unknown or null response
+    if [[ "${GRIDSQUARE}" =~ [A-Z][A-Z][0-9][0-9][A-Z][A-Z] ]]
+    then
+      echo "${US_CALL}:${GRIDSQUARE}" >> "${GRID_CACHE_FILE}"
+      GRIDSQUARE=" (${GRIDSQUARE})"
+    fi
   fi
   return
 }
 
-# Look up FCC License level for US Callsigns,
-#-----------------------------------
 #KPC
+# Look up FCC License level for US Callsigns
+#-----------------------------------
 fnGET_US_LICENSE()
 {
   echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
@@ -700,19 +762,17 @@ fnGET_US_LICENSE()
     LICENSE="${LICENSE#*:}"
   else
     # Otherwise, we need to query the remote host.
-#   read -r LICENSE STATUS <<< "$(curl -s --fail --max-time 2 "https://callook.info/${US_CALL}/json" 2>/dev/null | jq -r '.current.operClass, .status' | tr '\n' ' ')"
-    read -r LICENSE <<< "$(curl -s --fail --max-time 2 "https://callook.info/${US_CALL}/json" 2>/dev/null | jq -r '.current.operClass' | tr '\n' ' ')"
+#   read -r LICENSE STATUS <<< "$(curl -s --fail --max-time 2 "https://callook.info/${US_CALL}/json" 2>/dev/null | jq -r '.current.operClass, .status' 2>/dev/null | tr '\n' ' ')"
+    read -r LICENSE <<< "$(curl -s --fail --max-time 2 "https://callook.info/${US_CALL}/json" 2>/dev/null | jq -r '.current.operClass' 2>/dev/null | tr '\n' ' ')"
     # Dont cache an "Unknown" or null response
+#KPC
+    LICENSE="${LICENSE^^}"
     case "${LICENSE}" in
-      "Unknown")
-        LICENSE="(${LICENSE})"
-        ;;
-      "")
-        LICENSE=""
+      NOVICE|TECHNICIAN|GENERAL|ADVANCED|EXTRA|CLUB)
+        echo "${US_CALL}:${LICENSE}" >> "${LICENSE_CACHE_FILE}"
         ;;
       *)
-        LICENSE="${LICENSE^^}"
-        echo "${US_CALL}:${LICENSE}" >> "${LICENSE_CACHE_FILE}"
+        LICENSE=""
         ;;
     esac
   fi
@@ -1190,7 +1250,7 @@ fnDEV_INFO()
   DEV_STRING[3]="  ${TERM} SIZE=${LINES}x${COLUMNS} TTY=${MY_TTY} PID=${MY_PID} BG_PID=${BG_PID}"
   DEV_STRING[4]="  Modes and X-Modes: YSF=${YSF_ENABLED} DMR=${DMR_ENABLED} NXDN=${NXDN_ENABLED} DSTAR=${DSTAR_ENABLED} P25=${P25_ENABLED}"
   DEV_STRING[5]="  YSF2DMR=${YSF2DMR_ENABLED} YSF2NXDN=${YSF2NXDN_ENABLED} YSF2P25=${YSF2P25_ENABLED} DMR2YSR=${DMR2YSF_ENABLED} DMR2NXDN=${DMR2NXDN_ENABLED}"
-  DEV_STRING[6]="  Traffic Counts: DMR=${DMR_COUNT} YSF=${YSF_COUNT} NXDN=${NXDN_COUNT} DSTAR=${DSTAR_COUNT} P25=${P25_COUNT}"
+  DEV_STRING[6]="  Traffic: DMR=${DMR_COUNT} YSF=${YSF_COUNT} NXDN=${NXDN_COUNT} DSTAR=${DSTAR_COUNT} P25=${P25_COUNT}"
   DEV_STRING[7]="  Cache: DXCC=$(grep -c . "${DXCC_CACHE_FILE}") Grid=$(grep -c . "${GRID_CACHE_FILE}") Lic=$(grep -c . "${LICENSE_CACHE_FILE}") Other: K=${KERCHUNK_COUNT} E=${ERROR_COUNT} W=${WARNING_COUNT} R=${LOG_RESTARTS}"
 
   #----------
@@ -1393,8 +1453,7 @@ fnNOSCROLL_ZONE()
 
   #----------
   # Print line 3
-  # shellcheck disable=SC2016
-  ELAPSED=$(eval "echo $(date -ud "@${SECONDS}" +'$((%s/3600/24)) Days %H Hrs %M Mins')")
+  ELAPSED="$(fnSECONDS2TIME)"
   ELAPSED="${ELAPSED}${TOP_PAD}"
   ELAPSED="${ELAPSED:0:23}"
   echo -en "${DIM}${WHI}Elapsed:${SGR0} ${WHI}${BOLD}${ELAPSED}${SGR0}\r"
@@ -1502,7 +1561,6 @@ fnNOSCROLL_ZONE()
 
   #----------
   # Load the current history...
-  # shellcheck source=/dev/null
   . "${HISTORY_FILE}" 2>/dev/null
 
   #----------
@@ -1950,7 +2008,8 @@ PISTAR-LASTQSO - HELP
              Modes and X-Modes: YSF=0 DMR=0 NXDN=0 DSTAR=0 P25=1
              YSF2DMR=0 YSF2NXDN=0 YSF2P25=0 DMR2YSR=0 DMR2NXDN=0
                 Traffic Counts: DMR=0 YSF=0 NXDN=0 DSTAR=0 P25=0
-              Cache: DXCC=0 Grid=0 Other Counts: K=0 E=0 W=0 R=0
+               Cache: DXCC=0 Grid=0 Lic=0 Other: K=0 E=0 W=0 R=0
+
 
       The first line shows the options and parameters passed to the
       script when launched.
@@ -1978,8 +2037,8 @@ PISTAR-LASTQSO - HELP
       of DMR, YSF, NXDN, DSTAR, and P25 messages seen since the program
       was launched.
 
-      The last line shows the number of records in the DXCC and Grid
-      Square caches, and the number of Kerchunks, Errors, Warnings,
+      The last line shows the number of records in the DXCC, Grid, and
+      License caches, and the number of Kerchunks, Errors, Warnings,
       and log Restarts observed since program launch.  When the script
       is monitoring live data, the -i|--info data is shown in pale
       blue.  When running in -r|--replay mode, the data is shown in
@@ -2109,7 +2168,7 @@ fnVERSION()
   clear
   echo "${BOLD}${WHI}$(basename "${0}") v${VERSION}${SGR0}"
   cat <<'EOF'
-Copyright © 2022 Ken Cormack, KE8DPF
+Copyright © 2023 Ken Cormack, KE8DPF
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published
@@ -2135,7 +2194,7 @@ fnNO_LOGO()
 
   clear
   echo "${BOLD}${WHI}PISTAR-LASTQSO v${VERSION}${SGR0}"
-  echo "Copyright © 2022 Ken Cormack - KE8DPF"
+  echo "Copyright © 2023 Ken Cormack - KE8DPF"
   echo "${DIM}https://github.com/kencormack/pistar-lastqso${SGR0}"
   echo
   return
@@ -2226,7 +2285,7 @@ EOF
   tput cup 15 29
   echo "${SGR0}${BOLD}${YEL}PISTAR-LASTQSO v${VERSION}${WHI}${SGR0}"
   tput cuf 21
-  echo "${SGR0}${BOLD}${BLU}Copyright © 2022  Ken Cormack/KE8DPF${WHI}${SGR0}"
+  echo "${SGR0}${BOLD}${BLU}Copyright © 2023  Ken Cormack/KE8DPF${WHI}${SGR0}"
   tput cuf 17
   echo "${SGR0}${BOLD}${BLU}https://github.com/kencormack/pistar-lastqso${WHI}${SGR0}"
   echo -n "${SGR0}${WHI}${CUR_ON}"
@@ -2335,9 +2394,8 @@ fnGOODBYE_BOX()
   echo "${BOLD}${WHI}THANK YOU FOR USING PISTAR-LASTQSO v${VERSION}${SGR0}${DEF}"
 
   #----------
-  tput cup 7 20
-  # shellcheck disable=SC2016
-  ELAPSED=$(eval "echo $(date -ud "@${SECONDS}" +'$((%s/3600/24)) Days %H Hrs %M Mins %S Secs')")
+  tput cup 7 24
+  ELAPSED="$(fnSECONDS2TIME)"
   echo -n "${DIM}${CYA}Elapsed: ${ELAPSED}"
 
   tput cup 8 31
@@ -2345,7 +2403,6 @@ fnGOODBYE_BOX()
   printf %02d "${LOG_RESTARTS}"
 
   # Get present value of all the counters
-  # shellcheck source=/dev/null
   . "${COUNT_FILE}"
 
   #----------
@@ -2850,7 +2907,6 @@ fnYSF_END_NETWORK_TRAFFIC()
   #----------
   if [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
   then
-    # shellcheck source=/dev/null
     . "${COUNT_FILE}"
     ((KERCHUNK_COUNT++))
     fnWRITE_COUNTER_FILE
@@ -2890,7 +2946,6 @@ fnDSTAR_END_NETWORK_TRAFFIC()
   #----------
   if [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
   then
-    # shellcheck source=/dev/null
     . "${COUNT_FILE}"
     ((KERCHUNK_COUNT++))
     fnWRITE_COUNTER_FILE
@@ -2928,7 +2983,6 @@ fnNXDN_END_NETWORK_TRAFFIC()
   #----------
   if [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
   then
-    # shellcheck source=/dev/null
     . "${COUNT_FILE}"
     ((KERCHUNK_COUNT++))
     fnWRITE_COUNTER_FILE
@@ -2969,7 +3023,6 @@ fnP25_END_NETWORK_TRAFFIC()
   #----------
   if [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
   then
-    # shellcheck source=/dev/null
     . "${COUNT_FILE}"
     ((KERCHUNK_COUNT++))
     fnWRITE_COUNTER_FILE
@@ -3011,8 +3064,10 @@ fnSHOW_CURRENT_CALL()
   # For example, many YSF users will send things like
   # "KE8DPF-KEN" or "KE8DPF/KEN".  So we isolate just
   # the "KE8DPF" callsign, to perform our lookups.
-  SEARCH_FROM="${FROM%-*}"
-  SEARCH_FROM="${SEARCH_FROM%/*}"
+  #KPCKPC
+  #SEARCH_FROM="${FROM%-*}"
+  #SEARCH_FROM="${SEARCH_FROM%/*}"
+  SEARCH_FROM="$(fnCHOP_CALL "${FROM}")"
 
   # Search the CSV files for the "From" name
   FROM_NAME="$(grep ",${SEARCH_FROM}," "${NXDNCSV}" "${USERCSV}" | tail -1)"
@@ -3038,7 +3093,6 @@ fnSHOW_CURRENT_CALL()
 
   #----------
   # Increment the counter
-  # shellcheck source=/dev/null
   . "${COUNT_FILE}"
 
   case "${LOGREC_MODE}" in
@@ -3148,6 +3202,7 @@ fnSHOW_CURRENT_CALL()
         then
           # The cache gave us the country.
           COUNTRY="${DXCC_CACHE_RECORD#*:}"
+          COUNTRY="${COUNTRY/ of America/}"
           DXCC_TIME="Cached"
         else
           # The cache search came up empty.  Call on dxcc.pl.
@@ -3162,6 +3217,7 @@ fnSHOW_CURRENT_CALL()
           #  ^--^--- These spaces are important for proper operation, for
           #          linting/beautifying, and for syntax highlighting in "vim".
           COUNTRY="${CAPTURED_STDOUT}"
+          COUNTRY="${COUNTRY/ of America/}"
           DXCC_TIME="${CAPTURED_STDERR} secs"
 
           if [[ -n "${COUNTRY}" ]]
@@ -3224,10 +3280,12 @@ fnSHOW_CURRENT_CALL()
     fnGET_US_LICENSE "${SEARCH_FROM}"
     if [[ -n "${LICENSE}" ]]
     then
-      echo "${DIM}FCC :${SGR0} ${BOLD}${MAG}${LICENSE} class license${SGR0}${WHI}${CLR_ED}"
-#     echo -en "${DIM}FCC :${SGR0} ${BOLD}${MAG}${LICENSE} class license${SGR0}${WHI}${CLR_ED}\r"
-#     tput cuf 32
-#     echo "${DIM}STATUS:${SGR0} ${BOLD}${MAG}${STATUS}${SGR0}${WHI}${CLR_ED}"
+      if [[ "${LICENSE}" = "CLUB" ]]
+      then
+        echo "${DIM}FCC :${SGR0} ${BOLD}${MAG}${LICENSE} callsign${SGR0}${WHI}${CLR_ED}"
+      else
+        echo "${DIM}FCC :${SGR0} ${BOLD}${MAG}${LICENSE} class license${SGR0}${WHI}${CLR_ED}"
+      fi
     fi
   else
     LICENSE=""
@@ -3260,7 +3318,6 @@ fnDMR_SHOW_CURRENT_CALL()
   P_TO_NAME="$(printf "%-15s" "(${TO_NAME})")"
   echo -en "${DIM}From:${SGR0} ${BOLD}${FROM} ${P_FROM_NAME}${SGR0}\r"
 
-  # shellcheck source=/dev/null
   . "${COUNT_FILE}"
   ((DMR_COUNT++))
   fnWRITE_COUNTER_FILE
@@ -3307,9 +3364,6 @@ fnDMR_SHOW_CURRENT_CALL()
     if [[ -n "${LICENSE}" ]]
     then
       echo "${DIM}FCC :${SGR0} ${BOLD}${MAG}${LICENSE} class license${SGR0}${WHI}${CLR_ED}"
-#     echo -en "${DIM}FCC :${SGR0} ${BOLD}${MAG}${LICENSE} class license${SGR0}${WHI}${CLR_ED}\r"
-#     tput cuf 32
-#     echo "${DIM}STATUS:${SGR0} ${BOLD}${MAG}${STATUS}${SGR0}${WHI}${CLR_ED}"
     fi
   else
     LICENSE=""
@@ -3447,7 +3501,7 @@ fnCOLORIZE_RSSI()
 }
 
 #-----------------------------------
-fnDMR_DOWNLOAD_USERCSV()
+fnDOWNLOAD_USERCSV()
 {
   echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
@@ -3486,7 +3540,7 @@ fnDMR_DOWNLOAD_USERCSV()
 }
 
 #-----------------------------------
-fnYSF_DOWNLOAD_CTYDAT()
+fnDOWNLOAD_CTYDAT()
 {
   echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
@@ -3557,7 +3611,6 @@ fnBUILD_HISTORY()
 
       #----------
       # Load the current history...
-      # shellcheck source=/dev/null
       . "${HISTORY_FILE}" 2>/dev/null
 
       #----------
@@ -3669,7 +3722,6 @@ fnTALLY_ERRORS()
 
   ERROR_MSG="$(echo "${RECORD}" | cut -f4- -d" ")"
 
-  # shellcheck source=/dev/null
   . "${COUNT_FILE}"
   ((ERROR_COUNT++))
   fnWRITE_COUNTER_FILE
@@ -3701,7 +3753,6 @@ fnTALLY_WARNINGS()
 
   WARNING_MSG="$(echo "${RECORD}" | cut -f4- -d" ")"
 
-  # shellcheck source=/dev/null
   . "${COUNT_FILE}"
   ((WARNING_COUNT++))
   fnWRITE_COUNTER_FILE
@@ -3818,7 +3869,6 @@ fnDMR_MAIN()
   #----------
   if [[ "${LOGREC_REMAINING_DATA}" =~ "late entry from" ]]
   then
-    # shellcheck source=/dev/null
     . "${COUNT_FILE}"
     ((QSO_COUNT++))
     fnWRITE_COUNTER_FILE
@@ -3844,7 +3894,6 @@ fnDMR_MAIN()
   #----------
   if [[ "${LOGREC_REMAINING_DATA}" =~ "header from" ]]
   then
-    # shellcheck source=/dev/null
     . "${COUNT_FILE}"
     ((QSO_COUNT++))
     fnWRITE_COUNTER_FILE
@@ -3939,7 +3988,6 @@ fnDMR_MAIN()
     # are not counted.
     if [[ -n "${FROM}" ]] && [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
     then
-      # shellcheck source=/dev/null
       . "${COUNT_FILE}"
       ((KERCHUNK_COUNT++))
       fnWRITE_COUNTER_FILE
@@ -3989,7 +4037,6 @@ fnDMR_MAIN()
     # are not counted.
     if [[ -n "${FROM}" ]] && [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
     then
-      # shellcheck source=/dev/null
       . "${COUNT_FILE}"
       ((KERCHUNK_COUNT++))
       fnWRITE_COUNTER_FILE
@@ -4123,7 +4170,6 @@ fnYSF_MAIN()
 
     SOURCE="NET"
 
-    # shellcheck source=/dev/null
     . "${COUNT_FILE}"
     ((QSO_COUNT++))
     fnWRITE_COUNTER_FILE
@@ -4174,7 +4220,6 @@ fnYSF_MAIN()
 
     SOURCE="RF"
 
-    # shellcheck source=/dev/null
     . "${COUNT_FILE}"
     ((QSO_COUNT++))
     fnWRITE_COUNTER_FILE
@@ -4218,7 +4263,6 @@ fnYSF_MAIN()
 
     if [[ -n "${FROM}" ]] && [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
     then
-      # shellcheck source=/dev/null
       . "${COUNT_FILE}"
       ((KERCHUNK_COUNT++))
       fnWRITE_COUNTER_FILE
@@ -4291,7 +4335,6 @@ fnYSF_MAIN()
 
     if [[ -n "${FROM}" ]] && [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
     then
-      # shellcheck source=/dev/null
       . "${COUNT_FILE}"
       ((KERCHUNK_COUNT++))
       fnWRITE_COUNTER_FILE
@@ -4373,7 +4416,6 @@ fnNXDN_MAIN()
 
     SOURCE="RF"
 
-    # shellcheck source=/dev/null
     . "${COUNT_FILE}"
     ((QSO_COUNT++))
     fnWRITE_COUNTER_FILE
@@ -4403,7 +4445,6 @@ fnNXDN_MAIN()
 
     if [[ -n "${FROM}" ]] && [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
     then
-      # shellcheck source=/dev/null
       . "${COUNT_FILE}"
       ((KERCHUNK_COUNT++))
       fnWRITE_COUNTER_FILE
@@ -4439,7 +4480,6 @@ fnNXDN_MAIN()
 
     SOURCE="NET"
 
-    # shellcheck source=/dev/null
     . "${COUNT_FILE}"
     ((QSO_COUNT++))
     fnWRITE_COUNTER_FILE
@@ -4514,6 +4554,13 @@ fnDSTAR_MAIN()
 # unset CUT_ARRAY
 
   #----------
+  # Ignore these
+  if [[ "${LOGREC_REMAINING_DATA}" =~ "invalid slow data header" ]]
+  then
+    return
+  fi
+
+  #----------
   # Start of DSTAR network traffic
   if [[ "${LOGREC_REMAINING_DATA}" =~ "received network header from" ]]
   then
@@ -4544,7 +4591,6 @@ fnDSTAR_MAIN()
     echo -en "\r${CLR_EL}"
     fnBANNER
 
-    # shellcheck source=/dev/null
     . "${COUNT_FILE}"
     ((QSO_COUNT++))
     fnWRITE_COUNTER_FILE
@@ -4585,7 +4631,6 @@ fnDSTAR_MAIN()
     echo -en "\r${CLR_EL}"
     fnBANNER
 
-    # shellcheck source=/dev/null
     . "${COUNT_FILE}"
     ((QSO_COUNT++))
     fnWRITE_COUNTER_FILE
@@ -4653,7 +4698,6 @@ fnDSTAR_MAIN()
     #----------
     if [[ -n "${FROM}" ]] && [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
     then
-      # shellcheck source=/dev/null
       . "${COUNT_FILE}"
       ((KERCHUNK_COUNT++))
       fnWRITE_COUNTER_FILE
@@ -4828,7 +4872,6 @@ fnP25_MAIN()
 
     SOURCE="RF"
 
-    # shellcheck source=/dev/null
     . "${COUNT_FILE}"
     ((QSO_COUNT++))
     fnWRITE_COUNTER_FILE
@@ -4854,7 +4897,6 @@ fnP25_MAIN()
 
     SOURCE="NET"
 
-    # shellcheck source=/dev/null
     . "${COUNT_FILE}"
     ((QSO_COUNT++))
     fnWRITE_COUNTER_FILE
@@ -4889,7 +4931,6 @@ fnP25_MAIN()
 
     if [[ -n "${FROM}" ]] && [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
     then
-      # shellcheck source=/dev/null
       . "${COUNT_FILE}"
       ((KERCHUNK_COUNT++))
       fnWRITE_COUNTER_FILE
@@ -5162,10 +5203,10 @@ fi
 
 #----------
 # Make sure we have an updated user.csv file
-fnDMR_DOWNLOAD_USERCSV
+fnDOWNLOAD_USERCSV
 
 # Make sure we have an updated cty.dat file
-fnYSF_DOWNLOAD_CTYDAT
+fnDOWNLOAD_CTYDAT
 
 #----------
 fnDEFINE_BOXCHARS
@@ -5293,7 +5334,6 @@ while true
 do
   #----------
   # Read in the counter values
-  # shellcheck source=/dev/null
   . "${COUNT_FILE}"
 
   #----------
@@ -5396,7 +5436,6 @@ do
 
   #----------
   # Load the current history...
-  # shellcheck source=/dev/null
   . "${HISTORY_FILE}"
 
   # Push all the entries one position later, in the list.
