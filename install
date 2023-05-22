@@ -117,7 +117,7 @@ else
 fi
 
 #----------
-echo -e "${GRE}Step 6. - Preloading grid square and license caches...${WHI}"
+echo -e "${GRE}Step 6. - Preloading dxcc, grid, and license caches...${WHI}"
 if [ -f ./.lastqso-dxcc-cache ]
 then
   rm /tmp/lastqso-dxcc-cache* 2>/dev/null
