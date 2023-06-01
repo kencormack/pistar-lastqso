@@ -11,13 +11,13 @@ PISTAR-LASTQSO INSTALLATION:
 
 This install script will perform the following operations...
 
-1.) remount the rootfs as read-write
+1.) remount the rootfs filesystem as read-write
 2.) copy "pistar-lastqso" to /usr/local/bin and enable execute permission
 3.) copy "dxcc.pl" script to /usr/local/bin and enable execute permission
 4.) install the packages "figlet" and "jq" from the standard repositories
 5.) copy the supplemental "ansi_shadow.flf" font file to /usr/share/figlet
-6.) populate the dxcc, license, and grid caches w/ data for US callsigns
-7.) remount the rootfs as read-only
+6.) populate the dxcc, license (US), and grid (US) caches w/ callsign data
+7.) remount the rootfs filesystem as read-only
 
 EOF
 echo -en "Press ENTER to proceed, or Ctrl-C to abort... "
@@ -142,4 +142,3 @@ sudo mount -o remount,rw /
 #----------
 echo -e "${WHI}\nInstallation complete."
 tput sgr0
-
