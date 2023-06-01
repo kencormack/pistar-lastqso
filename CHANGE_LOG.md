@@ -1,4 +1,31 @@
 ```
+CHANGES: V3.18
+ 1. Some radios (such as the TYT MD-UV390/GPS)
+    can transmit GPS data.  If GPS data is
+    received, it will be displayed like this:
+    GPS : Lat 41.071675° N, Long 81.492544° W
+
+ 2. Callsign filtering in DXCC cache handling
+    is now same as used for grid and license
+    caches, as modified for v3.17.
+
+ 3. The "-c" commandline option now also
+    updates NXDN.csv, in addition to just the
+    DMR user.csv file.
+
+ 4. When searching for QTH info, don't bother
+    checking the NXDN.csv file when traffic is
+    DMR (we'll find them in user.csv), and
+    don't bother checking the user.csv file
+    when traffic is NXDN (we'll find them in
+    NXDN.csv).  All other modes will still
+    check both files in case a callsign used
+    in a different mode is also registered as
+    either/both DMR and/or NXDN.
+
+ 5. Fixed bug, parsing log records containing
+    square brackets "[" and "]".
+
 CHANGES: V3.17
  1. Added a test to make sure a remote query
     for a Maidenhead gridsquare returns an

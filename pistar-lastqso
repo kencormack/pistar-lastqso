@@ -13,7 +13,7 @@
 
 set -o allexport
 
-VERSION=3.17
+VERSION=3.18
 
 #----------
 if [[ "${EUID}" -eq 0 ]]
@@ -22,6 +22,18 @@ then
   echo "ERROR:" >&2
   echo "  Execution as \"root\" not required." >&2
   echo "  Please run as the normal \"pi-star\" userid." >&2
+  echo
+  exit
+fi
+
+#----------
+# This condition occurs during development only.  A typical
+# user will never encounter this.
+if [[ -n "$(pgrep -o "build_cache")" ]]
+then
+  echo
+  echo "ERROR:" >&2
+  echo "  A from-scratch cache build is in progress." >&2
   echo
   exit
 fi
@@ -565,7 +577,6 @@ OTHER_COLOR="${BOLD}${BLU}"
 ###########################################################
 
 #----------
-#KPCKPC
 fnCHOP_CALL()
 {
 # echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
@@ -709,7 +720,6 @@ fnCENTER()
   return
 }
 
-#KPC
 # Look up Maidenhead Grid Square for US Callsigns,
 # based on address of record, in the FCC database.
 #-----------------------------------
@@ -718,6 +728,7 @@ fnGET_US_GRIDSQUARE()
   echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   US_CALL="${1}"
+  US_CALL="$(fnCHOP_CALL "${US_CALL}")"
 
   # Search the cache.
   GRIDSQUARE="$(grep "^${US_CALL}:" "${GRID_CACHE_FILE}")"
@@ -732,7 +743,6 @@ fnGET_US_GRIDSQUARE()
     read -r GRIDSQUARE <<< "$(curl -s --fail --max-time 2 "https://callook.info/${US_CALL}/json" 2>/dev/null | jq -r '.location.gridsquare' 2>/dev/null | tr '\n' ' ')"
     GRIDSQUARE="${GRIDSQUARE^^}"
 
-#KPC
     # Dont cache an unknown or null response
     if [[ "${GRIDSQUARE}" =~ [A-Z][A-Z][0-9][0-9][A-Z][A-Z] ]]
     then
@@ -743,7 +753,6 @@ fnGET_US_GRIDSQUARE()
   return
 }
 
-#KPC
 # Look up FCC License level for US Callsigns
 #-----------------------------------
 fnGET_US_LICENSE()
@@ -751,6 +760,7 @@ fnGET_US_LICENSE()
   echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   US_CALL="${1}"
+  US_CALL="$(fnCHOP_CALL "${US_CALL}")"
 
   # Search the cache.
   LICENSE="$(grep "^${US_CALL}:" "${LICENSE_CACHE_FILE}")"
@@ -765,7 +775,6 @@ fnGET_US_LICENSE()
 #   read -r LICENSE STATUS <<< "$(curl -s --fail --max-time 2 "https://callook.info/${US_CALL}/json" 2>/dev/null | jq -r '.current.operClass, .status' 2>/dev/null | tr '\n' ' ')"
     read -r LICENSE <<< "$(curl -s --fail --max-time 2 "https://callook.info/${US_CALL}/json" 2>/dev/null | jq -r '.current.operClass' 2>/dev/null | tr '\n' ' ')"
     # Dont cache an "Unknown" or null response
-#KPC
     LICENSE="${LICENSE^^}"
     case "${LICENSE}" in
       NOVICE|TECHNICIAN|GENERAL|ADVANCED|EXTRA|CLUB)
@@ -1245,13 +1254,13 @@ fnDEV_INFO()
   BG_PID=${BG_PID:-'n/a'}
 
   #----------
-  DEV_STRING[1]="  Options & Parameters: ${MY_CMDLINE}"
+  DEV_STRING[1]="  Options/Params: ${MY_CMDLINE}"
   DEV_STRING[2]="  Debugging: 3>${DEBUG_LOG} Profiling: 4>${PROFILING_LOG}"
   DEV_STRING[3]="  ${TERM} SIZE=${LINES}x${COLUMNS} TTY=${MY_TTY} PID=${MY_PID} BG_PID=${BG_PID}"
   DEV_STRING[4]="  Modes and X-Modes: YSF=${YSF_ENABLED} DMR=${DMR_ENABLED} NXDN=${NXDN_ENABLED} DSTAR=${DSTAR_ENABLED} P25=${P25_ENABLED}"
   DEV_STRING[5]="  YSF2DMR=${YSF2DMR_ENABLED} YSF2NXDN=${YSF2NXDN_ENABLED} YSF2P25=${YSF2P25_ENABLED} DMR2YSR=${DMR2YSF_ENABLED} DMR2NXDN=${DMR2NXDN_ENABLED}"
   DEV_STRING[6]="  Traffic: DMR=${DMR_COUNT} YSF=${YSF_COUNT} NXDN=${NXDN_COUNT} DSTAR=${DSTAR_COUNT} P25=${P25_COUNT}"
-  DEV_STRING[7]="  Cache: DXCC=$(grep -c . "${DXCC_CACHE_FILE}") Grid=$(grep -c . "${GRID_CACHE_FILE}") Lic=$(grep -c . "${LICENSE_CACHE_FILE}") Other: K=${KERCHUNK_COUNT} E=${ERROR_COUNT} W=${WARNING_COUNT} R=${LOG_RESTARTS}"
+  DEV_STRING[7]="  DXCC=$(grep -c . "${DXCC_CACHE_FILE}") Grid=$(grep -c . "${GRID_CACHE_FILE}") Lic=$(grep -c . "${LICENSE_CACHE_FILE}") K=${KERCHUNK_COUNT} E=${ERROR_COUNT} W=${WARNING_COUNT} R=${LOG_RESTARTS}"
 
   #----------
   # In replay mode, text is bright yellow.
@@ -1528,7 +1537,7 @@ fnNOSCROLL_ZONE()
   DSTAR_REFLECTOR="${DSTAR_REFLECTOR:0:11}"
 
   P25_REFLECTOR="${P25_REFLECTOR}${TOP_PAD}"
-  P25_REFLECTOR="${P25_REFLECTOR:0:11}"
+  P25_REFLECTOR="${P25_REFLECTOR:0:9}"
 
   echo -en "${DIM}${WHI}REFLECTORS....${SGR0}\r"
   tput cuf 16
@@ -1859,7 +1868,7 @@ fnPARSE_CMDLINE()
         echo -n "${BELL}${FLASH}"
         echo -e "\nERROR:  \"${OPTION}\" is not a valid option.\n" >&2
         fnUSAGE
-        echo -e "See \"pistart-lastqso --help\" for detailed descriptions of the above.\n"
+        echo -e "See \"pistar-lastqso --help\" for detailed descriptions of the above.\n"
         stty "${STTY}"
         fnCLEANUP
         exit 1
@@ -3064,9 +3073,6 @@ fnSHOW_CURRENT_CALL()
   # For example, many YSF users will send things like
   # "KE8DPF-KEN" or "KE8DPF/KEN".  So we isolate just
   # the "KE8DPF" callsign, to perform our lookups.
-  #KPCKPC
-  #SEARCH_FROM="${FROM%-*}"
-  #SEARCH_FROM="${SEARCH_FROM%/*}"
   SEARCH_FROM="$(fnCHOP_CALL "${FROM}")"
 
   # Search the CSV files for the "From" name
@@ -3143,14 +3149,20 @@ fnSHOW_CURRENT_CALL()
   #----------
   # Lookup the QTH data for the callsign.
   # Try the DMR user.csv file first...
-  QTH_SRC="user.csv"
-  CSV_RECORD="$(grep ",${SEARCH_FROM}," "${USERCSV}" | LC_ALL=C sort -u | head -1)"
-
-  # If nothing found, try the NXDN.csv file...
-  if [[ "${CSV_RECORD}" = "" ]]
+  if [[ "${LOGREC_MODE}" != "NXDN" ]]
   then
-    QTH_SRC="NXDN.csv"
-    CSV_RECORD="$(grep ",${SEARCH_FROM}," "${NXDNCSV}" | LC_ALL=C sort -u | head -1)"
+    QTH_SRC="user.csv"
+    CSV_RECORD="$(grep ",${SEARCH_FROM}," "${USERCSV}" | LC_ALL=C sort -u | head -1)"
+  fi
+
+  if [[ "${LOGREC_MODE}" != "DMR" ]]
+  then
+    # If nothing found, try the NXDN.csv file...
+    if [[ "${CSV_RECORD}" = "" ]]
+    then
+      QTH_SRC="NXDN.csv"
+      CSV_RECORD="$(grep ",${SEARCH_FROM}," "${NXDNCSV}" | LC_ALL=C sort -u | head -1)"
+    fi
   fi
 
   #----------
@@ -3216,6 +3228,7 @@ fnSHOW_CURRENT_CALL()
           } < <( (printf '\0%s\0' "$(time dxcc.pl "${SEARCH_FROM}" | grep "^Country Name:" | awk '{ print substr($0, index($0,$3)) }')" 1>&2) 2>&1)
           #  ^--^--- These spaces are important for proper operation, for
           #          linting/beautifying, and for syntax highlighting in "vim".
+
           COUNTRY="${CAPTURED_STDOUT}"
           COUNTRY="${COUNTRY/ of America/}"
           DXCC_TIME="${CAPTURED_STDERR} secs"
@@ -3273,7 +3286,6 @@ fnSHOW_CURRENT_CALL()
     fi
   fi
 
-#KPC
   #----------
   if [[ "${COUNTRY}" = "United States" ]] && [[ "${FCC}" = "1" ]]
   then
@@ -3356,7 +3368,6 @@ fnDMR_SHOW_CURRENT_CALL()
     fi
   fi
 
-#KPC
   #----------
   if [[ "${COUNTRY}" = "United States" ]] && [[ "${FCC}" = "1" ]]
   then
@@ -3496,6 +3507,45 @@ fnCOLORIZE_RSSI()
         fi
       fi
     fi
+  fi
+  return
+}
+
+#-----------------------------------
+fnDOWNLOAD_NXDNCSV()
+{
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
+
+  # If the NXDN.csv file is missing, or is older than 7 days,
+  # then download a new one from the web.
+  if [[ ! -f "${NXDNCSV}" ]] || [[ -n "$(find "${NXDNCSV}" -mtime +7)" ]] || [[ ${GET_CSV_NOW} -eq 1 ]]
+  then
+    echo -e "\nDownloading latest NXDN.csv file..."
+    sudo mount -o remount,rw / 2>/dev/null
+    if sudo wget -t 1 -q --show-progress --progress=bar:force:noscroll https://database.radioid.net/static/nxdn.csv -O "${NXDNCSV}.tmp"
+    then
+      # Check for a too-small (possibly corrupt) file
+      # Make sure it's at least ~100K in size
+      if [[ "$(sudo stat --format=%s "${NXDNCSV}.tmp")" -lt 100000 ]]
+      then
+        echo -e "\nThe download appears corrupt.  Will continue without it.\n" >&2
+        sleep 2
+      else
+        echo "Applying the updated file..."
+        if sudo mv "${NXDNCSV}.tmp" "${NXDNCSV}" && sudo chown pi-star.pi-star "${NXDNCSV}"
+        then
+          echo "Update complete."
+        else
+          echo "There was a problem applying the update.  Will continue without it." >&2
+          sleep 2
+        fi
+      fi
+    else
+      echo "Unable to retrieve latest NXDN.csv.  Will continue without it." >&2
+      sleep 2
+    fi
+    sync;sync;sync
+    sudo mount -o remount,ro / 2>/dev/null
   fi
   return
 }
@@ -4993,6 +5043,46 @@ fnP25_MAIN()
 }
 
 #-----------------------------------
+fnGPS_MAIN()
+{
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
+
+  trap fnWINCH WINCH
+
+  #KPC
+  if [[ "${RECORD}" =~ "GPS position" ]] && [[ "${GPS_HIT}" = "0" ]]
+  then
+    # This gives us data that looks like... "-20.983585,-47.647781"
+    IFS=' '; CUT_ARRAY=(${LOGREC_REMAINING_DATA}); unset IFS;
+    FIELD_3="${CUT_ARRAY[2]}"
+
+    # This separates the latitude and longitude
+    IFS=','; CUT_ARRAY=(${FIELD_3}); unset IFS;
+    LATITUDE="${CUT_ARRAY[0]}"
+    LONGITUDE="${CUT_ARRAY[1]}"
+
+    # Indicate North or South, and East or West, based on
+    # whether the numbers are positive or negative.
+    NS="° N"
+    EW="° E"
+    if [[ "${LATITUDE}" =~ "-" ]]
+    then
+      NS="° S"
+      LATITUDE="${LATITUDE#*-}${NS}"
+    fi
+    if [[ "${LONGITUDE}" =~ "-" ]]
+    then
+      EW="° W"
+      LONGITUDE="${LONGITUDE#*-}${EW}"
+    fi
+
+    echo -e "\r${DIM}GPS :${SGR0} ${BOLD}${WHI}Lat ${LATITUDE}, Long ${LONGITUDE}${SGR0}"
+  fi
+  fnQSO_IN_PROGRESS
+  return
+}
+
+#-----------------------------------
 fnMAIN_LOOP()
 {
   echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
@@ -5013,6 +5103,13 @@ fnMAIN_LOOP()
     | grep -v -E --line-buffered "0000:|Opening|Closing|Embedded|Downlink|is running|link status|Logged into" \
     | while read -r RECORD
   do
+    #KPC
+    # Square brackets cause trouble when parsing
+    # a record, so they are removed here.  The only
+    # records of importance that I've seen them in
+    # (so far) are GPS position records.
+    RECORD="${RECORD//[\[\]]}"
+
     #----------
     # See if MMDVMHost has shutdown or transitioned to a new log.
     if [[ "${RECORD}" =~ "MMDVMHOST-STOP" ]]
@@ -5074,34 +5171,48 @@ fnMAIN_LOOP()
     #----------
     # Now parse it accordingly.
     case "${LOGREC_MODE}" in
+      "GPS")
+        #KPC
+        fnGPS_MAIN
+        # This flag prevents printing the record multiple
+        # times, when received multiple times, during a
+        # single transmission.
+        GPS_HIT=1
+        ;;
       "DMR")
         CONTACT_COLOR="${DMR_COLOR}"
         LINE_COLOR="${BLU}"
         fnDMR_MAIN
+        GPS_HIT=0
         ;;
       "YSF")
         CONTACT_COLOR="${YSF_COLOR}"
         LINE_COLOR="${MAG}"
         fnYSF_MAIN
+        GPS_HIT=0
         ;;
       "NXDN")
         CONTACT_COLOR="${NXDN_COLOR}"
         LINE_COLOR="${DIM}${WHI}"
         fnNXDN_MAIN
+        GPS_HIT=0
         ;;
       "D-Star")
         CONTACT_COLOR="${DSTAR_COLOR}"
         LINE_COLOR="${CYA}"
         fnDSTAR_MAIN
+        GPS_HIT=0
         ;;
       "P25")
         CONTACT_COLOR="${P25_COLOR}"
         LINE_COLOR="${DIM}${YEL}"
         fnP25_MAIN
+        GPS_HIT=0
         ;;
       *)
         CONTACT_COLOR="${OTHER_COLOR}"
         LINE_COLOR="${WHI}"
+        GPS_HIT=0
         ;;
     esac
   done
@@ -5202,8 +5313,9 @@ then
 fi
 
 #----------
-# Make sure we have an updated user.csv file
+# Make sure we have updated user.csv and NXDN.csv files
 fnDOWNLOAD_USERCSV
+fnDOWNLOAD_NXDNCSV
 
 # Make sure we have an updated cty.dat file
 fnDOWNLOAD_CTYDAT
