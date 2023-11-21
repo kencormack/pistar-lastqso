@@ -11,8 +11,6 @@
 2E0IOH:England
 2E0IOL:England
 2E0JYY:England
-2E0KJD:England
-2E0LHF:England
 2E0OJX:England
 2E0OPR:England
 2E0PGX:England
@@ -29,6 +27,7 @@
 2EODVD:England
 2M0ULD:Scotland
 2W0EUO:Wales
+2W0HFUF:Wales
 2W0HZC:Wales
 2W0JYB:Wales
 2W1FJG:Wales
@@ -206,12 +205,15 @@ F4GUC:France
 FT5D:France
 FT5DR:France
 G0AUW:England
+G0DLDG:England
 G0DMH:England
 G0EOB:England
+G0JWM:England
 G0KDT:England
 G0ROW:England
 G0RXG:England
 G1GLZ:England
+G1GWNB:England
 G1GXF:England
 G1HKR:England
 G1RCE:England
@@ -225,7 +227,6 @@ G3ZLX:England
 G4AOJ:England
 G4HBD:England
 G4NDR:England
-G4RHR:England
 G4TXK:England
 G5AJK:England
 G7AFT:England
@@ -302,7 +303,6 @@ JK1PBL:Japan
 JK7BEJB:Japan
 JL3ZHO:Japan
 JM4HTF:Japan
-JO3EJP:Japan
 JO4ICQ:Japan
 JQ1ZND:Japan
 JR1BZE:Japan
@@ -493,6 +493,7 @@ KC6IKI:United States
 KC7KNE:United States
 KC7NFF:United States
 KC7NYR:United States
+KC8IZH:United States
 KC8JDS:United States
 KC8KHDB:United States
 KC8MTV:United States
@@ -654,6 +655,7 @@ KF5UV:United States
 KF5WCP:United States
 KF6BSE:Hawaii
 KF6FUP:United States
+KF6NOI:United States
 KF6OB:United States
 KF7PGP:United States
 KG2BAD:United States
@@ -729,6 +731,7 @@ KJ5BHD:United States
 KJ5BJX:United States
 KJ5BUL:United States
 KJ5BVX:United States
+KJ6BDS:United States
 KJ6EO:United States
 KJ6NCO:United States
 KJ6OMN:United States
@@ -753,7 +756,6 @@ KK7AXO:United States
 KK7CNM:United States
 KK7CQE:United States
 KK7DRG:United States
-KK7EJP:United States
 KK7FTX:United States
 KK7FXK:United States
 KK7HLH:United States
@@ -793,7 +795,6 @@ KN4RTL:United States
 KN4TSA:United States
 KN4UILGREG:United States
 KN4VIK:United States
-KN4ZIC:United States
 KN6DLX:United States
 KN6HEC:United States
 KN6IOI:United States
@@ -986,7 +987,6 @@ MA5FFL:Scotland
 MB7IBW:England
 MB7ITG:England
 MI0JPZ:Northern Ireland
-MI0RJN:Northern Ireland
 MI1DJW:Northern Ireland
 MI7EGS:Northern Ireland
 MM0KSS:Scotland
@@ -1005,7 +1005,6 @@ N0GMJ:United States
 N0MHL:United States
 N0OQL:United States
 N0RYKJACK:Guam
-N0SIB:United States
 N0VGM:United States
 N0XIAP:United States
 N0XPB:United States
@@ -1146,6 +1145,7 @@ OE8DMR:Austria
 OE8KFS:Austria
 OM0AIH:Slovak Republic
 ON3EQT:Belgium
+ON3PN:Belgium
 ON4BIT:Belgium
 ON4ERM:Belgium
 ON5LDH:Belgium
@@ -1222,8 +1222,10 @@ VA7FHB:Canada
 VA7GJK:Canada
 VA7JCF:Canada
 VA7NRA:Canada
+VA7PUG:Canada
 VA7PWF:Canada
 VA7SDX:Canada
+VA7VY:Canada
 VA7ZAT:Canada
 VE1ABX:Canada
 VE1GUY:Canada
@@ -1242,6 +1244,7 @@ VE3JOY:Canada
 VE3KPI:Canada
 VE3MM:Canada
 VE3MNE:Canada
+VE3MYJ:Canada
 VE3OGF:Canada
 VE3OZG:Canada
 VE3RPZ:Canada
@@ -1319,6 +1322,7 @@ VY1AE:Canada
 VY1DM:Canada
 W0AAF:United States
 W0NE:United States
+W0NWAR:United States
 W0OIC:United States
 W0RMC:United States
 W0SCT:United States
@@ -1474,4 +1478,3 @@ ZL3TKI:New Zealand
 ZL4AX:New Zealand
 ZS3AG:South Africa
 ZS6IRQ:South Africa
-n1aam:United States
