@@ -25,7 +25,6 @@
 2E0VWC:England
 2E1AJB:England
 2E1GSK:England
-2E1UTD:England
 2EODVD:England
 2M0ULD:Scotland
 2W0EUO:Wales
@@ -210,6 +209,7 @@ FT5DR:France
 G0AUW:England
 G0DLDG:England
 G0DMH:England
+G0DMK:England
 G0EOB:England
 G0JWM:England
 G0KDT:England
@@ -229,6 +229,7 @@ G3YUE:England
 G3ZLX:England
 G4AOJ:England
 G4ARN:England
+G4BDW:England
 G4HBD:England
 G4NDR:England
 G4TXK:England
@@ -297,6 +298,7 @@ JI1ANL:Japan
 JJ0SWZ:Japan
 JJ1CBY:Japan
 JJ1JRH:Japan
+JJ1KXV:Japan
 JJ1SUL:Japan
 JJ1WBI:Japan
 JJ6VARHIRO:Japan
@@ -322,6 +324,7 @@ K0SSD:United States
 K0TRN:United States
 K0VL:United States
 K0VYD:United States
+K0WRK:United States
 K1BQY:United States
 K1CFI:United States
 K1DEM:United States
@@ -359,10 +362,12 @@ K5ROK:United States
 K5WTS:United States
 K6BSZ:United States
 K6SOAC:United States
+K6UV:United States
 K7CH:United States
 K7ELJ:United States
 K7FYN:United States
 K7REWDARYL:United States
+K7TRK:United States
 K8CBR:United States
 K8DDD:United States
 K8EM:United States
@@ -406,6 +411,7 @@ KA8UGB:United States
 KA9PPD:United States
 KA9RHL:United States
 KA9WDG:United States
+KB0DOD:United States
 KB1LXU:United States
 KB1TCX:United States
 KB2OIEXMIC:United States
@@ -505,13 +511,13 @@ KC8SJU:United States
 KC9BWJ:United States
 KC9GCR:United States
 KC9LPQ:United States
-KC9TC:United States
 KC9TSO:United States
 KC9ZVZLEE:United States
 KD0LEG:United States
 KD0UGF:United States
 KD0WAG:United States
 KD0YSA:United States
+KD0ZLV:United States
 KD2DAF:United States
 KD2LDZ:United States
 KD2MHS:United States
@@ -543,6 +549,7 @@ KD7DJG:United States
 KD7NHMD:United States
 KD8FUE:United States
 KD8HMI:United States
+KD8KMY:United States
 KD8NLK:United States
 KD8NQN:United States
 KD8UXZ:United States
@@ -561,7 +568,6 @@ KD9ODHK:United States
 KD9OHP:United States
 KD9RXF:United States
 KD9SHR:United States
-KD9SOK:United States
 KD9SZV:United States
 KD9TSZ:United States
 KD9TXH:United States
@@ -574,7 +580,6 @@ KD9YBH:United States
 KD9YON:United States
 KD9YOS:United States
 KE0CGR:United States
-KE0DFA:United States
 KE0FWN:United States
 KE0MIZ:United States
 KE0OGS:United States
@@ -623,7 +628,6 @@ KE8YPP:United States
 KE8YRU:United States
 KE8ZAC:United States
 KF0BAK:United States
-KF0BDD:United States
 KF0CGJ:United States
 KF0EGX:United States
 KF0EIR:United States
@@ -675,6 +679,7 @@ KG6ZAP:United States
 KG7RNM:United States
 KG7SWU:United States
 KG7WSB:United States
+KG7WZGC:United States
 KG8PI:United States
 KH2AA:Guam
 KH2MY:Guam
@@ -777,6 +782,7 @@ KK7MZW:United States
 KK7NFA:United States
 KK7NIG:United States
 KK7NNC:United States
+KK7PCC:United States
 KL4FK:Alaska
 KL5CS:United States
 KL7AL:United States
@@ -1070,7 +1076,6 @@ N6BJQ:United States
 N6QDO:United States
 N6TPC:United States
 N6VNII:United States
-N6WGP:United States
 N6WYZ:United States
 N6XA:United States
 N6XK:United States
@@ -1464,6 +1469,7 @@ WX4ADX:United States
 WX4AUG:United States
 WX9USARICH:United States
 WY0F:United States
+WZ8I:United States
 XE1KYAFT70:Mexico
 XLX369:Canada
 YO2DRS:Romania
