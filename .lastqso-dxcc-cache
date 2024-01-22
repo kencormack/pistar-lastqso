@@ -11,6 +11,7 @@
 2E0IKO:England
 2E0IOH:England
 2E0IOL:England
+2E0JVTB:England
 2E0JYY:England
 2E0OJX:England
 2E0OPR:England
@@ -36,12 +37,13 @@
 6K5UHT:Republic of Korea
 7K1UGA:Japan
 7M1TZF:Japan
+7N3ULM:Japan
 991A:Unknown
 9Z3CH:Trinidad & Tobago
 9Z4DAA:Trinidad & Tobago
 AA4AL:United States
-AA5AH:United States
 AA8YF:United States
+AB3JY:United States
 AB3LZ:United States
 AB5SI:United States
 AB7CQ:United States
@@ -181,7 +183,6 @@ DO4RP:Fed. Rep. of Germany
 DO5CE:Fed. Rep. of Germany
 DO5UZ:Fed. Rep. of Germany
 DO6HAM:Fed. Rep. of Germany
-DO6JM:Fed. Rep. of Germany
 DO6SKY:Fed. Rep. of Germany
 DO6SP:Fed. Rep. of Germany
 DO7PIP:Fed. Rep. of Germany
@@ -190,6 +191,7 @@ DO7SWK:Fed. Rep. of Germany
 DO8AW:Fed. Rep. of Germany
 DO8CA:Fed. Rep. of Germany
 DO9VW:Fed. Rep. of Germany
+DS5IXZ:Republic of Korea
 DS5KZBB:Republic of Korea
 DY9KFB:Philippines
 EA4FOQ:Spain
@@ -215,6 +217,7 @@ G0EOB:England
 G0JWM:England
 G0KDT:England
 G0ROW:England
+G0RPM:England
 G0RXG:England
 G1GLZ:England
 G1GWNB:England
@@ -234,11 +237,14 @@ G4ARN:England
 G4BDW:England
 G4HBD:England
 G4NDR:England
+G4RUE:England
 G4TXK:England
 G5AJK:England
 G7AFT:England
 G7EBP:England
 G7HZS:England
+G7SVFB:England
+G8IDX:England
 G8NVB:England
 G8RYX:England
 G8YZA:England
@@ -267,6 +273,7 @@ IK3DNVX:Italy
 IK4JPP:Italy
 IK4WMI:Italy
 IU2RSF:Italy
+IU3PUB:Italy
 IU7EPPP:Italy
 IW2LNQ:Italy
 IZ4IRX:Italy
@@ -320,6 +327,7 @@ JQ1ZND:Japan
 JR1BZE:Japan
 JR7OEF:Japan
 JS2EZZ:Japan
+JS2IMQ:Japan
 JS6TXN:Japan
 JZ10BTC:Unknown
 K0GUT:United States
@@ -363,6 +371,7 @@ K5CYA:United States
 K5JDX:United States
 K5MTW:United States
 K5WTS:United States
+K6AVB:United States
 K6BSZ:United States
 K6SOAC:United States
 K6UV:United States
@@ -418,12 +427,14 @@ KA9WDG:United States
 KB0DOD:United States
 KB1LXU:United States
 KB1TCX:United States
+KB1WID:United States
 KB2OIEXMIC:United States
 KB3JRH:United States
 KB3KOC:United States
 KB3MPN:United States
 KB3RBK:United States
 KB3UA:United States
+KB3WP:United States
 KB4JDE:United States
 KB4JP:United States
 KB5UGU:United States
@@ -478,6 +489,7 @@ KC3FLH:United States
 KC3FOI:United States
 KC3IGJ:United States
 KC3JEH:United States
+KC3LYJ:United States
 KC3MVS:United States
 KC3NPM:United States
 KC3OSF:United States
@@ -489,6 +501,7 @@ KC3RFQ:United States
 KC3SIG:United States
 KC3UUQ:United States
 KC3UUW:United States
+KC3VHS:United States
 KC3VII:United States
 KC3VUI:United States
 KC3VVE:United States
@@ -550,6 +563,7 @@ KD5WXU:United States
 KD6CWIR:United States
 KD6LOK:United States
 KD6SSN:United States
+KD6STR:United States
 KD6VGBB:United States
 KD7DJG:United States
 KD7NHMD:United States
@@ -570,6 +584,7 @@ KD9GSX:United States
 KD9KHJ:United States
 KD9KZS:United States
 KD9LES:United States
+KD9MBA:United States
 KD9ODHK:United States
 KD9OHP:United States
 KD9RXF:United States
@@ -645,6 +660,7 @@ KF0IWN:United States
 KF0KVH:United States
 KF0LHN:United States
 KF0LHO:United States
+KF0LLJ:United States
 KF0LOT:United States
 KF0LPB:United States
 KF0LZO:United States
@@ -683,6 +699,7 @@ KG5RPC:United States
 KG5YGQ:United States
 KG6KMK:United States
 KG6TUU:United States
+KG6UO:United States
 KG6ZAP:United States
 KG7RNM:United States
 KG7SWU:United States
@@ -731,8 +748,10 @@ KI7OWZ:United States
 KI7PWN:United States
 KI7SBU:United States
 KI7VKAMARK:United States
+KI7WXP:United States
 KI7ZQR:United States
 KI7ZYE:United States
+KJ4CGU:United States
 KJ4HTC:United States
 KJ4KEM:United States
 KJ4KVCA:United States
@@ -760,6 +779,7 @@ KJ7EDY:United States
 KJ7HJB:United States
 KJ7PAG:United States
 KJ7QPN:United States
+KJ7SMI:United States
 KK2A:United States
 KK4CCO:United States
 KK4DBN:United States
@@ -797,10 +817,13 @@ KL7AL:United States
 KM2D:United States
 KM4CU:United States
 KM4CWB:United States
+KM4GGH:United States
 KM4JCT:United States
 KM4NIH:United States
+KM4NMJ:United States
 KM4RTT:United States
 KM4TUE:United States
+KM4WSJ:United States
 KM6IRL:United States
 KM6SLB:United States
 KM6WPZ:United States
@@ -810,8 +833,8 @@ KN4JDJ:United States
 KN4JWK:United States
 KN4KDU:United States
 KN4RTL:United States
-KN4TSA:United States
 KN4UILGREG:United States
+KN4USCB:United States
 KN4VIK:United States
 KN6DLX:United States
 KN6HEC:United States
@@ -859,7 +882,6 @@ KO4YDN:United States
 KO4ZIP:United States
 KO6AQP:United States
 KO6ARA:United States
-KO6BXC:United States
 KQ4AET:United States
 KQ4AFR:United States
 KQ4AKF:United States
@@ -871,6 +893,7 @@ KQ4CZO:United States
 KQ4DCP:United States
 KQ4DHQ:United States
 KQ4DNQ:United States
+KQ4DPP:United States
 KQ4FCS:United States
 KQ4FQO:United States
 KQ4GHZ:United States
@@ -939,8 +962,10 @@ M0OAT:England
 M0ODM:England
 M0OTP:England
 M0PHC:England
+M0RCE:England
 M0RDB:England
 M0TEO:England
+M0TNI:England
 M0TPM:England
 M0VIC:England
 M0WFC:England
@@ -952,6 +977,7 @@ M1DAT:England
 M1DZM:England
 M1HVJG:England
 M1MIT:England
+M3GZW:England
 M3NWD:England
 M3PSE:England
 M3TXPB:England
@@ -990,12 +1016,13 @@ M7GZM:England
 M7HFD:England
 M7ICK:England
 M7IG:England
+M7JTO:England
 M7JWR:England
 M7LBY:England
 M7LXF:England
-M7LXH:England
 M7MVF:England
 M7NAX:England
+M7NEX:England
 M7ROE:England
 M7SCD:England
 M7SPE:England
@@ -1018,6 +1045,7 @@ MM6HVT:Scotland
 MM7CMT:Scotland
 MM7DSV:Scotland
 MM7JFA:Scotland
+MM7OLCB:Scotland
 MW0PRP:Wales
 MW0WTK:Wales
 MW7ERP:Wales
@@ -1031,6 +1059,7 @@ N0RYKJACK:Guam
 N0VGM:United States
 N0XIAP:United States
 N0XPB:United States
+N0ZCU:United States
 N1ARO:United States
 N1BCN:United States
 N1CML:United States
@@ -1045,6 +1074,7 @@ N2DTO:United States
 N2JA:United States
 N2JXG:United States
 N2KF:United States
+N2OIT:United States
 N2RWM:United States
 N2TGF:United States
 N2TGM:United States
@@ -1074,6 +1104,7 @@ N4KEY:United States
 N4NF:United States
 N4OZI:United States
 N4PWH:United States
+N4SSA:United States
 N4THT:United States
 N4TZN:United States
 N4ULE:United States
@@ -1168,6 +1199,7 @@ ON3EQT:Belgium
 ON3PN:Belgium
 ON4BIT:Belgium
 ON4ERM:Belgium
+ON4LG:Belgium
 ON5LDH:Belgium
 OZ1BIN:Denmark
 OZ2GTI:Denmark
@@ -1223,7 +1255,6 @@ TB5CBV:Asiatic Turkey
 TF3AB:Iceland
 TF3IG:Iceland
 TG9AGO:Guatemala
-VA1XH:Canada
 VA2MVX:Canada
 VA3COF:Canada
 VA3KS1AEA:Canada
@@ -1231,10 +1262,12 @@ VA3KWG:Canada
 VA3MU:Canada
 VA3QV:Canada
 VA3TMA:Canada
+VA3VJB:Canada
 VA5GAC:Canada
 VA5MUD:Canada
 VA6BED:Canada
 VA6JDM:Canada
+VA6MDR:Canada
 VA6MWA:Canada
 VA6VAP:Canada
 VA7BDT:Canada
@@ -1309,13 +1342,13 @@ VK3FADX:Australia
 VK3GQK:Australia
 VK3HX:Australia
 VK3LBB:Australia
-VK3LOC:Australia
 VK3MJFM:Australia
 VK3NCR:Australia
 VK3SKT:Australia
 VK3SMSM:Australia
 VK3TQP:Australia
 VK3TZE:Australia
+VK3VHR:Australia
 VK3VO:Australia
 VK3YAPB:Australia
 VK3ZJB:Australia
@@ -1351,6 +1384,7 @@ W0WAH:United States
 W0ZWA:United States
 W1GRY:United States
 W1JOL:United States
+W1MAV:United States
 W1MEB:United States
 W1TXT:United States
 W2DOG:United States
@@ -1386,6 +1420,7 @@ W5DO:United States
 W5IDD:United States
 W5JAP:United States
 W5JZQ:United States
+W5TXZ:United States
 W5VBA:United States
 W6ALH:United States
 W6CAG:United States
@@ -1428,6 +1463,7 @@ WA2EIN:United States
 WA2SFF:United States
 WA3J:United States
 WA3NGAANDY:United States
+WA3RWP:United States
 WA3WAT:United States
 WA4DDR:United States
 WA4FJB:United States
@@ -1453,6 +1489,7 @@ WB8E:United States
 WB8IXW:United States
 WB8NQW:United States
 WB8P:United States
+WB8USA:United States
 WB9LUL:United States
 WB9RXKB:United States
 WB9TQW:United States
@@ -1502,6 +1539,7 @@ ZL1KN:New Zealand
 ZL1MYL:New Zealand
 ZL1TBE:New Zealand
 ZL2ACK:New Zealand
+ZL2JML:New Zealand
 ZL2JMLM:New Zealand
 ZL2JSTB:New Zealand
 ZL3AFC:New Zealand
@@ -1509,4 +1547,5 @@ ZL3ET:New Zealand
 ZL3TKI:New Zealand
 ZL4AX:New Zealand
 ZS3AG:South Africa
+ZS6BUN:South Africa
 ZS6IRQ:South Africa
