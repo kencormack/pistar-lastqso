@@ -18,12 +18,14 @@
 2E0PGX:England
 2E0RLTB:England
 2E0RPU:England
+2E0RTB:England
 2E0SSB:England
 2E0TER:England
 2E0TPB:England
 2E0UFJ:England
 2E0UPM:England
 2E0VWC:England
+2E0WDSB:England
 2E1AJB:England
 2E1GSK:England
 2EODVD:England
@@ -63,6 +65,7 @@ AE4CH:United States
 AE4DA:United States
 AE6SB:United States
 AF6VH:United States
+AF7YF:United States
 AI4NF:United States
 AI5DT:United States
 AI5NL:United States
@@ -216,6 +219,7 @@ G0DMK:England
 G0EOB:England
 G0JWM:England
 G0KDT:England
+G0MKZ:England
 G0ROW:England
 G0RPM:England
 G0RXG:England
@@ -235,11 +239,13 @@ G3ZLX:England
 G4AOJ:England
 G4ARN:England
 G4BDW:England
+G4BDWB:England
 G4HBD:England
 G4NDR:England
 G4RUE:England
 G4TXK:England
 G5AJK:England
+G6GLZ:England
 G7AFT:England
 G7EBP:England
 G7HZS:England
@@ -249,6 +255,7 @@ G8NVB:England
 G8RYX:England
 G8YZA:England
 GB23C:England
+GB7ICB:England
 GB7ICC:England
 GI1GKI:Northern Ireland
 GI3WTG:Northern Ireland
@@ -271,7 +278,6 @@ HF5JS:Poland
 HS5HBQ:Thailand
 IK3DNVX:Italy
 IK4JPP:Italy
-IK4WMI:Italy
 IU2RSF:Italy
 IU3PUB:Italy
 IU7EPPP:Italy
@@ -762,7 +768,6 @@ KJ4UZM:United States
 KJ4WLF:United States
 KJ4WNWE:United States
 KJ4YQK:United States
-KJ5AJO:United States
 KJ5AND:United States
 KJ5BHD:United States
 KJ5BJX:United States
@@ -822,7 +827,6 @@ KM4JCT:United States
 KM4NIH:United States
 KM4NMJ:United States
 KM4RTT:United States
-KM4TUE:United States
 KM4WSJ:United States
 KM6IRL:United States
 KM6SLB:United States
@@ -875,6 +879,7 @@ KO4SMX:United States
 KO4STW:United States
 KO4SWU:United States
 KO4UHK:United States
+KO4VQEA:United States
 KO4VVH:United States
 KO4WTD:United States
 KO4WWE:United States
@@ -988,6 +993,7 @@ M6APL:England
 M6DER:England
 M6EVR:England
 M6HSU:England
+M6MBX:England
 M6OFJ:England
 M6PHZ:England
 M6TOR:England
@@ -1105,7 +1111,6 @@ N4NF:United States
 N4OZI:United States
 N4PWH:United States
 N4SSA:United States
-N4THT:United States
 N4TZN:United States
 N4ULE:United States
 N5HAV:United States
@@ -1516,12 +1521,14 @@ WP4QAZ:Puerto Rico
 WQ0X:United States
 WQ4F:United States
 WR3V:United States
+WS4HRO:United States
 WU0G:United States
 WU1Z:United States
 WU4M:United States
 WV8RWG:United States
 WX4ADX:United States
 WX4AUG:United States
+WX6DC:United States
 WX9USARICH:United States
 WY0F:United States
 WZ8I:United States
