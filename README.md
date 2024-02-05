@@ -1,7 +1,7 @@
 # pistar-lastqso
 ## A Tool to Monitor DMR, YSF, D-STAR, NXDN, P25, and M17, on Pi-Star
 
-**Note: M17 support is limited to network traffic only, in version 3.20,
+**M17 support is limited to network traffic only, in version 3.20,
 until someone with an M17-capable radio can share with me log entries
 showing M17 RF traffic (radio-to-hotspot and hotspot-to-radio)**
 
