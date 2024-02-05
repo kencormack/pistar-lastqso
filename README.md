@@ -1,5 +1,6 @@
 # pistar-lastqso
-## A Tool to Monitor DMR, YSF, D-STAR, NXDN, and P25 Traffic, on Pi-Star
+## A Tool to Monitor DMR, YSF, D-STAR, NXDN, P25, and M17, on Pi-Star
+## (M17 support is limited to network traffic only, in version 3.2.0)
 **This program was written for the official pi-star version 4.1.4 and later only.  NO testing has been done, nor will it ever be done, with earlier versions.  Likewise, no third-party "enhanced" dashboards or other user assembled hotspot concoctions are supported.**
 
 Note: Some screenshots shown below may not always reflect the latest version, differing only in minor cosmetics from the tool's current version.
@@ -369,13 +370,13 @@ PISTAR-LASTQSO - HELP
       helpful only to those looking to modify the script, is shown
       in the top-right corner of the screen.  An example looks like
       this:
-                       Options & Parameters: -t 15 -f 5 -w -i -l
+                                    Options: -t 15 -f 5 -w -i -l
                    Debugging: 3>/dev/null Profiling: 4>/dev/null
                  xterm SIZE=44x168 TTY=pts0 PID=2110 BG_PID=2414
-             Modes and X-Modes: YSF=0 DMR=0 NXDN=0 DSTAR=0 P25=1
+                 Modes/X-Modes: YSF=1 DMR=1 NXDN=1 DSTAR=1 P25=1
              YSF2DMR=0 YSF2NXDN=0 YSF2P25=0 DMR2YSR=0 DMR2NXDN=0
                 Traffic Counts: DMR=0 YSF=0 NXDN=0 DSTAR=0 P25=0
-               Cache: DXCC=0 Grid=0 Lic=0 Other: K=0 E=0 W=0 R=0
+                   DXCC=457 Grid=95105 Lic=95105 K=0 E=0 W=0 R=0
 
       The first line shows the options and parameters passed to the
       script when launched.
