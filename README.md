@@ -41,7 +41,7 @@ Note: Some screenshots shown below may not always reflect the latest version, di
 
 -------------------------------------------------------------------
 ## About
-pistar-lastqso is a tool to monitor DMR, YSF (including DMR2YSF and YSF2DMR cross-modes), D-Star, NXDN, and P25 traffic on a PI-STAR node, either via SSH, or, on an HDMI-connected console.  Written as a bash shell script (with a few lines of python), no web browser or other GUI client is required.
+pistar-lastqso is a tool to monitor DMR, YSF (including DMR2YSF and YSF2DMR cross-modes), D-Star, NXDN, P25, and M17 traffic on a PI-STAR node, either via SSH, or, on an HDMI-connected console.  Written as a bash shell script (with a few lines of python), no web browser or other GUI client is required.
 
 **For each QSO (all modes), the program can display the following data:**
 - The localized Time and Date of the contact
@@ -188,7 +188,7 @@ If the **user.csv** file is already present on your hotspot, but is older than 7
 -------------------------------------------------------------------
 ## City, State, Country Lookups for Callsigns (Other Modes)
 
-For other modes, pistar-lastqso will attempt to find QTH info in the DMR **user.csv** file, then PI-STAR's **NXDN.csv** file, on the likelihood that a YSF, D-Star, or P25 user is also a registered DMR or NXDN user.  If the Callsign is not found in either of those files, it then calls upon the perl script **dxcc.pl** and it's **cty.dat** file.  As the first two data sources generally contain City, State, and Country info, they are tried first.
+For other modes, pistar-lastqso will attempt to find QTH info in the DMR **user.csv** file, then PI-STAR's **NXDN.csv** file, on the likelihood that a YSF, D-Star, M17, or P25 user is also a registered DMR or NXDN user.  If the Callsign is not found in either of those files, it then calls upon the perl script **dxcc.pl** and it's **cty.dat** file.  As the first two data sources generally contain City, State, and Country info, they are tried first.
 
 The **dxcc.pl** script, and it's **cty.dat** file, can only determine the Country that issued the Callsign, based on the Callsign's prefix.  (Lookups with **dxcc.pl** can be disabled if needed, with the "-D|--DXCC" options - see **[the Help text](https://github.com/kencormack/pistar-lastqso#the-help-text)** for details.)
 
@@ -247,9 +247,9 @@ PISTAR-LASTQSO - HELP
 
 (Cursor Up/Down keys to scroll, Page Up/Dn to page, Q to quit help.)
 
-  With no options, the script watches for DMR, YSF, D-Star, NXDN, and
-  P25 traffic types.  Log entries are parsed and presented as each log
-  line is read.  Ctrl-C can be used to exit the program.
+  With no options, the script watches for DMR, YSF, D-Star, NXDN, P25,
+  and M17 traffic types.  Log entries are parsed and presented as each
+  log line is read.  Ctrl-C can be used to exit the program.
 
   -12|--12hr
       By default, timestamps are shown in 24 hour military format.
@@ -373,7 +373,7 @@ PISTAR-LASTQSO - HELP
                                     Options: -t 15 -f 5 -w -i -l
                    Debugging: 3>/dev/null Profiling: 4>/dev/null
                  xterm SIZE=44x168 TTY=pts0 PID=2110 BG_PID=2414
-                 Modes/X-Modes: YSF=1 DMR=1 NXDN=1 DSTAR=1 P25=1
+           Modes/X-Modes: YSF=1 DMR=1 NXDN=1 DSTAR=1 P25=1 M17=1
              YSF2DMR=0 YSF2NXDN=0 YSF2P25=0 DMR2YSR=0 DMR2NXDN=0
           Traffic Counts: DMR=0 YSF=0 NXDN=0 DSTAR=0 P25=0 M17=0
                 DXCC=1555 Grid=100258 Lic=100258 K=0 E=0 W=0 R=0
@@ -393,16 +393,16 @@ PISTAR-LASTQSO - HELP
       log activity (daily log rotations and pi-star nightly updates).
 
       The fourth line shows which of the following modes are enabled
-      in pi-star: YSF, DMR, NXDN, DSTAR or P25.  If enabled, the mode
-      will show a "1".  Disabled will show a "0".
+      in pi-star: YSF, DMR, NXDN, DSTAR P25, or M17.  If enabled, the
+      mode will show a "1".  Disabled will show a "0".
 
       The fifth line shows which of the following cross-modes are
       enabled: YSF2DMR, YSF2NXDN, YSF2P25, DMR2YSR, and DMR2NXDN.
       If enabled, the mode will show a "1".  Disabled will show a "0".
 
       The sixth line shows a number of counters.  They show the number
-      of DMR, YSF, NXDN, DSTAR, and P25 messages seen since the program
-      was launched.
+      of DMR, YSF, NXDN, DSTAR, M17 and P25 messages seen since the
+      program was launched.
 
       The last line shows the number of records in the DXCC, Grid, and
       License caches, and the number of Kerchunks, Errors, Warnings,
