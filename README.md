@@ -375,8 +375,8 @@ PISTAR-LASTQSO - HELP
                  xterm SIZE=44x168 TTY=pts0 PID=2110 BG_PID=2414
                  Modes/X-Modes: YSF=1 DMR=1 NXDN=1 DSTAR=1 P25=1
              YSF2DMR=0 YSF2NXDN=0 YSF2P25=0 DMR2YSR=0 DMR2NXDN=0
-                Traffic Counts: DMR=0 YSF=0 NXDN=0 DSTAR=0 P25=0
-                   DXCC=457 Grid=95105 Lic=95105 K=0 E=0 W=0 R=0
+          Traffic Counts: DMR=0 YSF=0 NXDN=0 DSTAR=0 P25=0 M17=0
+                DXCC=1555 Grid=100258 Lic=100258 K=0 E=0 W=0 R=0
 
       The first line shows the options and parameters passed to the
       script when launched.
