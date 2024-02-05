@@ -5,7 +5,7 @@
 until someone with an M17-capable radio can share with me log entries
 showing M17 RF traffic (radio-to-hotspot and hotspot-to-radio)**
 
-**This program was written for the official pi-star version 4.1.4 and later only.  NO testing has been done, nor will it ever be done, with earlier versions.  Likewise, no third-party "enhanced" dashboards or other user assembled hotspot concoctions are supported.**
+This program was written for the official pi-star version 4.1.4 and later only.  NO testing has been done, nor will it ever be done, with earlier versions.  Likewise, no third-party "enhanced" dashboards or other user assembled hotspot concoctions are supported.
 
 Note: Some screenshots shown below may not always reflect the latest version, differing only in minor cosmetics from the tool's current version.
 
