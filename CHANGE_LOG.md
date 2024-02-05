@@ -1,4 +1,36 @@
 ```
+CACHE STATUS:  Updated - February 2024
+ The license and grid caches contain more than
+ 100,000 US callsigns, based on US FCC data.
+ The dxcc cache contains more than 1500 non-US
+ callsigns observed during development/testing.
+
+CHANGES: V3.20
+ 1. Begin adding support for M17.  Support for
+    hotspot <--> internet traffic has been added.
+    Support for radio <--> hotspot will require
+    sample log entries from volunteers with an
+    M17-capable radio, and appropriate pi-star
+    and MMDVM firmware versions, as I don't have
+    an M17 radio at this time.
+
+ 2. The format for DMR Talker Alias log entries
+    changed, somewhere around pi-star 3.1.8.
+    TA data used to be logged in chunks, and
+    I'd have to make sure I had it all, before
+    displaying it.  Now, the log entries only
+    appear when the data is complete.  The
+    script now handles both cases.
+
+ 3. Ignore "slow data text" log entries.
+
+CHANGES: V3.19
+ 1. Added support for another vt100-type font.
+    The double-wide (but this time, single-high)
+    character set is available as -f|--font 6.
+    Like font #5, #6 is also term-type and
+    emulator dependent.
+
 CHANGES: V3.18
  1. Some radios (such as the TYT MD-UV390/GPS)
     can transmit GPS data.  If GPS data is

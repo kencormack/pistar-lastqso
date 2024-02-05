@@ -3,7 +3,7 @@
 #
 # pistar-lastqso
 # Written by:   Ken Cormack (KE8DPF), unixken@yahoo.com
-# Copyright © 2023, Ken Cormack
+# Copyright © 2024, Ken Cormack
 # github:       https://github.com/kencormack/pistar-lastqso
 # QRZ page:     https://www.qrz.com/db/KE8DPF
 
@@ -11,9 +11,15 @@
 # INITIALIZATION
 ###########################################################
 
+# Insert this wherever I need to bail, during test/dev
+#echo -en "\r${TERM_RESET}"
+#stty "${STTY}"
+#fnCLEANUP
+#exit
+
 set -o allexport
 
-VERSION=3.18
+VERSION=3.20
 
 #----------
 if [[ "${EUID}" -eq 0 ]]
@@ -33,7 +39,7 @@ if [[ -n "$(pgrep -o "build_cache")" ]]
 then
   echo
   echo "ERROR:" >&2
-  echo "  A from-scratch cache build is in progress." >&2
+  echo "  A cache build is in progress." >&2
   echo
   exit
 fi
@@ -365,29 +371,33 @@ DEF="$(tput setaf 9)"		# Default
 # BG_WHI="$(tput setab 7)"	# White
 # BG_DEF="$(tput setab 9)"	# Default
 
+TICK="✓"
+CROSS="✗"
+
 #----------
 # ANSI STUFF - for things that tput can't address.
 # Not every terminal emulator or term type may support ANSI
 # escape sequences, though most common ones do.  YMMV
-#
+
 # The ESCape character
 ESC=$(echo -n $'\e' 2>/dev/null)
-#
+
 # "tput sgr0" fails to restore terminal settings under certain
 # circumstances.  This may(?) be a better choice, upon exit.
 TERM_RESET="$(echo -ne "${ESC}[0m" 2>/dev/null)"
 
-# Single-height, double-width character set
-# 6 sets line double-width, with normal height
-WIDE_FONT="$(echo -n "${ESC}"#6 2>/dev/null)"
-# 5 sets line single-width (lines are set this way when cleared by ESC [ J)
-NORM_FONT="$(echo -n "${ESC}"#5 2>/dev/null)"
-#
 # Double-height, double-width character set.
 # 3 is top half of charset, 4 is bottom half.
 # Not every terminal type/emulation supports these.
 LARGE_TOP="$(echo -n "${ESC}#3" 2>/dev/null)"
 LARGE_BOT="$(echo -n "${ESC}#4" 2>/dev/null)"
+
+# 5 sets line single-width (lines are set this way when cleared by ESC [ J)
+NORM_FONT="$(echo -n "${ESC}"#5 2>/dev/null)"
+# Single-height, double-width character set
+
+# 6 sets line double-width, with normal height
+WIDE_FONT="$(echo -n "${ESC}"#6 2>/dev/null)"
 
 #----------
 # Stuff dealing with pi-star files
@@ -471,6 +481,7 @@ YSF_COUNT=0
 NXDN_COUNT=0
 DSTAR_COUNT=0
 P25_COUNT=0
+M17_COUNT=0
 QSO_COUNT=0
 KERCHUNK_COUNT=0
 ERROR_COUNT=0
@@ -570,6 +581,7 @@ YSF_COLOR="${BOLD}${YEL}"
 NXDN_COLOR="${BOLD}${CYA}"
 DSTAR_COLOR="${BOLD}${GRE}"
 P25_COLOR="${BOLD}${MAG}"
+M17_COLOR="${BOLD}${RED}"
 OTHER_COLOR="${BOLD}${BLU}"
 
 ###########################################################
@@ -635,6 +647,7 @@ YSF_COUNT=${YSF_COUNT}
 NXDN_COUNT=${NXDN_COUNT}
 DSTAR_COUNT=${DSTAR_COUNT}
 P25_COUNT=${P25_COUNT}
+M17_COUNT=${M17_COUNT}
 #
 QSO_COUNT=${QSO_COUNT}
 KERCHUNK_COUNT=${KERCHUNK_COUNT}
@@ -699,6 +712,7 @@ fnCOPY_CACHE()
     mv /tmp/unparsed_NXDN  /home/pi-star 2>/dev/null
     mv /tmp/unparsed_DSTAR /home/pi-star 2>/dev/null
     mv /tmp/unparsed_P25   /home/pi-star 2>/dev/null
+    mv /tmp/unparsed_M17   /home/pi-star 2>/dev/null
   fi
 
   #----------
@@ -805,6 +819,8 @@ fnGET_MODES()
   NXDN_ENABLED="${NXDN_ENABLED#*=}"
   P25_ENABLED="$(grep -A 2 "^\[P25\]" /etc/mmdvmhost | grep "^Enable")"
   P25_ENABLED="${P25_ENABLED#*=}"
+  M17_ENABLED="$(grep -A 2 "^\[M17\]" /etc/mmdvmhost | grep "^Enable")"
+  M17_ENABLED="${M17_ENABLED#*=}"
   #POCSAG_ENABLED="$(grep -A 2 "^\[POCSAG\]" /etc/mmdvmhost | grep "^Enable")"
   #POCSAG_ENABLED="${POCSAG_ENABLED#*=}"
 
@@ -858,8 +874,10 @@ fnLARGE_FONT()
   echo -n "${SGR0}"
   case ${MY_FONT} in
     5)
-      echo "${LARGE_TOP}${*}"
-      echo "${LARGE_BOT}${*}"
+      echo -e "${LARGE_TOP}${*}\n${LARGE_BOT}${*}"
+      ;;
+    6)
+      echo -e "${WIDE_FONT}${*}"
       ;;
     *)
       echo "${*}"
@@ -1254,12 +1272,12 @@ fnDEV_INFO()
   BG_PID=${BG_PID:-'n/a'}
 
   #----------
-  DEV_STRING[1]="  Options/Params: ${MY_CMDLINE}"
-  DEV_STRING[2]="  Debugging: 3>${DEBUG_LOG} Profiling: 4>${PROFILING_LOG}"
+  DEV_STRING[1]="  Options: ${MY_CMDLINE}"
+  DEV_STRING[2]="  Debugging: 3> $(basename "${DEBUG_LOG}") Profiling: 4> $(basename "${PROFILING_LOG}")"
   DEV_STRING[3]="  ${TERM} SIZE=${LINES}x${COLUMNS} TTY=${MY_TTY} PID=${MY_PID} BG_PID=${BG_PID}"
-  DEV_STRING[4]="  Modes and X-Modes: YSF=${YSF_ENABLED} DMR=${DMR_ENABLED} NXDN=${NXDN_ENABLED} DSTAR=${DSTAR_ENABLED} P25=${P25_ENABLED}"
+  DEV_STRING[4]="  Modes/X-Modes: YSF=${YSF_ENABLED} DMR=${DMR_ENABLED} NXDN=${NXDN_ENABLED} DSTAR=${DSTAR_ENABLED} P25=${P25_ENABLED} M17=${M17_ENABLED}"
   DEV_STRING[5]="  YSF2DMR=${YSF2DMR_ENABLED} YSF2NXDN=${YSF2NXDN_ENABLED} YSF2P25=${YSF2P25_ENABLED} DMR2YSR=${DMR2YSF_ENABLED} DMR2NXDN=${DMR2NXDN_ENABLED}"
-  DEV_STRING[6]="  Traffic: DMR=${DMR_COUNT} YSF=${YSF_COUNT} NXDN=${NXDN_COUNT} DSTAR=${DSTAR_COUNT} P25=${P25_COUNT}"
+  DEV_STRING[6]="  Traffic: DMR=${DMR_COUNT} YSF=${YSF_COUNT} NXDN=${NXDN_COUNT} DSTAR=${DSTAR_COUNT} P25=${P25_COUNT} M17=${M17_COUNT}"
   DEV_STRING[7]="  DXCC=$(grep -c . "${DXCC_CACHE_FILE}") Grid=$(grep -c . "${GRID_CACHE_FILE}") Lic=$(grep -c . "${LICENSE_CACHE_FILE}") K=${KERCHUNK_COUNT} E=${ERROR_COUNT} W=${WARNING_COUNT} R=${LOG_RESTARTS}"
 
   #----------
@@ -1525,6 +1543,13 @@ fnNOSCROLL_ZONE()
     fi
   fi
 
+  M17_STARTUP="null"
+  if [[ "${M17_ENABLED}" = "1" ]]
+  then
+    M17_STARTUP="$(grep -A 5 "^\[Network\]" /etc/m17gateway | grep "^Startup")"
+    M17_STARTUP="${M17_STARTUP#*=}"
+  fi
+
   #----------
   # Print line 4
   YSF_STARTUP="${YSF_STARTUP}${TOP_PAD}"
@@ -1539,15 +1564,18 @@ fnNOSCROLL_ZONE()
   P25_REFLECTOR="${P25_REFLECTOR}${TOP_PAD}"
   P25_REFLECTOR="${P25_REFLECTOR:0:9}"
 
-  echo -en "${DIM}${WHI}REFLECTORS....${SGR0}\r"
-  tput cuf 16
+  M17_STARTUP="${M17_STARTUP}${TOP_PAD}"
+  M17_STARTUP="${M17_STARTUP:0:9}"
+
   echo -en "${DIM}${WHI}YSF:${SGR0}${YSF_COLOR}${YSF_STARTUP}${SGR0}\r"
-  tput cuf 32
+  tput cuf 16
   echo -en "${DIM}${WHI}NXDN:${SGR0}${NXDN_COLOR}${NXDN_REFLECTOR}${SGR0}\r"
-  tput cuf 48
+  tput cuf 32
   echo -en "${DIM}${WHI}DSTAR:${SGR0}${DSTAR_COLOR}${DSTAR_REFLECTOR}${SGR0}\r"
-  tput cuf 65
-  echo "${DIM}${WHI}P25:${SGR0}${P25_COLOR}${P25_REFLECTOR}${SGR0}"
+  tput cuf 48
+  echo -en "${DIM}${WHI}P25:${SGR0}${P25_COLOR}${P25_REFLECTOR}${SGR0}\r"
+  tput cuf 62
+  echo "${DIM}${WHI}M17:${SGR0}${M17_COLOR}${M17_STARTUP}${SGR0}"
 
   #----------
   # Print line 5
@@ -1632,11 +1660,11 @@ fnUSAGE()
   echo "USAGE:  Valid options and parameters include:
 
 Short Form:
-  [-12] [-c] [-d] [-D] [-e] [-f <1-5>] [-F] [-g] [-h] [-i] [-l]
+  [-12] [-c] [-d] [-D] [-e] [-f <1-6>] [-F] [-g] [-h] [-i] [-l]
   [-m] [-n] [-p] [-r /path/to/file] [-t [integer]] [-v] [-w]
 
 Long Form:
-  [--12hr] [--csv] [--dat] [--DXCC] [--errors] [--font <1-5>] [--FCC] [--grid]
+  [--12hr] [--csv] [--dat] [--DXCC] [--errors] [--font <1-6>] [--FCC] [--grid]
   [-help] [-info] [--logo] [--mono] [--nobig] [--poll] [--replay /path/to/file]
   [--top [integer]] [--version] [--wrap]
   " >&2
@@ -1712,10 +1740,10 @@ fnPARSE_CMDLINE()
 
       -f|--font)
         # If this option is given, see if the next value
-        # is a number from 1 to 5
+        # is a number from 1 to 6
         NEXT=$((INDEX + 1))
         PARAM="${ARG_LIST[${NEXT}]}"
-        if [[ ${PARAM} == ?(-)+([1-5]) ]]
+        if [[ ${PARAM} == ?(-)+([1-6]) ]]
         then
           # It is, so use it to set the font.
           MY_FONT=${PARAM}
@@ -1725,7 +1753,7 @@ fnPARSE_CMDLINE()
         else
           # It is not, so show the usage text, and exit.
           echo -n "${BELL}${FLASH}"
-          echo -e "\nERROR:  The use of \"-f|--font\" requires an integer 1-5\n" >&2
+          echo -e "\nERROR:  The use of \"-f|--font\" requires an integer 1-6\n" >&2
           fnUSAGE
           stty "${STTY}"
           fnCLEANUP
@@ -1888,9 +1916,9 @@ PISTAR-LASTQSO - HELP
 
 (Cursor Up/Down keys to scroll, Page Up/Dn to page, Q to quit help.)
 
-  With no options, the script watches for DMR, YSF, D-Star, NXDN, and
-  P25 traffic types.  Log entries are parsed and presented as each log
-  line is read.  Ctrl-C can be used to exit the program.
+  With no options, the script watches for DMR, YSF, D-Star, NXDN, P25,
+  and M17 traffic types.  Log entries are parsed and presented as each
+  log line is read.  Ctrl-C can be used to exit the program.
 
   -12|--12hr
       By default, timestamps are shown in 24 hour military format.
@@ -1956,16 +1984,17 @@ PISTAR-LASTQSO - HELP
       show up in the log.  Although the -e|--error option will supress
       display of ERRORS, it will NOT supress display of WARNINGS.
 
-  -f|--font <1-5>
+  -f|--font <1-6>
       The [-f|--font] option forces use of the selected font, regardless
       of screen-width.
 
-      Valid options are 1, 2, 3, 4, or 5
+      Valid options are 1, 2, 3, 4, 5, or 6
         1 = "small"
         2 = "standard"
         3 = "big"
         4 = "ansi_shadow"
-        5 = "emulator-dependent alternate charset"
+        5 = "emulator-dependent alternate charset (dbl-high/dbl-wide)"
+        6 = "emulator-dependent alternate charset (dbl-wide)"
 
       If this option is omitted, the script will auto-select an
       appropriately sized figlet font based on the following screen-
@@ -1978,8 +2007,9 @@ PISTAR-LASTQSO - HELP
       The "ansi_shadow" and "emulator-dependent alternate character set"
       fonts are never auto-selected.
 
-      Font # 5 may not work for everyone.  Not all terminal emulators
-      or TERM-types support the ANSI control codes for this feature.
+      Fonts # 5 and 6 may not work for everyone.  Not all terminal
+      emulators or TERM-types support the vt100 ANSI control codes for
+      this feature.
 
   -F|--FCC
       For US callsigns only, enable amateur radio license level lookup
@@ -2011,14 +2041,13 @@ PISTAR-LASTQSO - HELP
       helpful only to those looking to modify the script, is shown
       in the top-right corner of the screen.  An example looks like
       this:
-                       Options & Parameters: -t 15 -f 5 -w -i -l
+                                    Options: -t 15 -f 5 -w -i -l
                    Debugging: 3>/dev/null Profiling: 4>/dev/null
                  xterm SIZE=44x168 TTY=pts0 PID=2110 BG_PID=2414
-             Modes and X-Modes: YSF=0 DMR=0 NXDN=0 DSTAR=0 P25=1
+           Modes/X-Modes: YSF=1 DMR=1 NXDN=1 DSTAR=1 P25=1 M17=1
              YSF2DMR=0 YSF2NXDN=0 YSF2P25=0 DMR2YSR=0 DMR2NXDN=0
-                Traffic Counts: DMR=0 YSF=0 NXDN=0 DSTAR=0 P25=0
-               Cache: DXCC=0 Grid=0 Lic=0 Other: K=0 E=0 W=0 R=0
-
+          Traffic Counts: DMR=0 YSF=0 NXDN=0 DSTAR=0 P25=0 M17=0
+                   DXCC=457 Grid=95105 Lic=95105 K=0 E=0 W=0 R=0
 
       The first line shows the options and parameters passed to the
       script when launched.
@@ -2035,16 +2064,16 @@ PISTAR-LASTQSO - HELP
       log activity (daily log rotations and pi-star nightly updates).
 
       The fourth line shows which of the following modes are enabled
-      in pi-star: YSF, DMR, NXDN, DSTAR or P25.  If enabled, the mode
-      will show a "1".  Disabled will show a "0".
+      in pi-star: YSF, DMR, NXDN, DSTAR, P25, or M17.  If enabled, the
+      mode will show a "1".  Disabled will show a "0".
 
       The fifth line shows which of the following cross-modes are
       enabled: YSF2DMR, YSF2NXDN, YSF2P25, DMR2YSR, and DMR2NXDN.
       If enabled, the mode will show a "1".  Disabled will show a "0".
 
       The sixth line shows a number of counters.  They show the number
-      of DMR, YSF, NXDN, DSTAR, and P25 messages seen since the program
-      was launched.
+      of DMR, YSF, NXDN, DSTAR, P25, and M17 messages seen since the
+      program was launched.
 
       The last line shows the number of records in the DXCC, Grid, and
       License caches, and the number of Kerchunks, Errors, Warnings,
@@ -2177,7 +2206,7 @@ fnVERSION()
   clear
   echo "${BOLD}${WHI}$(basename "${0}") v${VERSION}${SGR0}"
   cat <<'EOF'
-Copyright © 2023 Ken Cormack, KE8DPF
+Copyright © 2024 Ken Cormack, KE8DPF
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published
@@ -2203,7 +2232,7 @@ fnNO_LOGO()
 
   clear
   echo "${BOLD}${WHI}PISTAR-LASTQSO v${VERSION}${SGR0}"
-  echo "Copyright © 2023 Ken Cormack - KE8DPF"
+  echo "Copyright © 2024 Ken Cormack - KE8DPF"
   echo "${DIM}https://github.com/kencormack/pistar-lastqso${SGR0}"
   echo
   return
@@ -2294,42 +2323,44 @@ EOF
   tput cup 15 29
   echo "${SGR0}${BOLD}${YEL}PISTAR-LASTQSO v${VERSION}${WHI}${SGR0}"
   tput cuf 21
-  echo "${SGR0}${BOLD}${BLU}Copyright © 2023  Ken Cormack/KE8DPF${WHI}${SGR0}"
+  echo "${SGR0}${BOLD}${BLU}Copyright © 2024  Ken Cormack/KE8DPF${WHI}${SGR0}"
   tput cuf 17
   echo "${SGR0}${BOLD}${BLU}https://github.com/kencormack/pistar-lastqso${WHI}${SGR0}"
   echo -n "${SGR0}${WHI}${CUR_ON}"
 
   #----------
-  # The 5 mode names in random (yeah, I got bored) sequence
+  # The 6 mode names in random sequence
   local SEQUENCE
   local NUM
   # shellcheck disable=SC2207
-  SEQUENCE=($(shuf -i 1-5 -n 5))
+  SEQUENCE=($(shuf -i 1-6 -n 6))
   for NUM in "${SEQUENCE[@]}"
   do
     case "${NUM}" in
-      1) tput cup 11 11 ; echo -n "${BOLD}${WHI}DMR${SGR0}" ;;
-      2) tput cup 11 24 ; echo -n "${BOLD}${WHI}NXDN${SGR0}" ;;
-      3) tput cup 11 37 ; echo -n "${BOLD}${WHI}P25${SGR0}" ;;
-      4) tput cup 11 49 ; echo -n "${BOLD}${WHI}DSTAR${SGR0}" ;;
-      5) tput cup 11 63 ; echo -n "${BOLD}${WHI}YSF${SGR0}" ;;
+      1) tput cup 11 10 ; echo -n "${BOLD}${WHI}DMR${SGR0}" ;;
+      2) tput cup 11 20 ; echo -n "${BOLD}${WHI}NXDN${SGR0}" ;;
+      3) tput cup 11 31 ; echo -n "${BOLD}${WHI}P25${SGR0}" ;;
+      4) tput cup 11 41 ; echo -n "${BOLD}${WHI}DSTAR${SGR0}" ;;
+      5) tput cup 11 53 ; echo -n "${BOLD}${WHI}YSF${SGR0}" ;;
+      6) tput cup 11 63 ; echo -n "${BOLD}${WHI}M17${SGR0}" ;;
       *) true ;;
     esac
   done
 
   #----------
-  # The 5 mode boxes in random (I'm still bored) sequence
+  # The 6 mode boxes in random sequence
   echo -n "${SGR0}${BLU}"
   # shellcheck disable=SC2207
-  SEQUENCE=($(shuf -i 1-5 -n 5))
+  SEQUENCE=($(shuf -i 1-6 -n 6))
   for NUM in "${SEQUENCE[@]}"
   do
     case "${NUM}" in
-      1) fnDRAW_BOX 10  9 2 6 1 0 1 ;;
-      2) fnDRAW_BOX 10 22 2 7 1 0 1 ;;
-      3) fnDRAW_BOX 10 35 2 6 1 0 1 ;;
-      4) fnDRAW_BOX 10 47 2 8 1 0 1 ;;
-      5) fnDRAW_BOX 10 61 2 6 1 0 1 ;;
+      1) fnDRAW_BOX 10  8 2 6 1 0 1 ;;
+      2) fnDRAW_BOX 10 18 2 7 1 0 1 ;;
+      3) fnDRAW_BOX 10 29 2 6 1 0 1 ;;
+      4) fnDRAW_BOX 10 39 2 8 1 0 1 ;;
+      5) fnDRAW_BOX 10 51 2 6 1 0 1 ;;
+      6) fnDRAW_BOX 10 61 2 6 1 0 1 ;;
       *) true ;;
     esac
   done
@@ -2341,7 +2372,7 @@ fnCHECK_MODES_ENABLED()
 {
   echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
-  if [[ ! "${DMR_ENABLED}${YSF_ENABLED}${NXDN_ENABLED}${DSTAR_ENABLED}${P25_ENABLED}" =~ "1" ]]
+  if [[ ! "${DMR_ENABLED}${YSF_ENABLED}${NXDN_ENABLED}${DSTAR_ENABLED}${P25_ENABLED}${M17_ENABLED}" =~ "1" ]]
   then
     #----------
     echo -n "${SGR0}${RED}"
@@ -2438,16 +2469,22 @@ fnGOODBYE_BOX()
   tput cup 11 56
   echo -n "${DIM}${WHI})${SGR0}"
 
-  tput cup 12 27
+  tput cup 12 21
   echo -n "${DIM}${WHI}(DSTAR ${SGR0}${CYA}"
   printf %05d "${DSTAR_COUNT}"
-  tput cup 12 39
+  tput cup 12 33
   echo -n "${DIM}${WHI})${SGR0}"
 
-  tput cup 12 41
+  tput cup 12 35
   echo -n "${DIM}${WHI}(NXDN ${SGR0}${CYA}"
   printf %05d "${NXDN_COUNT}"
-  tput cup 12 52
+  tput cup 12 45
+  echo -n "${DIM}${WHI})${SGR0}"
+
+  tput cup 12 47
+  echo -n "${DIM}${WHI}(M17 ${SGR0}${CYA}"
+  printf %05d "${M17_COUNT}"
+  tput cup 12 57
   echo -n "${DIM}${WHI})${SGR0}"
 
   #----------
@@ -2463,12 +2500,12 @@ fnGOODBYE_BOX()
   echo -n "${DIM}${WHI}Includes ${SGR0}${YEL}$(printf %04d "${KERCHUNK_COUNT}")${DIM}${WHI} Kerchunks (${SGR0}${YEL}$(printf %.2f "${PERCENTAGE}")%${DIM}${WHI})${SGR0}"
 
   #----------
-  tput cup 14 18
-  echo -n "${CYA}Caches:  DXCC $(printf %05d "$(grep -c . "${DXCC_CACHE_FILE}")")"
+  tput cup 14 17
+  echo -n "${CYA}Caches... DXCC_$(printf %05d "$(grep -c . "${DXCC_CACHE_FILE}")")"
   tput cup 14 39
-  echo -n "${CYA}GRID $(printf %05d "$(grep -c . "${GRID_CACHE_FILE}")")"
+  echo -n "${CYA}GRID_$(printf %05d "$(grep -c . "${GRID_CACHE_FILE}")")"
   tput cup 14 51
-  echo -n "${CYA}FCC $(printf %05d "$(grep -c . "${LICENSE_CACHE_FILE}")")"
+  echo -n "${CYA}FCC_$(printf %05d "$(grep -c . "${LICENSE_CACHE_FILE}")")"
 
   #----------
   ERROR_COUNT_COLOR=""
@@ -2816,6 +2853,12 @@ fnBANNER()
   else
     FROM_OR_SENDER="${FROM}"
   fi
+  if [[ "${LOGREC_MODE}" = "M17" ]] && [[ "${M17_HOST_SUFFIX}" != "" ]]
+  then
+    FROM_OR_SENDER="${FROM}_${M17_HOST_SUFFIX}"
+  else
+    FROM_OR_SENDER="${FROM}"
+  fi
 
   #----------
   # NO_WRAP is set with the "-w|--wrap" cmdline option.
@@ -2828,10 +2871,10 @@ fnBANNER()
 
   #----------
   # This deals with the alternate charset font only...
-  if [[ "${MY_FONT}" = "5" ]]
+  if [[ "${MY_FONT}" = "5" ]] || [[ "${MY_FONT}" = "6" ]]
   then
-    # Font #5 is not a figlet font.  Do what we need to
-    # do, and get out.
+    # Fonts #5 and 6 are not figlet fonts.
+    # Print what we need, then get out.
     fnLARGE_FONT "${BOLD}${CONTACT_COLOR}${FROM_OR_SENDER} ... ${TO}"
     return
   fi
@@ -2974,6 +3017,43 @@ fnDSTAR_END_NETWORK_TRAFFIC()
 }
 
 #-----------------------------------
+fnM17_END_NETWORK_TRAFFIC()
+{
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
+
+  trap fnWINCH WINCH
+
+  #----------
+  # Fields to pass to the history...
+  BER="n/a"
+  LOSS="n/a"
+
+  #----------
+  echo -en "\r${CLR_EL}"
+  echo -en "\r${DIM}Dur.:${SGR0} ${BLU}${BOLD}${SECS}${SGR0}${WHI}${DIM} sec\r"
+
+  #----------
+  if [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
+  then
+    . "${COUNT_FILE}"
+    ((KERCHUNK_COUNT++))
+    fnWRITE_COUNTER_FILE
+
+    tput cuf 64
+    echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
+  else
+    echo
+  fi
+
+  #----------
+  fnBUILD_HISTORY
+  echo -n "${LINE_COLOR}"
+  fnSEPARATOR
+  fnLISTENING
+  return
+}
+
+#-----------------------------------
 fnNXDN_END_NETWORK_TRAFFIC()
 {
   echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
@@ -3089,6 +3169,7 @@ fnSHOW_CURRENT_CALL()
   else
     FROM_OR_SENDER="${FROM}"
   fi
+
   if [[ -n "${FROM_NAME}" ]]
   then
     P_FROM_NAME="$(printf "%-15s" "(${FROM_NAME})")"
@@ -3116,6 +3197,9 @@ fnSHOW_CURRENT_CALL()
     ;;
   "P25")
     ((P25_COUNT++))
+    ;;
+  "M17")
+    ((M17_COUNT++))
     ;;
   *)
     :
@@ -3657,6 +3741,13 @@ fnBUILD_HISTORY()
       else
         FROM_OR_SENDER="${FROM}"
       fi
+      if [[ "${LOGREC_MODE}" = "M17" ]] && [[ "${M17_HOST_SUFFIX}" != "" ]]
+      then
+        FROM_OR_SENDER="${FROM}_${M17_HOST_SUFFIX}"
+      else
+        FROM_OR_SENDER="${FROM}"
+        M17_HOST_SUFFIX=""
+      fi
       FROM_OR_SENDER="${FROM_OR_SENDER:0:11}"
 
       #----------
@@ -3885,6 +3976,32 @@ fnDMR_MAIN()
   unset CUT_ARRAY
 
   #----------
+  # NEW TA HANDLER
+  # At some point, the format of DMR Talker Alias log entries
+  # changed.  The data used to come in chunks, and I had to
+  # ensure the data was complete before displaying it.  Now,
+  # it looks like mmdvmhost only logs the TA when it's complete,
+  # and I no longer have to check to ensure we have all of it.
+  if [[ "${LOGREC_REMAINING_DATA}" =~ ", Talker Alias" ]]
+  then
+    if [[ ${TA_DISPLAYED} -eq 0 ]]
+    then
+      TA="$(echo "${LOGREC_REMAINING_DATA}" | grep "Talker Alias" | cut -f2 -d'"')"
+      if [[ -n "${TA}" ]]
+      then
+        echo -en "\r${CLR_EL}"
+        echo "${DIM}TA..:${SGR0} ${MAG}${BOLD}${TA}${SGR0}${WHI}${CLR_ED}"
+        TA_DISPLAYED=1
+        fnQSO_IN_PROGRESS
+      fi
+    fi
+    return
+  fi
+
+  # OLD TA HANDLER
+  # Up until recently, this was the format for DMR Talker Alias
+  # log entries.  The data would come in chunks, and I'd need to
+  # ensure the data was complete in order to display it.
   if [[ "${LOGREC_REMAINING_DATA}" =~ "DMR Talker Alias" ]]
   then
     # The log entries show that TA arrives in chunks.  Make sure we have
@@ -4409,6 +4526,135 @@ fnYSF_MAIN()
   echo "Un-parsed YSF log entry..." >&2
   echo "${LOGREC_REMAINING_DATA}" >&2
   echo "${RECORD}" >>/tmp/unparsed_YSF
+  echo -n "${LINE_COLOR}"
+  fnSEPARATOR
+  return
+}
+
+#KPC
+#-----------------------------------
+fnM17_MAIN()
+{
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
+
+  trap fnWINCH WINCH
+
+  # We come into this function already knowing:
+  # The entire log line...
+  #   RECORD
+  # The first 4 fields of the log line...
+  #   LOGREC_TYPE  LOGREC_DATE  LOGREC_TIME  LOGREC_MODE
+  # And "everything following" the first 3 fields...
+  #   LOGREC_REMAINING_DATA
+  #
+  # The fields, between "RECORD" and "LOGREC_REMAINING_DATA"
+  # align with each other as follows:
+  #     RECORD...
+  #     0 1 2    3 4 5 6 7 8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 (array indexes)
+  #     1 2 3    4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 (awk fields)
+  #     LOGREC_REMAINING_DATA...
+  #              0 1 2 3 4 5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 (array indexes)
+  #              1 2 3 4 5 6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 ("FIELD_x")
+  #
+  # Grab the parts that we need
+  IFS=' '; CUT_ARRAY=(${LOGREC_REMAINING_DATA}); unset IFS;
+  # Revise field list below, as needed
+  FIELD_1="${CUT_ARRAY[0]}"
+  FIELD_2="${CUT_ARRAY[1]}"
+  FIELD_3="${CUT_ARRAY[2]}"
+  FIELD_4="${CUT_ARRAY[3]}"
+  FIELD_5="${CUT_ARRAY[4]}"
+  FIELD_6="${CUT_ARRAY[5]}"
+  FIELD_7="${CUT_ARRAY[6]}"
+  FIELD_8="${CUT_ARRAY[7]}"
+  FIELD_9="${CUT_ARRAY[8]}"
+  FIELD_10="${CUT_ARRAY[9]}"
+  FIELD_11="${CUT_ARRAY[10]}"
+  FIELD_12="${CUT_ARRAY[11]}"
+  # Revise field list above, as needed
+  unset CUT_ARRAY
+
+  #----------
+  # Start of M17 RF voice traffic
+
+  #----------
+  # End of M17 RF traffic
+
+  #----------
+  # Start of M17 network traffic
+# M17, received network voice transmission from XXXXXX  X to ALL
+# M17, received network voice transmission from XXXXXX to ALL
+# 1    2        3       4     5            6    7      8  9  10
+  if [[ "${LOGREC_REMAINING_DATA}" =~ "received network voice transmission from" ]]
+  then
+#   echo -e "\n${LOGREC_REMAINING_DATA}"
+
+    fnCONVERT_DATE_TIME
+    QSO_START_TIME="${TIME}"
+
+    FROM="${FIELD_7}"
+
+    if [[ "${FIELD_10}" = "ALL" ]]
+    then
+      TO="${FIELD_10}"
+      M17_HOST_SUFFIX="${FIELD_8}"
+    else
+      TO="${FIELD_9}"
+      M17_HOST_SUFFIX=""
+    fi
+
+    echo -en "\r${CLR_EL}"
+    fnBANNER
+
+    SOURCE="NET"
+
+    . "${COUNT_FILE}"
+    ((QSO_COUNT++))
+    fnWRITE_COUNTER_FILE
+
+    fnSHOW_CURRENT_CALL
+    return
+  fi
+
+  #----------
+  # End of M17 network traffic
+  if [[ "${LOGREC_REMAINING_DATA}" =~ "received network end of transmission from" ]]
+  then
+#   echo -e "\n${LOGREC_REMAINING_DATA}"
+
+    FROM="${FIELD_8}"
+
+    if [[ "${FIELD_11}" = "ALL," ]]
+    then
+      TO="${FIELD_11%,*}"
+      M17_HOST_SUFFIX="${FIELD_9}"
+      SECS="${FIELD_12}"
+    else
+      TO="${FIELD_10%,*}"
+      M17_HOST_SUFFIX=""
+      SECS="${FIELD_11}"
+    fi
+
+    LOSS="n/a"
+    fnM17_END_NETWORK_TRAFFIC
+    return
+  fi
+
+# #----------
+  if [[ "${LOGREC_REMAINING_DATA}" =~ "network watchdog has expired" ]]
+  then
+    echo -en "\r${CLR_EL}"
+    SECS="${FIELD_6}"
+    fnM17_END_NETWORK_TRAFFIC
+    return
+  fi
+
+  #----------
+  echo -n "${LINE_COLOR}"
+  fnSEPARATOR
+  echo "Un-parsed M17 log entry..." >&2
+  echo "${LOGREC_REMAINING_DATA}" >&2
+  echo "${RECORD}" >>/tmp/unparsed_M17
   echo -n "${LINE_COLOR}"
   fnSEPARATOR
   return
@@ -5049,7 +5295,6 @@ fnGPS_MAIN()
 
   trap fnWINCH WINCH
 
-  #KPC
   if [[ "${RECORD}" =~ "GPS position" ]] && [[ "${GPS_HIT}" = "0" ]]
   then
     # This gives us data that looks like... "-20.983585,-47.647781"
@@ -5100,10 +5345,9 @@ fnMAIN_LOOP()
   # Filter the log, looking for lines we'll want to parse.
   eval "${CMD}" "${WORKING_LOG}" 2>/dev/null \
     | grep -E --line-buffered "^M: |^W: |^E: |^MMDVMHOST-STOP" \
-    | grep -v -E --line-buffered "0000:|Opening|Closing|Embedded|Downlink|is running|link status|Logged into" \
+    | grep -v -E --line-buffered "0000:|Opening|Closing|Embedded|Downlink|is running|link status|Logged into|slow data text" \
     | while read -r RECORD
   do
-    #KPC
     # Square brackets cause trouble when parsing
     # a record, so they are removed here.  The only
     # records of importance that I've seen them in
@@ -5172,7 +5416,6 @@ fnMAIN_LOOP()
     # Now parse it accordingly.
     case "${LOGREC_MODE}" in
       "GPS")
-        #KPC
         fnGPS_MAIN
         # This flag prevents printing the record multiple
         # times, when received multiple times, during a
@@ -5209,9 +5452,15 @@ fnMAIN_LOOP()
         fnP25_MAIN
         GPS_HIT=0
         ;;
+      "M17")
+        CONTACT_COLOR="${M17_COLOR}"
+        LINE_COLOR="${WHI}"
+        fnM17_MAIN
+        GPS_HIT=0
+        ;;
       *)
         CONTACT_COLOR="${OTHER_COLOR}"
-        LINE_COLOR="${WHI}"
+        LINE_COLOR="${DIM}${WHI}"
         GPS_HIT=0
         ;;
     esac
@@ -5270,6 +5519,7 @@ fnABORT()
   tput cup "${LINES}" 0
   echo -en "${TERM_RESET}"
   stty "${STTY}"
+  reset
   exit
 }
 
