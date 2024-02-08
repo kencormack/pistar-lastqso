@@ -31,6 +31,7 @@
 2EODVD:England
 2M0ULD:Scotland
 2W0EUO:Wales
+2W0FBD:Wales
 2W0HFUF:Wales
 2W0HZC:Wales
 2W0JYB:Wales
@@ -74,7 +75,6 @@ AI7MT:United States
 AJ5ZX:United States
 AK0TF:United States
 AL7G:United States
-BG9GAM:China
 BH4AXY:China
 BH8USU:China
 BM2NJN:Taiwan
@@ -406,6 +406,7 @@ K9KCH:United States
 K9KSU:United States
 K9NET:United States
 K9PHK:United States
+K9QM:United States
 K9RKA:United States
 K9RQ:United States
 K9VTR:United States
@@ -461,7 +462,6 @@ KB9ZTF:United States
 KC0KFW:United States
 KC0QPW:United States
 KC0SAL:United States
-KC0ZIC:United States
 KC1BEK:United States
 KC1DJQ:United States
 KC1EZV:United States
@@ -722,7 +722,6 @@ KI5EBT:United States
 KI5ERN:United States
 KI5GCK:United States
 KI5GYT:United States
-KI5HKU:United States
 KI5IZY:United States
 KI5JIB:United States
 KI5LQN:United States
@@ -942,6 +941,7 @@ KW9V:United States
 KX3C:United States
 KX4AT:United States
 KX7KW:United States
+KY1D:United States
 KY4DOC:United States
 KY4EFD:United States
 KY4K:United States
@@ -1077,6 +1077,8 @@ N2DTO:United States
 N2JA:United States
 N2JXG:United States
 N2KF:United States
+N2KL:United States
+N2MJC:United States
 N2OIT:United States
 N2RWM:United States
 N2TGF:United States
@@ -1096,6 +1098,7 @@ N3WGH:United States
 N3YSF:United States
 N3ZAN:United States
 N3ZF:United States
+N4DJC:United States
 N4DWH:United States
 N4EH:United States
 N4FMO:United States
@@ -1182,6 +1185,7 @@ NX1G:United States
 NX3T:United States
 NY9X:United States
 NZ0B:United States
+NZ5R:United States
 OE0XXX:Austria
 OE1BXM:Austria
 OE1IAD:Austria
@@ -1203,6 +1207,7 @@ ON4BIT:Belgium
 ON4ERM:Belgium
 ON4LG:Belgium
 ON5LDH:Belgium
+OS5DEM:Belgium
 OZ1BIN:Denmark
 OZ2GTI:Denmark
 OZ5BJ:Denmark
@@ -1245,6 +1250,7 @@ SP9FVH:Poland
 SQ4KOU:Poland
 SQ5ABZ:Poland
 SQ7OTM:Poland
+SQ9MYS:Poland
 SQ9SY:Poland
 SV1BYKB:Greece
 SV1BYKM:Greece
