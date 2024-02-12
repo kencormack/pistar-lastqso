@@ -1,4 +1,7 @@
 ```
+CHANGES: V3.21
+ 1. Add support for M17's "text Data" messages
+
 CACHE STATUS:  Updated - February 2024
  The license and grid caches contain more than
  100,000 US callsigns, based on US FCC data.

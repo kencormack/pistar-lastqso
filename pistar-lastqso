@@ -19,7 +19,7 @@
 
 set -o allexport
 
-VERSION=3.20
+VERSION=3.21
 
 #----------
 if [[ "${EUID}" -eq 0 ]]
@@ -4616,6 +4616,21 @@ fnM17_MAIN()
     return
   fi
 
+# #----------
+  if [[ "${LOGREC_REMAINING_DATA}" =~ "M17, text Data:" ]]
+  then
+    IFS=':'; CUT_ARRAY=(${LOGREC_REMAINING_DATA}); unset IFS;
+    M17_TEXT_DATA="${CUT_ARRAY[1]}"
+    unset CUT_ARRAY
+    # Ensure display of any "text Data" entry happens only once per message
+    if [[ "${FROM}" != "${LAST_FROM}" ]]
+    then
+      echo -e "\r${DIM}Text:${SGR0}${BOLD}${WHI}${M17_TEXT_DATA}${SGR0}"
+      LAST_FROM="${FROM}"
+    fi
+    return
+  fi
+
   #----------
   # End of M17 network traffic
   if [[ "${LOGREC_REMAINING_DATA}" =~ "received network end of transmission from" ]]
@@ -4637,6 +4652,8 @@ fnM17_MAIN()
 
     LOSS="n/a"
     fnM17_END_NETWORK_TRAFFIC
+    # This next line resets ability to display "text Data" entries
+    LAST_FROM="${FROM}"
     return
   fi
 
@@ -4646,6 +4663,8 @@ fnM17_MAIN()
     echo -en "\r${CLR_EL}"
     SECS="${FIELD_6}"
     fnM17_END_NETWORK_TRAFFIC
+    # This next line resets ability to display "text Data" entries
+    LAST_FROM="${FROM}"
     return
   fi
 
