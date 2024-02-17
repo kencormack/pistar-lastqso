@@ -19,7 +19,7 @@
 
 set -o allexport
 
-VERSION=3.21
+VERSION=3.22
 
 #----------
 if [[ "${EUID}" -eq 0 ]]
@@ -4571,14 +4571,121 @@ fnM17_MAIN()
   FIELD_10="${CUT_ARRAY[9]}"
   FIELD_11="${CUT_ARRAY[10]}"
   FIELD_12="${CUT_ARRAY[11]}"
+  FIELD_13="${CUT_ARRAY[12]}"
+  FIELD_14="${CUT_ARRAY[13]}"
   # Revise field list above, as needed
   unset CUT_ARRAY
 
   #----------
   # Start of M17 RF voice traffic
+# M17, received RF voice transmission from KE8DPF to ALL
+# 1    2        3  4     5            6    7      8  9
+  if [[ "${LOGREC_REMAINING_DATA}" =~ "received RF voice transmission from" ]]
+  then
+    fnCONVERT_DATE_TIME
+    QSO_START_TIME="${TIME}"
+
+    FROM="${FIELD_7}"
+    TO="${FIELD_9}"
+    echo -en "\r${CLR_EL}"
+    fnBANNER
+
+    SOURCE="RF"
+
+    . "${COUNT_FILE}"
+    ((QSO_COUNT++))
+    fnWRITE_COUNTER_FILE
+
+    fnSHOW_CURRENT_CALL
+    return
+  fi
 
   #----------
   # End of M17 RF traffic
+# M17, received RF end of transmission from KE8DPF to ALL, 0.0 seconds, BER: 0.0%
+# 1    2        3  4   5  6            7    8      9  10   11  12       13   14
+  if [[ "${LOGREC_REMAINING_DATA}" =~ "received RF end of transmission" ]]
+  then
+    SECS="${FIELD_11}"
+    BER="${FIELD_14}"
+    BER="${BER%,*}"
+    BER="${BER%\%*}"
+
+    fnCOLORIZE_BER
+
+    RSSI="n/a"
+
+    echo -en "\r${CLR_EL}"
+    echo -en "\r${DIM}Dur.:${SGR0} ${BLU}${BOLD}${SECS}${SGR0}${WHI} sec\r"
+    tput cuf 18
+    echo -en "${DIM}BER:${SGR0} ${BER_COLOR}${BOLD}${BER}${SGR0}${WHI}\r"
+
+    if [[ -n "${FROM}" ]] && [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
+    then
+      . "${COUNT_FILE}"
+      ((KERCHUNK_COUNT++))
+      fnWRITE_COUNTER_FILE
+
+      tput cuf 64
+      echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
+    else
+      echo
+    fi
+
+    #----------
+    fnBUILD_HISTORY
+    echo -n "${LINE_COLOR}"
+    fnSEPARATOR
+    fnLISTENING
+    return
+  fi
+
+
+  #----------
+  # Transmission lost
+# M17, transmission lost from KE8DPF to ALL, 0.1 seconds, BER: 6.2%
+# 1    2            3    4    5      6  7    8   9        10   11
+  if [[ "${LOGREC_REMAINING_DATA}" =~ "transmission lost from" ]]
+  then
+    echo -en "\r${CLR_EL}"
+#   echo -e "\r${BOLD}${YEL}${LOGREC_REMAINING_DATA}${SGR0}${WHI}"
+    SECS="${FIELD_8}"
+    BER="${FIELD_11}"
+    RSSI="n/a"
+
+    # Fields to pass to the history...
+    BER="${BER%,*}"
+    BER="${BER%\%*}"
+
+    fnCOLORIZE_BER
+
+    #----------
+    echo -en "\r${CLR_EL}"
+    echo -e "\r${BOLD}${YEL}TRANSMISSION LOST${SGR0}${WHI}"
+    echo -en "\r${DIM}Dur.:${SGR0} ${BLU}${BOLD}${SECS}${SGR0}${WHI} sec\r"
+    tput cuf 18
+    echo -en "${DIM}BER:${SGR0} ${BER_COLOR}${BOLD}${BER}${SGR0}${WHI}\r"
+
+    if [[ -n "${FROM}" ]] && [[ -n "$(echo "${SECS}" | awk '$1 <2.0{print}')" ]]
+    then
+      . "${COUNT_FILE}"
+      ((KERCHUNK_COUNT++))
+      fnWRITE_COUNTER_FILE
+
+      tput cuf 64
+      echo "${YEL}[[kerchunk]]${SGR0}${WHI}"
+    else
+      echo
+    fi
+    echo -n "${CLR_ED}"
+
+    #----------
+    fnBUILD_HISTORY
+    echo -n "${LINE_COLOR}"
+    fnSEPARATOR
+    fnLISTENING
+    return
+  fi
 
   #----------
   # Start of M17 network traffic

@@ -1,4 +1,11 @@
 ```
+CHANGES: V3.22
+ 1. Added support for M17 RF transmissions,
+    both radio-->hotspot and hotspot-->radio.
+    This needs to be confirmed by anyone with
+    an M17 radio.  (Support for M17 network
+    traffic was added in version 3,20.)
+
 CHANGES: V3.21
  1. Add support for M17's "text Data" messages
 
