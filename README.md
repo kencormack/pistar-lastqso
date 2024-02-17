@@ -1,7 +1,7 @@
 # pistar-lastqso
 ## A Tool to Monitor DMR, YSF, D-STAR, NXDN, P25, and M17, on Pi-Star
 
-**M17 RF support has been added.  Users with an M17-capable radio are asked to give this version a good shakedown.  Please use the [Issues](https://github.com/kencormack/pistar-lastqso/issues) tab at the top of this page, to report any problems found.**
+**As of version 3.22, M17 RF support has been added.  Users with an M17-capable radio are asked to give this version a good shakedown.  Please use the [Issues](https://github.com/kencormack/pistar-lastqso/issues) tab at the top of this page, to report any problems found.**
 
 This program was written for the official pi-star version 4.1.4 and later only.  NO testing has been done, nor will it ever be done, with earlier versions.  Likewise, no third-party "enhanced" dashboards or other user assembled hotspot concoctions are supported.
 
