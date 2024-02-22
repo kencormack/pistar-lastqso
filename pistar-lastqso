@@ -19,7 +19,7 @@
 
 set -o allexport
 
-VERSION=3.22
+VERSION=3.23
 
 #----------
 if [[ "${EUID}" -eq 0 ]]
@@ -3155,8 +3155,16 @@ fnSHOW_CURRENT_CALL()
   # the "KE8DPF" callsign, to perform our lookups.
   SEARCH_FROM="$(fnCHOP_CALL "${FROM}")"
 
+#KPC
   # Search the CSV files for the "From" name
-  FROM_NAME="$(grep ",${SEARCH_FROM}," "${NXDNCSV}" "${USERCSV}" | tail -1)"
+  if ! [[ "${SEARCH_FROM}" =~ ^[0-9]+$ ]]
+  then
+    # the "From" contains letters (a callsign)
+    FROM_NAME="$(grep ",${SEARCH_FROM}," "${NXDNCSV}" "${USERCSV}" | tail -1)"
+  else
+    # the "From" is numeric only (not a callsign)
+    FROM_NAME="$(grep "^${SEARCH_FROM}," "${NXDNCSV}" "${USERCSV}" | tail -1)"
+  fi
   IFS=','; CUT_ARRAY=(${FROM_NAME}); unset IFS;
   FROM_NAME="${CUT_ARRAY[2]}"
   unset CUT_ARRAY
@@ -3230,22 +3238,39 @@ fnSHOW_CURRENT_CALL()
   tput cuf 32
   echo "${DIM}Src.:${SGR0} ${BOLD}${CYA}${SOURCE}${SGR0}${WHI}${CLR_ED}"
 
+#KPC
   #----------
+  CSV_RECORD=""
   # Lookup the QTH data for the callsign.
   # Try the DMR user.csv file first...
   if [[ "${LOGREC_MODE}" != "NXDN" ]]
   then
     QTH_SRC="user.csv"
-    CSV_RECORD="$(grep ",${SEARCH_FROM}," "${USERCSV}" | LC_ALL=C sort -u | head -1)"
+    # Search the CSV files for the "From" name
+    if ! [[ "${SEARCH_FROM}" =~ ^[0-9]+$ ]]
+    then
+      # the "From" contains letters (a callsign)
+      CSV_RECORD="$(grep ",${SEARCH_FROM}," "${USERCSV}" | LC_ALL=C sort -u | head -1)"
+    else
+      # the "From" is numeric only (not a callsign)
+      CSV_RECORD="$(grep "^${SEARCH_FROM}," "${USERCSV}" | LC_ALL=C sort -u | head -1)"
+    fi
   fi
-
   if [[ "${LOGREC_MODE}" != "DMR" ]]
   then
     # If nothing found, try the NXDN.csv file...
     if [[ "${CSV_RECORD}" = "" ]]
     then
       QTH_SRC="NXDN.csv"
-      CSV_RECORD="$(grep ",${SEARCH_FROM}," "${NXDNCSV}" | LC_ALL=C sort -u | head -1)"
+      # Search the CSV files for the "From" name
+      if ! [[ "${SEARCH_FROM}" =~ ^[0-9]+$ ]]
+      then
+        # the "From" contains letters (a callsign)
+        CSV_RECORD="$(grep ",${SEARCH_FROM}," "${NXDNCSV}" | LC_ALL=C sort -u | head -1)"
+      else
+        # the "From" is numeric only (not a callsign)
+        CSV_RECORD="$(grep "^${SEARCH_FROM}," "${NXDNCSV}" | LC_ALL=C sort -u | head -1)"
+      fi
     fi
   fi
 

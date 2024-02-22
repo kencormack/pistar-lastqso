@@ -1,4 +1,9 @@
 ```
+CHANGES: V3.23
+ 1. Fixed a long-standing (but just noticed)
+    bug wherein an erroneous name and QTH
+    are displayed, when the "From:" is "0".
+
 CHANGES: V3.22
  1. Added support for M17 RF transmissions,
     both radio-->hotspot and hotspot-->radio.
