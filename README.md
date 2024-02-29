@@ -728,6 +728,9 @@ The rest of the program is mainly parsing the log entries, managing the history 
 -------------------------------------------------------------------
 ## Stargazers over time
 [![Stargazers over time](https://starchart.cc/kencormack/pistar-lastqso.svg?variant=adaptive)](https://starchart.cc/kencormack/pistar-lastqso)
+
+- **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
+- **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
 ## License
 
