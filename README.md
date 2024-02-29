@@ -726,6 +726,9 @@ The rest of the program is mainly parsing the log entries, managing the history 
 - **[Section Links](https://github.com/kencormack/pistar-lastqso#contents)**
 - **[Back to Files](https://github.com/kencormack/pistar-lastqso)**
 -------------------------------------------------------------------
+## Stargazers over time
+[![Stargazers over time](https://starchart.cc/kencormack/pistar-lastqso.svg?variant=adaptive)](https://starchart.cc/kencormack/pistar-lastqso)
+-------------------------------------------------------------------
 ## License
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
