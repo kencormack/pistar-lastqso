@@ -44,6 +44,7 @@
 6K5CRSB:Republic of Korea
 6K5UHT:Republic of Korea
 7K1UGA:Japan
+7L1EPY:Japan
 7M1TZF:Japan
 7N3ULM:Japan
 991A:Unknown
@@ -173,6 +174,7 @@ DM1GG:Fed. Rep. of Germany
 DM2DM:Fed. Rep. of Germany
 DM2NL:Fed. Rep. of Germany
 DM6MZ:Fed. Rep. of Germany
+DM8ETB:Fed. Rep. of Germany
 DN6STY:Fed. Rep. of Germany
 DO1ABS:Fed. Rep. of Germany
 DO1BLN:Fed. Rep. of Germany
@@ -237,6 +239,7 @@ G0JWM:England
 G0KDT:England
 G0MKZ:England
 G0OOM:England
+G0RKB:England
 G0ROW:England
 G0RPM:England
 G0RXG:England
@@ -263,6 +266,7 @@ G4HBD:England
 G4NDR:England
 G4RUE:England
 G4TXK:England
+G4YIC:England
 G5AJK:England
 G6GLZ:England
 G6LQW:England
@@ -537,6 +541,7 @@ KC1SUE:United States
 KC1TCM:United States
 KC1TDZ:United States
 KC1TGC:United States
+KC1UJG:United States
 KC2GTO:United States
 KC2MEC:United States
 KC2NCH:United States
@@ -562,7 +567,6 @@ KC3SIG:United States
 KC3UUQ:United States
 KC3UUW:United States
 KC3VHS:United States
-KC3VII:United States
 KC3VUI:United States
 KC3VVE:United States
 KC3VZI:United States
@@ -698,6 +702,7 @@ KE7ADT:United States
 KE7EES:United States
 KE7EGG:United States
 KE7JUX:United States
+KE8GDN:United States
 KE8NAX:United States
 KE8NME:United States
 KE8NQK:United States
@@ -807,6 +812,7 @@ KI5RTX:United States
 KI5UBT:United States
 KI5UH:United States
 KI5USD:United States
+KI5UZI:United States
 KI5VGQ:United States
 KI5VKD:United States
 KI5VLS:United States
@@ -922,6 +928,7 @@ KN4JWK:United States
 KN4KDU:United States
 KN4RDG:United States
 KN4RTL:United States
+KN4SLJ:United States
 KN4TGC:United States
 KN4UILGREG:United States
 KN4USCB:United States
@@ -1175,7 +1182,6 @@ N0DZP:United States
 N0GMJ:United States
 N0MHL:United States
 N0OQL:United States
-N0RSE:United States
 N0RSF:United States
 N0RYKJACK:Guam
 N0TTT:United States
@@ -1189,6 +1195,7 @@ N1CML:United States
 N1FCE:United States
 N1FR:United States
 N1LVV:United States
+N1POL:United States
 N1QBQ:United States
 N1RWH:United States
 N1VPU:United States
@@ -1225,6 +1232,7 @@ N3YSF:United States
 N3ZAN:United States
 N3ZF:United States
 N4AZB:United States
+N4CUE:United States
 N4DJC:United States
 N4DWH:United States
 N4EH:United States
@@ -1357,6 +1365,7 @@ PB0AHX:Netherlands
 PC1TG:Netherlands
 PD0ADCB:Netherlands
 PD0JSB:Netherlands
+PD1LEN:Netherlands
 PD1RHB:Netherlands
 PD1RX:Netherlands
 PD5RON:Netherlands
@@ -1546,6 +1555,7 @@ W2GZN:United States
 W2PRB:United States
 W2WFJ:United States
 W3AE:United States
+W3CAP:United States
 W3EDS:United States
 W3GV:United States
 W3IV:United States
