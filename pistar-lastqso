@@ -3,7 +3,7 @@
 #
 # pistar-lastqso
 # Written by:   Ken Cormack (KE8DPF), unixken@yahoo.com
-# Copyright © 2024, Ken Cormack
+# Copyright:	© 2024, Ken Cormack
 # github:       https://github.com/kencormack/pistar-lastqso
 # QRZ page:     https://www.qrz.com/db/KE8DPF
 
@@ -19,17 +19,17 @@
 
 set -o allexport
 
-VERSION=3.23
+VERSION=3.24
 
 #----------
 if [[ "${EUID}" -eq 0 ]]
 then
-  echo
-  echo "ERROR:" >&2
-  echo "  Execution as \"root\" not required." >&2
-  echo "  Please run as the normal \"pi-star\" userid." >&2
-  echo
-  exit
+    echo
+    echo "ERROR:" >&2
+    echo "  Execution as \"root\" not required." >&2
+    echo "  Please run as the normal \"pi-star\" userid." >&2
+    echo
+    exit
 fi
 
 #----------
@@ -37,11 +37,11 @@ fi
 # user will never encounter this.
 if [[ -n "$(pgrep -o "build_cache")" ]]
 then
-  echo
-  echo "ERROR:" >&2
-  echo "  A cache build is in progress." >&2
-  echo
-  exit
+    echo
+    echo "ERROR:" >&2
+    echo "  A cache build is in progress." >&2
+    echo
+    exit
 fi
 
 #----------
@@ -58,7 +58,7 @@ stty cbreak -echo
 # configuring pi-star and watching the logs, network-traffic-only (no RF
 # traffic) was added for NXDN, D-Star, and P25.  When a D-Star user sent
 # me a sample of his logs, showing D-Star RF log entries, D-Star RF
-# support was added.  At this writing, support for NXDN and P25 RF
+# support was added.  At this writing, support for NXDN, P25, and M17 RF
 # voice traffic have also been added.
 
 # NOTE #2: I've tried to write this script with readability in mind.
@@ -74,7 +74,7 @@ stty cbreak -echo
 # expansion mechanisms.  This saves tremendous overhead in loops such
 # as this script, particularly on a Pi Zero.
 
-# NOTE #3: I cut my teeth on Sequent hardware and SVR3, 30+ years ago.
+# NOTE #3: I cut my teeth on Sequent hardware and SVR3, 35+ years ago.
 # Over three decades, I've worked on nearly all commercial *nix variants.
 # Until Linux, none of them came with BASH, and KSH was my defacto shell.
 # At heart, I'm a KSH guy.  Consequently, you may find "old fashioned"
@@ -311,13 +311,13 @@ FLASH="$(tput flash)"		# Flash the screen
 # tput's alternate screen buffers.  If not, just clear the screen.
 if infocmp -1 | grep -q "smcup=" && infocmp -1 | grep -q "rmcup="
 then
-  SMCUP="$(tput smcup)"		# Set alternate screen buffer
-  RMCUP="$(tput rmcup)"		# Restore primary screen buffer
-  HAS_BUFFER=1
+    SMCUP="$(tput smcup)"		# Set alternate screen buffer
+    RMCUP="$(tput rmcup)"		# Restore primary screen buffer
+    HAS_BUFFER=1
 else
-  SMCUP="$(tput clear)"
-  RMCUP="$(tput clear)"
-  HAS_BUFFER=0
+    SMCUP="$(tput clear)"
+    RMCUP="$(tput clear)"
+    HAS_BUFFER=0
 fi
 
 CUR_HOME=$(tput cup 0 0)	# Send the cursor home, to line 0, column 0
@@ -370,6 +370,14 @@ DEF="$(tput setaf 9)"		# Default
 # BG_CYA="$(tput setab 6)"	# Cyan
 # BG_WHI="$(tput setab 7)"	# White
 # BG_DEF="$(tput setab 9)"	# Default
+
+DMR_COLOR="${BOLD}${WHI}"
+YSF_COLOR="${BOLD}${YEL}"
+NXDN_COLOR="${BOLD}${CYA}"
+DSTAR_COLOR="${BOLD}${GRE}"
+P25_COLOR="${BOLD}${MAG}"
+M17_COLOR="${BOLD}${RED}"
+OTHER_COLOR="${BOLD}${BLU}"
 
 TICK="✓"
 CROSS="✗"
@@ -576,14 +584,6 @@ TOP_PAD="                                                          "
 # (There's one entry in user.csv that is over 170 characters long!)
 echo -en "${WRAP_OFF}"
 
-DMR_COLOR="${BOLD}${WHI}"
-YSF_COLOR="${BOLD}${YEL}"
-NXDN_COLOR="${BOLD}${CYA}"
-DSTAR_COLOR="${BOLD}${GRE}"
-P25_COLOR="${BOLD}${MAG}"
-M17_COLOR="${BOLD}${RED}"
-OTHER_COLOR="${BOLD}${BLU}"
-
 ###########################################################
 # FUNCTIONS
 ###########################################################
@@ -785,11 +785,14 @@ fnGET_US_LICENSE()
     LICENSE="${LICENSE^^}"
     LICENSE="${LICENSE#*:}"
   else
+#KPC
     # Otherwise, we need to query the remote host.
-#   read -r LICENSE STATUS <<< "$(curl -s --fail --max-time 2 "https://callook.info/${US_CALL}/json" 2>/dev/null | jq -r '.current.operClass, .status' 2>/dev/null | tr '\n' ' ')"
-    read -r LICENSE <<< "$(curl -s --fail --max-time 2 "https://callook.info/${US_CALL}/json" 2>/dev/null | jq -r '.current.operClass' 2>/dev/null | tr '\n' ' ')"
+    read -r TYPE CLASS <<< "$(curl --silent --fail --max-time 2 "https://callook.info/${US_CALL}/json" 2>/dev/null \
+      | grep -v "^<" | jq -r '.status, .type, .current.operClass' 2>/dev/null \
+      | tr '\n' ' ' | sed 's/  / CLUB /g')"
+
     # Dont cache an "Unknown" or null response
-    LICENSE="${LICENSE^^}"
+    LICENSE="${CLASS^^}"
     case "${LICENSE}" in
       NOVICE|TECHNICIAN|GENERAL|ADVANCED|EXTRA|CLUB)
         echo "${US_CALL}:${LICENSE}" >> "${LICENSE_CACHE_FILE}"
@@ -1374,7 +1377,12 @@ fnNOSCROLL_ZONE()
     # Get the number of TGs linked (static and dynamic, combined),
     # and remove quote marks from the resulting list of talkgroups
     BM_TG_COUNT="$(printf %02d "${BM_TG_COUNT}")"
-    BM_TG_LIST="${BM_TG_LIST//\"}"
+    if [[ ${BM_TG_COUNT} -eq 0 ]]
+    then
+      BM_TG_LIST=" No Talkgroups Linked"
+    else
+      BM_TG_LIST="${BM_TG_LIST//\"}"
+    fi
 
     #----------
     # See if the total characters is wider than what we can show
@@ -1812,6 +1820,14 @@ fnPARSE_CMDLINE()
         # BG_CYA=""
         # BG_WHI=""
         # BG_DEF=""
+
+        DMR_COLOR="${BOLD}"
+        YSF_COLOR="${BOLD}"
+        NXDN_COLOR="${BOLD}"
+        DSTAR_COLOR="${BOLD}"
+        P25_COLOR="${BOLD}"
+        M17_COLOR="${BOLD}"
+        OTHER_COLOR="${BOLD}"
         continue
         ;;
 
@@ -2416,6 +2432,7 @@ fnCHECK_MODES_ENABLED()
     tput cup "${LINES}" 0
     echo -e "${TERM_RESET}"
     stty "${STTY}"
+    reset
     fnCLEANUP
     exit
   fi
@@ -2501,11 +2518,11 @@ fnGOODBYE_BOX()
 
   #----------
   tput cup 14 17
-  echo -n "${CYA}Caches... DXCC_$(printf %05d "$(grep -c . "${DXCC_CACHE_FILE}")")"
-  tput cup 14 39
-  echo -n "${CYA}GRID_$(printf %05d "$(grep -c . "${GRID_CACHE_FILE}")")"
-  tput cup 14 51
-  echo -n "${CYA}FCC_$(printf %05d "$(grep -c . "${LICENSE_CACHE_FILE}")")"
+  echo -n "${CYA}Cache (DXCC $(printf %04d "$(grep -c . "${DXCC_CACHE_FILE}")"))"
+  tput cup 14 35
+  echo -n "${CYA}(GRID $(printf %05d "$(grep -c . "${GRID_CACHE_FILE}")"))"
+  tput cup 14 49
+  echo -n "${CYA}(FCC $(printf %05d "$(grep -c . "${LICENSE_CACHE_FILE}")"))"
 
   #----------
   ERROR_COUNT_COLOR=""
@@ -3155,7 +3172,6 @@ fnSHOW_CURRENT_CALL()
   # the "KE8DPF" callsign, to perform our lookups.
   SEARCH_FROM="$(fnCHOP_CALL "${FROM}")"
 
-#KPC
   # Search the CSV files for the "From" name
   if ! [[ "${SEARCH_FROM}" =~ ^[0-9]+$ ]]
   then
@@ -3238,7 +3254,6 @@ fnSHOW_CURRENT_CALL()
   tput cuf 32
   echo "${DIM}Src.:${SGR0} ${BOLD}${CYA}${SOURCE}${SGR0}${WHI}${CLR_ED}"
 
-#KPC
   #----------
   CSV_RECORD=""
   # Lookup the QTH data for the callsign.
@@ -4556,7 +4571,6 @@ fnYSF_MAIN()
   return
 }
 
-#KPC
 #-----------------------------------
 fnM17_MAIN()
 {
@@ -4673,7 +4687,6 @@ fnM17_MAIN()
   if [[ "${LOGREC_REMAINING_DATA}" =~ "transmission lost from" ]]
   then
     echo -en "\r${CLR_EL}"
-#   echo -e "\r${BOLD}${YEL}${LOGREC_REMAINING_DATA}${SGR0}${WHI}"
     SECS="${FIELD_8}"
     BER="${FIELD_11}"
     RSSI="n/a"
@@ -4719,8 +4732,6 @@ fnM17_MAIN()
 # 1    2        3       4     5            6    7      8  9  10
   if [[ "${LOGREC_REMAINING_DATA}" =~ "received network voice transmission from" ]]
   then
-#   echo -e "\n${LOGREC_REMAINING_DATA}"
-
     fnCONVERT_DATE_TIME
     QSO_START_TIME="${TIME}"
 
@@ -4767,8 +4778,6 @@ fnM17_MAIN()
   # End of M17 network traffic
   if [[ "${LOGREC_REMAINING_DATA}" =~ "received network end of transmission from" ]]
   then
-#   echo -e "\n${LOGREC_REMAINING_DATA}"
-
     FROM="${FIELD_8}"
 
     if [[ "${FIELD_11}" = "ALL," ]]

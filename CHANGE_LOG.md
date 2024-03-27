@@ -1,4 +1,18 @@
 ```
+CHANGES: V3.24
+ 1. If DMR is in play, and network is BM,
+    and no talkgroups are linked, and the top
+    info section of the screen is active, show
+    "No Talkgroups Linked" where the linked
+    TGs would otherwise be displayed.
+
+ 2. Cleaned up cache counts on exit screen.
+
+ 3. Improved caching of US "CLUB" callsigns.
+
+ 4. Fixed an oversight when forcing monochrome
+    output with -m or --mono cmdline option.
+
 CHANGES: V3.23
  1. Fixed a long-standing (but just noticed)
     bug wherein an erroneous name and QTH
