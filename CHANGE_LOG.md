@@ -1,4 +1,7 @@
 ```
+CHANGES: V3.25
+ 1. Fixed bug introduced in #4 of V3.24 below.
+
 CHANGES: V3.24
  1. If DMR is in play, and network is BM,
     and no talkgroups are linked, and the top

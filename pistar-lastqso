@@ -19,7 +19,7 @@
 
 set -o allexport
 
-VERSION=3.24
+VERSION=3.25
 
 #----------
 if [[ "${EUID}" -eq 0 ]]
@@ -787,7 +787,7 @@ fnGET_US_LICENSE()
   else
 #KPC
     # Otherwise, we need to query the remote host.
-    read -r TYPE CLASS <<< "$(curl --silent --fail --max-time 2 "https://callook.info/${US_CALL}/json" 2>/dev/null \
+    read -r STATUS TYPE CLASS <<< "$(curl --silent --fail --max-time 2 "https://callook.info/${US_CALL}/json" 2>/dev/null \
       | grep -v "^<" | jq -r '.status, .type, .current.operClass' 2>/dev/null \
       | tr '\n' ' ' | sed 's/  / CLUB /g')"
 
