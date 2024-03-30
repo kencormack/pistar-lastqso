@@ -258,7 +258,6 @@ G3RDC:England
 G3WAG:England
 G3YUE:England
 G3ZLX:England
-G4AOJ:England
 G4ARN:England
 G4AWPT:England
 G4BDW:England
@@ -267,6 +266,7 @@ G4HBD:England
 G4NDR:England
 G4RUE:England
 G4TXK:England
+G4UUI:England
 G4YIC:England
 G5AJK:England
 G6GLZ:England
@@ -289,6 +289,7 @@ GI3WTG:Northern Ireland
 GI7ISX:Northern Ireland
 GI8WFA:Northern Ireland
 GM0MNVRAY:Scotland
+GM6JOS:Scotland
 GW0FHU:Wales
 GW0GWR:Wales
 GW0JQS:Wales
@@ -661,7 +662,6 @@ KD9ODHK:United States
 KD9OHP:United States
 KD9RXF:United States
 KD9SHR:United States
-KD9TDF:United States
 KD9TSZ:United States
 KD9TXH:United States
 KD9VV:United States
@@ -981,6 +981,7 @@ KO4TEP:United States
 KO4UHK:United States
 KO4VQEA:United States
 KO4VVH:United States
+KO4WJE:United States
 KO4WTD:United States
 KO4WWE:United States
 KO4YDN:United States
@@ -1099,6 +1100,7 @@ M1DZM:England
 M1HVJG:England
 M1MIT:England
 M3GZW:England
+M3LNN:England
 M3NWD:England
 M3PSE:England
 M3TXPB:England
@@ -1275,6 +1277,7 @@ N6WYZ:United States
 N6XA:United States
 N6XK:United States
 N6XKUJ:United States
+N7GRF:United States
 N7HIG:United States
 N7IAC:Alaska
 N7PNK:United States
@@ -1636,7 +1639,6 @@ W9NJP:United States
 W9NL:United States
 W9TRW:United States
 W9WOX:United States
-WA0JIM:United States
 WA1JQC:United States
 WA2EIN:United States
 WA2SFF:United States
@@ -1708,8 +1710,10 @@ WX9USARICH:United States
 WY0F:United States
 WZ8I:United States
 XE1KYAFT70:Mexico
+XE2ERA:Mexico
 XE2WR:Mexico
 XLX369:Canada
+YG3BRBB:Indonesia
 Z21LX:Zimbabwe
 ZA2HKT:Albania
 ZF1PB:Cayman Islands
@@ -1719,6 +1723,7 @@ ZL1DI:New Zealand
 ZL1ER:New Zealand
 ZL1KN:New Zealand
 ZL1MYL:New Zealand
+ZL1SGC:New Zealand
 ZL1TBE:New Zealand
 ZL2ACK:New Zealand
 ZL2JML:New Zealand
