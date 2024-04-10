@@ -11,25 +11,19 @@
 # INITIALIZATION
 ###########################################################
 
-# Insert this wherever I need to bail, during test/dev
-#echo -en "\r${TERM_RESET}"
-#stty "${STTY}"
-#fnCLEANUP
-#exit
-
 set -o allexport
 
-VERSION=3.25
+VERSION=3.26
 
 #----------
 if [[ "${EUID}" -eq 0 ]]
 then
-    echo
-    echo "ERROR:" >&2
-    echo "  Execution as \"root\" not required." >&2
-    echo "  Please run as the normal \"pi-star\" userid." >&2
-    echo
-    exit
+  echo
+  echo "ERROR:" >&2
+  echo "  Execution as \"root\" not required." >&2
+  echo "  Please run as the normal \"pi-star\" userid." >&2
+  echo
+  exit
 fi
 
 #----------
@@ -37,12 +31,28 @@ fi
 # user will never encounter this.
 if [[ -n "$(pgrep -o "build_cache")" ]]
 then
-    echo
-    echo "ERROR:" >&2
-    echo "  A cache build is in progress." >&2
-    echo
-    exit
+  echo
+  echo "ERROR:" >&2
+  echo "  A cache build is in progress." >&2
+  echo
+  exit
 fi
+
+#----------
+# Turn on privileged mode. In this mode, the $BASH_ENV and $ENV files
+# are not processed, shell functions are not inherited from the
+# environment, and the SHELLOPTS, BASHOPTS, CDPATH and GLOBIGNORE
+# variables, if they appear in the environment, are ignored.
+set -p
+# Make globs that don't get expanded cause errors, rather than getting
+# passed to the command with the * intact.
+shopt -s failglob
+# Ensure that ERR traps are inherited by functions, command substitutions,
+# and subshell environments.
+set -o errtrace
+# Ensure that DEBUG and RETURN traps are inherited by functions, command substitutions,
+# and subshell environments.  (The -E causes errors within functions to bubble up.)
+set -E -o functrace
 
 #----------
 # Save the current terminal configuration
@@ -102,7 +112,7 @@ stty cbreak -echo
 #
 # For that, make use of an array...
 #     IFS='/'; CUT_ARRAY=(${STRING TO PICK APART}); unset IFS;  #IFS is the field separator
-#     SPECIFIC_NEEDED_DATA="${CUT_ARRAY[0]}"                  #[0] is first field, [1] is second, [2] is third, etc.
+#     SPECIFIC_NEEDED_DATA="${CUT_ARRAY[0]}"                    #[0] is first field, [1] is second, [2] is third, etc.
 #     unset CUT_ARRAY
 # This allows selection of a single field, without contaminating that field with
 # overlap from another field
@@ -129,18 +139,15 @@ stty cbreak -echo
 # I'll need to look into that a bit more.
 umask u=rw,g=,o=
 
-PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
+PATH="/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin"
 
 # Start the Elapsed Time clock
-SECONDS=0
+SECONDS="0"
 
 #----------
 # Get the full path to this script
-SCRIPT="$(readlink -f "${0}")"
-
-# For the -i|--info section
-#MY_PID="$(pgrep -o -f "/bin/bash /usr/local/bin/pistar-lastqso")"
-MY_PID="$(pgrep -o -f "${BASH} ${SCRIPT}")"
+# for the -i|--info section
+MY_PID="$(pgrep -o -f "${BASH} $(readlink -f "${0}")")"
 
 #----------
 # For bash's built-in "time" command
@@ -159,28 +166,12 @@ TIMEFORMAT='%R'
 # Place the groomed elements into an array
 MY_CMDLINE="${*//=/ }"
 read -r -a ARG_LIST <<< "${MY_CMDLINE}"
-ARG_LIST_LENGTH=${#ARG_LIST[@]}
+ARG_LIST_LENGTH="${#ARG_LIST[@]}"
 
 #----------
 # Get the tty we're using.  Tmp filenames will be suffixed to keep
 # multiple concurrent sessions from stomping on each other's files.
 MY_TTY="$(tty | sed -u -e 's/\///g' -e 's/dev//')"
-
-#----------
-# Turn on privileged mode. In this mode, the $BASH_ENV and $ENV files
-# are not processed, shell functions are not inherited from the
-# environment, and the SHELLOPTS, BASHOPTS, CDPATH and GLOBIGNORE
-# variables, if they appear in the environment, are ignored.
-set -p
-# Make globs that don't get expanded cause errors, rather than getting
-# passed to the command with the * intact.
-shopt -s failglob
-# Ensure that ERR traps are inherited by functions, command substitutions,
-# and subshell environments.
-set -o errtrace
-# Ensure that DEBUG and RETURN traps are inherited by functions, command substitutions,
-# and subshell environments.  (The -E causes errors within functions to bubble up.)
-set -E -o functrace
 
 #----------
 # SET UP THE DEBUG FILE DESCRIPTOR
@@ -228,35 +219,35 @@ PS4='+\011\t ${LINENO}\011'
 #
 # Timestamps now default to 24Hr format.  To go back
 # to 12Hr am/pm timestamps, use "-12|--12hr" option.
-MIL_TIME=1
+MIL_TIME="1"
 #
 # Don't force immediate download of user.csv file.
 # Can be overridden with "-c|--csv" cmdline option
-GET_CSV_NOW=0
+GET_CSV_NOW="0"
 #
 # Don't force immediate download of cty.dat file.
 # Can be overridden with "-d|--dat" cmdline option
-GET_DAT_NOW=0
+GET_DAT_NOW="0"
 #
 # Call upon dxcc.pl to resolve QTH country when
 # the callsign can't be found in either the DMR
 # user.csv or NXDN NXDN.csv files.  Can be overridden
 # with "-D|--DXCC" cmdline option.
-USE_DXCC=1
+USE_DXCC="1"
 #
 # Show errors, whenever they appear in the MMDVM log.
 # Can be overridden with "-e|--errors" cmdline option
-SHOW_LOG_ERRORS=1
+SHOW_LOG_ERRORS="1"
 #
 # Maidenhead lookups on US callsigns disabled by default.
 # Can be activated with "-g|--grid" cmdline option.
-GRID=0
+GRID="0"
 #
 # If callsign is US-based, FCC database queries to
 # determine if the license is Novice, Technician, General,
 # Advanced, or Extra levels, are disabled by default.
 # Can be activated with "-F|--FCC" cmdline option.
-FCC=0
+FCC="0"
 #
 # *IF* your display is greater than 130 columns wide,
 # *AND* you use the "-t|--top" option, *AND* you add
@@ -264,15 +255,15 @@ FCC=0
 # added to the top-right corner of the display.  This
 # is helpful if you are modifying this script.  Other
 # than that, it serves little use.
-SHOW_DEV_INFO=0
+SHOW_DEV_INFO="0"
 #
 # By default, display logo screen.
 # Can be disabled with "-l|--logo" cmdline option
-LOGO=1
+LOGO="1"
 #
 # Display Callsigns & TGs/DG-IDs, etc., in large font.
 # Can be overridden with "-n|--nobig" cmdline option
-USE_BANNER=1
+USE_BANNER="1"
 #
 # By default, the script will query Brandmeister ONLY ONCE
 # at startup, to determine currently linked talkgroups.
@@ -284,20 +275,20 @@ USE_BANNER=1
 # the list will occur.  This delay will be more noticable on
 # Raspberry Pi Zero-based hotspots.  The quad-core models
 # (including the new Pi Zero 2) won't generally notice a delay.
-BM_POLL=0
+BM_POLL="0"
 #
 # By default, the script will parse the current "live" log
 # using "tail".  But if testing, "-r|--replay" will use the
 # "cat" command instead, to replay a user-specified log.
-REPLAY=0
+REPLAY="0"
 #
 # Don't display the config and history section at top of screen.
 # Can be overridden with "-t|--top" cmdline option
-TOP=0
+TOP="0"
 #
 # Allow figlet to auto-wrap as needed.
 # Can be overridden with "-w|--wrap" cmdline option
-NO_WRAP=0
+NO_WRAP="0"
 
 #----------
 # Define some ways to make things bold, use different colors, control
@@ -311,13 +302,13 @@ FLASH="$(tput flash)"		# Flash the screen
 # tput's alternate screen buffers.  If not, just clear the screen.
 if infocmp -1 | grep -q "smcup=" && infocmp -1 | grep -q "rmcup="
 then
-    SMCUP="$(tput smcup)"		# Set alternate screen buffer
-    RMCUP="$(tput rmcup)"		# Restore primary screen buffer
-    HAS_BUFFER=1
+  SMCUP="$(tput smcup)"		# Set alternate screen buffer
+  RMCUP="$(tput rmcup)"		# Restore primary screen buffer
+  HAS_BUFFER="1"
 else
-    SMCUP="$(tput clear)"
-    RMCUP="$(tput clear)"
-    HAS_BUFFER=0
+  SMCUP="$(tput clear)"
+  RMCUP="$(tput clear)"
+  HAS_BUFFER="0"
 fi
 
 CUR_HOME=$(tput cup 0 0)	# Send the cursor home, to line 0, column 0
@@ -410,7 +401,7 @@ WIDE_FONT="$(echo -n "${ESC}"#6 2>/dev/null)"
 #----------
 # Stuff dealing with pi-star files
 #
-MY_CALLSIGN="$(grep -A 8 "^\[General\]" /etc/mmdvmhost | grep "^Enable")"
+MY_CALLSIGN="$(grep -A 8 "^\[General\]" /etc/mmdvmhost | grep "^Callsign")"
 MY_CALLSIGN="${MY_CALLSIGN#*=}"
 
 # Some DMR-related files we'll be consulting...
@@ -423,30 +414,30 @@ TGLIST="${TGLIST#*=}"
 
 # Unlike the two files above, all of pi-star's references to this file are
 # hard-coded, so I am safe to set this variable directly to the filename.
-DMRHOSTS=/usr/local/etc/DMR_Hosts.txt
+DMRHOSTS="/usr/local/etc/DMR_Hosts.txt"
 
 # Users can create this next file to contain any DMR talkgroup
 # names that are blank/empty in the pistar-supplied TGLIST above.
 # If all your talk groups are covered, then you don't need to
 # worry about this file.
-MY_LIST=/usr/local/etc/MY_LIST.txt
+MY_LIST="/usr/local/etc/MY_LIST.txt"
 
 # This is the master DMR user.csv file from radioid.net.
 # We download this, and update it if older than 7 days.
-USERCSV=/usr/local/etc/user.csv
+USERCSV="/usr/local/etc/user.csv"
 
 # This is the NXDN.csv file supplied with, and updated by pi-star.
 # It is identical in structure to the DMR user.csv file
-NXDNCSV=/usr/local/etc/NXDN.csv
+NXDNCSV="/usr/local/etc/NXDN.csv"
 
 # This is the cty.dat file from www.country-files.com.
 # It is used by dxcc.pl, to determine the country that issued
 # a callsign, based on the callsign's prefix.  We download
 # and update it if older than 30 days.
-CTYDAT=/usr/local/etc/cty.dat
+CTYDAT="/usr/local/etc/cty.dat"
 
 #----------
-if [[ ${REPLAY} -eq 1 ]]
+if [[ "${REPLAY}" -eq 1 ]]
 then
   WORKING_LOG="${REPLAY_LOG}"
 else
@@ -484,19 +475,19 @@ COUNT_FILE="/tmp/lastqso-count-${MY_TTY}"
 
 # The various counters that will be stored and recalled
 # to/from the above file
-DMR_COUNT=0
-YSF_COUNT=0
-NXDN_COUNT=0
-DSTAR_COUNT=0
-P25_COUNT=0
-M17_COUNT=0
-QSO_COUNT=0
-KERCHUNK_COUNT=0
-ERROR_COUNT=0
-WARNING_COUNT=0
+DMR_COUNT="0"
+YSF_COUNT="0"
+NXDN_COUNT="0"
+DSTAR_COUNT="0"
+P25_COUNT="0"
+M17_COUNT="0"
+QSO_COUNT="0"
+KERCHUNK_COUNT="0"
+ERROR_COUNT="0"
+WARNING_COUNT="0"
 
 # This tracks when logging is cycled
-LOG_RESTARTS=0
+LOG_RESTARTS="0"
 
 #----------
 HISTORY_FILE="/tmp/lastqso-history-${MY_TTY}"
@@ -506,7 +497,7 @@ HISTORY_FILE="/tmp/lastqso-history-${MY_TTY}"
 BM_TG_FILE="/tmp/lastqso-tgs-${MY_TTY}"
 # We make sure any file left behind by a previous run is
 # deleted, so that we build a fresh copy with this run.
-rm "${BM_TG_FILE}" 2>/dev/null
+rm "${BM_TG_FILE}" 2>/dev/null || :
 
 # When dxcc.pl is called to find the country that issued
 # a callsign, the result will be stored in this cache
@@ -591,7 +582,7 @@ echo -en "${WRAP_OFF}"
 #----------
 fnCHOP_CALL()
 {
-# echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
+  echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   # Call with:
   #   VAR_TO_CHOP="$(fnCHOP_CALL "${VAR_TO_CHOP}")"
@@ -617,6 +608,7 @@ fnCHOP_CALL()
   # was used, and the person just appended their
   # name directly onto the call ("XX0XXXBILL").
   # But that's for another day (maybe).
+  return
 }
 
 #----------
@@ -634,6 +626,7 @@ fnSECONDS2TIME()
   [[ $M -ge 0 ]] && printf '%02d mins ' $M
 # [[ $D > 0 || $H > 0 || $M > 0 ]] && printf 'and '
 # printf '%d secs\n' $S
+  return
 }
 
 #----------
@@ -655,6 +648,7 @@ KERCHUNK_COUNT=${KERCHUNK_COUNT}
 ERROR_COUNT=${ERROR_COUNT}
 WARNING_COUNT=${WARNING_COUNT}" \
   > "${COUNT_FILE}"
+  return
 }
 
 #-----------------------------------
@@ -707,17 +701,16 @@ fnCOPY_CACHE()
   if [[ -n "${IS_DEV}" ]]
   then
     sudo mount -o remount,rw / 2>/dev/null
-    mv /tmp/unparsed_DMR   /home/pi-star 2>/dev/null
-    mv /tmp/unparsed_YSF   /home/pi-star 2>/dev/null
-    mv /tmp/unparsed_NXDN  /home/pi-star 2>/dev/null
-    mv /tmp/unparsed_DSTAR /home/pi-star 2>/dev/null
-    mv /tmp/unparsed_P25   /home/pi-star 2>/dev/null
-    mv /tmp/unparsed_M17   /home/pi-star 2>/dev/null
+    mv /tmp/unparsed_DMR   /home/pi-star 2>/dev/null || :
+    mv /tmp/unparsed_YSF   /home/pi-star 2>/dev/null || :
+    mv /tmp/unparsed_NXDN  /home/pi-star 2>/dev/null || :
+    mv /tmp/unparsed_DSTAR /home/pi-star 2>/dev/null || :
+    mv /tmp/unparsed_P25   /home/pi-star 2>/dev/null || :
+    mv /tmp/unparsed_M17   /home/pi-star 2>/dev/null || :
   fi
 
   #----------
   sync;sync;sync
-
   return
 }
 
@@ -785,11 +778,15 @@ fnGET_US_LICENSE()
     LICENSE="${LICENSE^^}"
     LICENSE="${LICENSE#*:}"
   else
-#KPC
     # Otherwise, we need to query the remote host.
-    read -r STATUS TYPE CLASS <<< "$(curl --silent --fail --max-time 2 "https://callook.info/${US_CALL}/json" 2>/dev/null \
-      | grep -v "^<" | jq -r '.status, .type, .current.operClass' 2>/dev/null \
-      | tr '\n' ' ' | sed 's/  / CLUB /g')"
+    read -r TYPE CLASS <<< "$(curl --silent --fail --max-time 2 "https://callook.info/${US_CALL}/json" 2>/dev/null \
+      | grep -v "^<" | jq -r '.type, .current.operClass' 2>/dev/null \
+      | tr '\n' ' ')"
+
+    if [[ "${TYPE}" =~ "CLUB" ]]
+    then
+      CLASS="CLUB"
+    fi
 
     # Dont cache an "Unknown" or null response
     LICENSE="${CLASS^^}"
@@ -937,7 +934,6 @@ fnDEFINE_BOXCHARS()
   # U+258x  ▀           ▄           █           ▌
   # U+259x  ▐  ░  ▒  ▓
 
-  # HAS_UTF8="$(echo "${LC_ALL}${LC_CTYPE}${LANG}" | grep "UTF-8")"
   if [[ "$(locale charmap)" =~ "UTF-8" ]]
   then
     # UTF-8 single-line box-drawing characters
@@ -975,8 +971,9 @@ fnDEFINE_BOXCHARS()
     SDBOX_BT="$(printf "\u2568")"	# ╨ bottom "T" (up-pointing)
     SDBOX_TT="$(printf "\u2565")"	# ╥ top "T" (down-pointing)
 
-    HALF_SHADOW="$(printf "\u2580")"	# ▀ half-height shadow
-    FULL_SHADOW="$(printf "\u2588")"	# █ full-height shadow
+    TOP_HALF_SHADOW="$(printf "\u2580")" # ▀ top half-height shadow
+    BOT_HALF_SHADOW="$(printf "\u2584")" # ▀ bottom half-height shadow
+    FULL_SHADOW="$(printf "\u2588")"	 # █ full-height shadow
   else
     # if no UTF-8, use ascii characters to draw a poor-man's box
     SBOX_BR="+"
@@ -1013,11 +1010,11 @@ fnDEFINE_BOXCHARS()
     SDBOX_BT="+"
     SDBOX_TT="+"
 
-    HALF_SHADOW="#"
+    TOP_HALF_SHADOW="#"
+    BOT_HALF_SHADOW="#"
     FULL_SHADOW="#"
   fi
   DBL_LINE="$(printf "${DBOX_HL}%.0s" {1..76})"
-
   return
 }
 
@@ -1034,13 +1031,13 @@ fnDRAW_BOX()
   echo -e "\n----------\nenter: ${FUNCNAME[0]} <- called by ${FUNCNAME[1]}" >&3
 
   #----------
-  BOX_TOP=${1}
-  BOX_LEFT=${2}
-  BOX_HEIGHT=${3}
-  BOX_WIDTH=${4}
-  BOX_STYLE=${5}
-  BOX_FILL=${6}
-  BOX_SHADOW=${7}
+  BOX_TOP="${1}"
+  BOX_LEFT="${2}"
+  BOX_HEIGHT="${3}"
+  BOX_WIDTH="${4}"
+  BOX_STYLE="${5}"
+  BOX_FILL="${6}"
+  BOX_SHADOW="${7}"
 
   BOX_BOTTOM=$((BOX_TOP + BOX_HEIGHT))
   BOX_RIGHT=$((BOX_LEFT + BOX_WIDTH))
@@ -1067,7 +1064,7 @@ fnDRAW_BOX()
 
   #----------
   # Top line of the box
-  if [[ ${BOX_WIDTH} -gt 2 ]]
+  if [[ "${BOX_WIDTH}" -gt 2 ]]
   then
     tput cup "${BOX_TOP}" "${BOX_LEFT}"
     for ((I=BOX_LEFT; I<=BOX_RIGHT; I++))
@@ -1088,7 +1085,7 @@ fnDRAW_BOX()
 
   #----------
   # preserve or erase what's between the sides of the box
-  COUNT=1
+  COUNT="1"
   PADDING=""
   if [[ "${BOX_FILL}" = "0" ]]
   then
@@ -1096,7 +1093,7 @@ fnDRAW_BOX()
   else
     PAD=" "			# one space
   fi
-  until [[ ${COUNT} -eq ${BOX_WIDTH} ]]
+  until [[ "${COUNT}" -eq "${BOX_WIDTH}" ]]
   do
     PADDING="${PADDING}${PAD}"
     ((COUNT++))
@@ -1104,12 +1101,12 @@ fnDRAW_BOX()
 
   #----------
   # sides of the box
-  until [[ ${BOX_CURRENT_LINE} -eq ${BOX_BOTTOM} ]]
+  until [[ "${BOX_CURRENT_LINE}" -eq "${BOX_BOTTOM}" ]]
   do
     tput cup "${BOX_CURRENT_LINE}" "${BOX_LEFT}"
     echo -n "${BOX_VL}${PADDING}${BOX_VL}"
     # if shadow, print the block
-    if [[ ${BOX_SHADOW} -eq 1 ]]
+    if [[ "${BOX_SHADOW}" -eq 1 ]]
     then
       echo -n "${FULL_SHADOW}"
     fi
@@ -1118,7 +1115,7 @@ fnDRAW_BOX()
 
   #----------
   # Bottom line of the box
-  if [[ ${BOX_WIDTH} -gt 2 ]]
+  if [[ "${BOX_WIDTH}" -gt 2 ]]
   then
     tput cup "${BOX_BOTTOM}" "${BOX_LEFT}"
     for ((I=BOX_LEFT; I<=BOX_RIGHT; I++))
@@ -1135,14 +1132,14 @@ fnDRAW_BOX()
   tput cup "${BOX_BOTTOM}" "${BOX_RIGHT}"
   echo -n "${BOX_BR}"
   # if shadow, print the row of blocks
-  if [[ ${BOX_SHADOW} -eq 1 ]]
+  if [[ "${BOX_SHADOW}" -eq 1 ]]
   then
     tput cup "${BOX_CURRENT_LINE}" "$((BOX_RIGHT + 1))"
     echo -n "${FULL_SHADOW}"
     tput cup $((BOX_BOTTOM + 1)) $((BOX_LEFT + 2))
     for ((I=BOX_LEFT; I<="$((BOX_RIGHT -1))"; I++))
     do
-      printf "${HALF_SHADOW}%0.s"
+      printf "${TOP_HALF_SHADOW}%0.s"
     done
   fi
   return
@@ -1157,7 +1154,7 @@ fnTOP_DATA()
   # created when the -t|--top option is specified on the cmdline.
 
   #----------
-  if [[ ${REPLAY} -eq 1 ]]
+  if [[ "${REPLAY}" -eq 1 ]]
   then
     WORKING_LOG="${REPLAY_LOG}"
   fi
@@ -1195,7 +1192,7 @@ fnTOP_DATA()
   # Isolate the field that contains "MHz" within the record
   # If we can't find it, set it to "unknown"
   TCXO="$(printf %2.4f "$(echo "${DESCRIPTION}" | awk '/MHz/ {for(i=NF;i>=1;i--) {if($i~/MHz/) {$0=i":"$i}} print}' | cut -f3 -d":" | sed -u 's/MHz//')")"
-  TCXO=${TCXO:-'unknown'}
+  TCXO="${TCXO:-'unknown'}"
 
   #----------
   # GATHER LINE 2 DATA...
@@ -1266,13 +1263,13 @@ fnDEV_INFO()
   # If running on a big screen, this prints some info in the
   # top-right corner of the screen, on the non-scrolling lines,
   # when -t|--top is used.
-  if [[ ${COLUMNS} -lt 130 ]] || [[ "${SHOW_DEV_INFO}" = "0" ]]
+  if [[ "${COLUMNS}" -lt 130 ]] || [[ "${SHOW_DEV_INFO}" -eq 0 ]]
   then
     return
   fi
 
   # If null, set to "n/a"
-  BG_PID=${BG_PID:-'n/a'}
+  BG_PID="${BG_PID:-'n/a'}"
 
   #----------
   DEV_STRING[1]="  Options: ${MY_CMDLINE}"
@@ -1286,7 +1283,7 @@ fnDEV_INFO()
   #----------
   # In replay mode, text is bright yellow.
   # In normal mode, text is pale cyan.
-  if [[ ${REPLAY} -eq 1 ]]
+  if [[ "${REPLAY}" -eq 1 ]]
   then
     echo -n "${BOLD}${YEL}"
   else
@@ -1294,8 +1291,8 @@ fnDEV_INFO()
   fi
 
   #----------
-  DEV_INDEX=1
-  until [[ ${DEV_INDEX} -gt 7 ]]
+  DEV_INDEX="1"
+  until [[ "${DEV_INDEX}" -gt 7 ]]
   do
     # tput references lines, beginning at 0.  The array begins
     # at 1.  So we subtract 1 from the array index, to get the
@@ -1304,7 +1301,7 @@ fnDEV_INFO()
 
     # Subtract the length of the string from the width of the
     # screen, to find the column at which to begin printing.
-    Y=$(( ("${COLUMNS}" - ${#DEV_STRING[DEV_INDEX]}) - 1 ))
+    Y=$(( ("${COLUMNS}" - "${#DEV_STRING[DEV_INDEX]}") - 1 ))
 
     # Print each line, flush right, at right edge of screen.
     tput cup "${X}" "${Y}"
@@ -1354,7 +1351,7 @@ fnNOSCROLL_ZONE()
 
     #----------
     BM_TG_LIST=""
-    BM_TG_COUNT=0
+    BM_TG_COUNT="0"
     # Parse the JSON for any static TGs
     while read -r TALKGROUP
     do
@@ -1377,7 +1374,7 @@ fnNOSCROLL_ZONE()
     # Get the number of TGs linked (static and dynamic, combined),
     # and remove quote marks from the resulting list of talkgroups
     BM_TG_COUNT="$(printf %02d "${BM_TG_COUNT}")"
-    if [[ ${BM_TG_COUNT} -eq 0 ]]
+    if [[ "${BM_TG_COUNT}" -eq 0 ]]
     then
       BM_TG_LIST=" No Talkgroups Linked"
     else
@@ -1387,8 +1384,8 @@ fnNOSCROLL_ZONE()
     #----------
     # See if the total characters is wider than what we can show
     # within the line-length limit of the no-scroll region.
-    BM_TG_LENGTH=${#BM_TG_LIST}
-    if [[ ${BM_TG_LENGTH} -gt 28 ]]
+    BM_TG_LENGTH="${#BM_TG_LIST}"
+    if [[ "${BM_TG_LENGTH}" -gt 28 ]]
     then
       # If so, take only the first 28 chars and add an elipsis (...)
       # to show we are aware there's more, but it just won't fit.
@@ -1597,7 +1594,7 @@ fnNOSCROLL_ZONE()
 
   #----------
   # The history column headings
-  if [[ ${HIST_MAX} -gt 0 ]]
+  if [[ "${HIST_MAX}" -gt 0 ]]
   then
     echo "${REV}${CYA}Previous ${SBOX_VL} From       ${SBOX_VL} To         ${SBOX_VL}  Secs ${SBOX_VL}  BER% ${SBOX_VL} Src ${SBOX_VL} Loss% or S-Meter ${SGR0}${WHI}"
   else
@@ -1613,8 +1610,8 @@ fnNOSCROLL_ZONE()
   # Print the QSO history lines... newest through oldest
   # Save the history to a file, as well, for auto-restarts.
   rm "${HISTORY_FILE}" 2>/dev/null
-  HIST_COUNT=1
-  until [[ ${HIST_COUNT} -gt ${HIST_MAX} ]]
+  HIST_COUNT="1"
+  until [[ "${HIST_COUNT}" -gt "${HIST_MAX}" ]]
   do
     echo "${SGR0}${HISTORY[HIST_COUNT]}${CLR_EL}"
     echo -e "HISTORY[${HIST_COUNT}]=\"${HISTORY[HIST_COUNT]}\"" >> "${HISTORY_FILE}"
@@ -1635,7 +1632,6 @@ fnNOSCROLL_ZONE()
   #----------
   # Now return the cursor back to where it was, and turn it back on
   echo -n "${CUR_RC}${CUR_ON}"
-
   return
 }
 
@@ -1720,29 +1716,29 @@ fnPARSE_CMDLINE()
   do
     OPTION="${ARG_LIST[${INDEX}]}"
 
-    case ${OPTION} in
+    case "${OPTION}" in
       -12|--12hr)
-        MIL_TIME=0
+        MIL_TIME="0"
         continue
         ;;
 
       -c|--csv)
-        GET_CSV_NOW=1
+        GET_CSV_NOW="1"
         continue
         ;;
 
       -d|--dat)
-        GET_DAT_NOW=1
+        GET_DAT_NOW="1"
         continue
         ;;
 
       -D|--DXCC)
-        USE_DXCC=0
+        USE_DXCC="0"
         continue
         ;;
 
       -e|--errors)
-        SHOW_LOG_ERRORS=0
+        SHOW_LOG_ERRORS="0"
         continue
         ;;
 
@@ -1751,10 +1747,10 @@ fnPARSE_CMDLINE()
         # is a number from 1 to 6
         NEXT=$((INDEX + 1))
         PARAM="${ARG_LIST[${NEXT}]}"
-        if [[ ${PARAM} == ?(-)+([1-6]) ]]
+        if [[ "${PARAM}" == ?(-)+([1-6]) ]]
         then
           # It is, so use it to set the font.
-          MY_FONT=${PARAM}
+          MY_FONT="${PARAM}"
           # Skip over the number we were passed, and look
           # for the next cmdline option.
           ((INDEX++))
@@ -1771,12 +1767,12 @@ fnPARSE_CMDLINE()
         ;;
 
       -F|--FCC)
-        FCC=1
+        FCC="1"
         continue
         ;;
 
       -g|--grid)
-        GRID=1
+        GRID="1"
         continue
         ;;
 
@@ -1788,12 +1784,12 @@ fnPARSE_CMDLINE()
         ;;
 
       -i|--info)
-        SHOW_DEV_INFO=1
+        SHOW_DEV_INFO="1"
         continue
         ;;
 
       -l|--logo)
-        LOGO=0
+        LOGO="0"
         continue
         ;;
 
@@ -1832,12 +1828,12 @@ fnPARSE_CMDLINE()
         ;;
 
       -n|--nobig)
-        USE_BANNER=0
+        USE_BANNER="0"
         continue
         ;;
 
       -p|--poll)
-        BM_POLL=1
+        BM_POLL="1"
         continue
         ;;
 
@@ -1862,19 +1858,19 @@ fnPARSE_CMDLINE()
           fnCLEANUP
           exit
         fi
-        REPLAY=1
+        REPLAY="1"
         REPLAY_LOG="${PARAM}"
         ((INDEX++))
         continue
         ;;
 
       -t|--top)
-        TOP=1
+        TOP="1"
         # If this option is given, see if the next value
         # is a number from 0 to 99
         NEXT=$((INDEX + 1))
         PARAM="${ARG_LIST[${NEXT}]}"
-        if [[ ${PARAM} =~ ^-?[0-9]|[1-2][0-9]+$ ]]
+        if [[ "${PARAM}" =~ ^-?[0-9]|[1-2][0-9]+$ ]]
         then
           # It is, so use it to set the history depth.
           # By default, the -t|--top history is 5 lines deep.
@@ -1884,10 +1880,10 @@ fnPARSE_CMDLINE()
           HIST_MAX="${PARAM}"
           # Skip over the number we were passed, and look
           # for the next cmdline option.
-          ((INDEX++))
+          ((INDEX++)) || :
         else
           # It is not, so assume a default history of 5.
-          HIST_MAX=5
+          HIST_MAX="5"
         fi
         # When "-t|--top" is used, with or without a history, this defines
         # the line number on which the scrolling region of the screen
@@ -1904,7 +1900,7 @@ fnPARSE_CMDLINE()
         ;;
 
       -w|--wrap)
-        NO_WRAP=1
+        NO_WRAP="1"
         continue
         ;;
 
@@ -2505,9 +2501,9 @@ fnGOODBYE_BOX()
   echo -n "${DIM}${WHI})${SGR0}"
 
   #----------
-  if [[ ${QSO_COUNT} -gt 0 ]]
+  if [[ "${QSO_COUNT}" -gt 0 ]]
   then
-    if [[ ${KERCHUNK_COUNT} -gt ${QSO_COUNT} ]]
+    if [[ "${KERCHUNK_COUNT}" -gt "${QSO_COUNT}" ]]
     then
       KERCHUNK_COUNT="${QSO_COUNT}"
     fi
@@ -2527,18 +2523,18 @@ fnGOODBYE_BOX()
   #----------
   ERROR_COUNT_COLOR=""
   WARNING_COUNT_COLOR=""
-  if [[ ${ERROR_COUNT} -gt 0 ]] || [[ ${WARNING_COUNT} -gt 0 ]]
+  if [[ "${ERROR_COUNT}" -gt 0 ]] || [[ "${WARNING_COUNT}" -gt 0 ]]
   then
-    if [[ ${ERROR_COUNT} -gt 0 ]]
+    if [[ "${ERROR_COUNT}" -gt 0 ]]
     then
       ERROR_COUNT_COLOR="${SGR0}${YEL}"
     fi
-    if [[ ${WARNING_COUNT} -gt 0 ]]
+    if [[ "${WARNING_COUNT}" -gt 0 ]]
     then
       WARNING_COUNT_COLOR="${SGR0}${RED}"
     fi
 
-    if [[ ${ERROR_COUNT} -gt 0 ]] || [[ ${WARNING_COUNT} -gt 0 ]]
+    if [[ "${ERROR_COUNT}" -gt 0 ]] || [[ "${WARNING_COUNT}" -gt 0 ]]
     then
       echo -n "${SGR0}${RED}"
       # Usage: fnDRAW_BOX BOX_TOP BOX_LEFT BOX_HEIGHT BOX_WIDTH BOX_STYLE BOX_FILL BOX_SHADOW
@@ -2623,7 +2619,7 @@ fnLISTENING()
   fnNOSCROLL_ZONE
   echo -en "\r${CLR_EL}"
   echo -n "  ${GRE}${BOLD}Listening for Traffic... ${SGR0}${WHI}${CLR_EL}${CLR_ED}"
-  TA_DISPLAYED=0
+  TA_DISPLAYED="0"
   return
 }
 
@@ -2636,7 +2632,7 @@ fnQSO_IN_PROGRESS()
 
   echo -en "\r${CLR_EL}"
   echo -n "  ${YEL}${BOLD}QSO In Progress... ${SGR0}${WHI}${CLR_EL}${CLR_ED}"
-  TA_DISPLAYED=0
+  TA_DISPLAYED="0"
   return
 }
 
@@ -2680,9 +2676,9 @@ fnDMR_CSV_SEARCH()
     COUNTRY=""
   fi
   # If any fields came back empty, set a default of "n/a" (not available)
-  CITY=${CITY:-'n/a'}
-  STATE=${STATE:-'n/a'}
-  COUNTRY=${COUNTRY:-'n/a'}
+  CITY="${CITY:-'n/a'}"
+  STATE="${STATE:-'n/a'}"
+  COUNTRY="${COUNTRY:-'n/a'}"
 
   #----------
   if [[ "${COUNTRY}" = "United States" ]] && [[ "${GRID}" = "1" ]]
@@ -2703,7 +2699,7 @@ fnCONVERT_DATE_TIME()
 
   # Convert the log entry UTC date/timestamps to localized, human-readable form
   DATE="$(date -d "${LOGREC_DATE} ${LOGREC_TIME} UTC" +"%a %d %b %Y")"
-  if [[ ${MIL_TIME} -eq 1 ]]
+  if [[ "${MIL_TIME}" -eq 1 ]]
   then
     TIME="$(date -d "${LOGREC_DATE} ${LOGREC_TIME} UTC" +"%H:%M:%S %Z")"
     AMPM=" "
@@ -2881,7 +2877,7 @@ fnBANNER()
   # NO_WRAP is set with the "-w|--wrap" cmdline option.
   if [[ "${NO_WRAP}" = "1" ]]
   then
-    OUTPUT_WIDTH=1000
+    OUTPUT_WIDTH="1000"
   else
     OUTPUT_WIDTH="${COLUMNS}"
   fi
@@ -2901,7 +2897,7 @@ fnBANNER()
   # Disable the large font display callsign to save screen space,
   # by passing the "--nobig" parameter to this script:
   #     pistar-lastqso -n|--nobig
-  case ${MY_FONT} in
+  case "${MY_FONT}" in
     1)
       FONT="small"
       ;;
@@ -2939,7 +2935,7 @@ fnBANNER()
   # Tighten up the leading with these two fonts.
   # This moves the cursor up one line to recover
   # an extra blank line that follows these fonts.
-  case ${FONT} in
+  case "${FONT}" in
     "big"|"ansi_shadow")
       echo -n "${CUR_UP}"
       ;;
@@ -3368,9 +3364,9 @@ fnSHOW_CURRENT_CALL()
   fi
 
   # If any fields came back empty, set a default of "n/a" (not available)
-  CITY=${CITY:-'n/a'}
-  STATE=${STATE:-'n/a'}
-  COUNTRY=${COUNTRY:-'n/a'}
+  CITY="${CITY:-'n/a'}"
+  STATE="${STATE:-'n/a'}"
+  COUNTRY="${COUNTRY:-'n/a'}"
 
   #----------
   if [[ "${COUNTRY}" = "United States" ]] && [[ "${GRID}" = "1" ]]
@@ -3642,7 +3638,7 @@ fnDOWNLOAD_NXDNCSV()
 
   # If the NXDN.csv file is missing, or is older than 7 days,
   # then download a new one from the web.
-  if [[ ! -f "${NXDNCSV}" ]] || [[ -n "$(find "${NXDNCSV}" -mtime +7)" ]] || [[ ${GET_CSV_NOW} -eq 1 ]]
+  if [[ ! -f "${NXDNCSV}" ]] || [[ -n "$(find "${NXDNCSV}" -mtime +7)" ]] || [[ "${GET_CSV_NOW}" -eq 1 ]]
   then
     echo -e "\nDownloading latest NXDN.csv file..."
     sudo mount -o remount,rw / 2>/dev/null
@@ -3681,7 +3677,7 @@ fnDOWNLOAD_USERCSV()
 
   # If the user.csv file is missing, or is older than 7 days,
   # then download a new one from the web.
-  if [[ ! -f "${USERCSV}" ]] || [[ -n "$(find "${USERCSV}" -mtime +7)" ]] || [[ ${GET_CSV_NOW} -eq 1 ]]
+  if [[ ! -f "${USERCSV}" ]] || [[ -n "$(find "${USERCSV}" -mtime +7)" ]] || [[ "${GET_CSV_NOW}" -eq 1 ]]
   then
     echo -e "\nDownloading latest DMR user.csv file..."
     sudo mount -o remount,rw / 2>/dev/null
@@ -3720,7 +3716,7 @@ fnDOWNLOAD_CTYDAT()
 
   # If the cty.dat file is missing, or is older than 30 days,
   # then download a new one from the web.
-  if [[ ! -f "${CTYDAT}" ]] || [[ -n "$(find "${CTYDAT}" -mtime +30)" ]] || [[ ${GET_DAT_NOW} -eq 1 ]]
+  if [[ ! -f "${CTYDAT}" ]] || [[ -n "$(find "${CTYDAT}" -mtime +30)" ]] || [[ "${GET_DAT_NOW}" -eq 1 ]]
   then
     echo -e "\nDownloading latest DXCC cty.dat file..."
     sudo mount -o remount,rw / 2>/dev/null
@@ -3772,7 +3768,7 @@ fnBUILD_HISTORY()
 
   if [[ -n "${QSO_START_TIME}" ]] && [[ -n "${FROM}" ]] && [[ -n "${TO}" ]]
   then
-    if [[ -n "${LOSS}" ]] || [[ -n "${BER}" ]] || [[ ${DATA} -eq 1 ]]
+    if [[ -n "${LOSS}" ]] || [[ -n "${BER}" ]] || [[ "${DATA}" -eq 1 ]]
     then
       #----------
       if [[ "${LOGREC_MODE}" = "D-Star" ]]
@@ -3799,8 +3795,8 @@ fnBUILD_HISTORY()
       # AND LEAVES THE NEWEST SPOT EMPTY FOR THE RECORD WE ARE
       # ABOUT TO ADD
       rm "${HISTORY_FILE}" 2>/dev/null
-      HIST_COUNT=${HIST_MAX}
-      until [[ ${HIST_COUNT} -eq 0 ]]
+      HIST_COUNT="${HIST_MAX}"
+      until [[ "${HIST_COUNT}" -eq 0 ]]
       do
         HISTORY[HIST_COUNT]="${HISTORY[$((HIST_COUNT - 1))]}"
         echo -e "HISTORY[${HIST_COUNT}]=\"${HISTORY[HIST_COUNT]}\"" >> "${HISTORY_FILE}"
@@ -3839,7 +3835,7 @@ fnBUILD_HISTORY()
       fi
 
       #----------
-      if [[ ${DATA} -eq 1 ]]
+      if [[ "${DATA}" -eq 1 ]]
       then
         HIST_SECS="-----"
         HIST_BER="-----"
@@ -3850,7 +3846,7 @@ fnBUILD_HISTORY()
       HISTORY[1]="${BOLD}${BLU}${HIST_TIME}${DIM}${AMPM}${BOLD}${WHI}${SGR0}${SBOX_VL} ${BOLD}${CONTACT_COLOR}${HIST_FROM}${SGR0}${SBOX_VL} ${BOLD}${CONTACT_COLOR}${HIST_TO}${SGR0} ${SBOX_VL} ${BOLD}${BLU}${HIST_SECS}${WHI}${SGR0} ${SBOX_VL} ${BOLD}${BER_COLOR}${HIST_BER}${WHI}${SGR0} ${SBOX_VL} ${BOLD}${CYA}${HIST_SRC}${WHI}"
 
       #----------
-      if [[ ${DATA} -eq 1 ]]
+      if [[ "${DATA}" -eq 1 ]]
       then
         if [[ -n "${BLOCKS}" ]]
         then
@@ -3872,8 +3868,8 @@ fnBUILD_HISTORY()
   #----------
   # STORE THE NEW HISTORY, INCLUDING THE RECORD WE'VE JUST BUILT
   # Save the history
-  HIST_COUNT=1
-  until [[ ${HIST_COUNT} -gt ${HIST_MAX} ]]
+  HIST_COUNT="1"
+  until [[ "${HIST_COUNT}" -gt "${HIST_MAX}" ]]
   do
     echo -e "HISTORY[${HIST_COUNT}]=\"${HISTORY[HIST_COUNT]}\"" >> "${HISTORY_FILE}"
     ((HIST_COUNT++))
@@ -3890,7 +3886,6 @@ fnBUILD_HISTORY()
   DBM=""
   RSSI=""
   DATA=""
-
   return
 }
 
@@ -3961,24 +3956,6 @@ fnDMR_MAIN()
   trap fnWINCH WINCH
 
   #----------
-  # Don't waste any time with these...
-  if [[ "${LOGREC_REMAINING_DATA}" =~ " CSBK " ]] || [[ "${LOGREC_REMAINING_DATA}" =~ " VSBK " ]]
-  then
-    return
-  fi
-
-  #----------
-  # Compensate for shifting fields between "group" and "private" ID numbers
-  # "private" call log entries lack "TG" in the log line, which skews the
-  # data returned when parsing positional fields.  These few lines inject a
-  # bogus "PC" (private contact) place-holder to substitute for the missing
-  # "TG", so as not to skew positional fields.  A hack, but a useful one.
-  if [[ ! "${LOGREC_REMAINING_DATA}" =~ " TG " ]]
-  then
-    LOGREC_REMAINING_DATA="${LOGREC_REMAINING_DATA// to / to PC }"
-  fi
-
-  #----------
   # We come into this function already knowing:
   # The entire log line...
   #   RECORD
@@ -4016,6 +3993,24 @@ fnDMR_MAIN()
   unset CUT_ARRAY
 
   #----------
+  # Don't waste any time with these...
+  if [[ "${LOGREC_REMAINING_DATA}" =~ " CSBK " ]] || [[ "${LOGREC_REMAINING_DATA}" =~ " VSBK " ]]
+  then
+    return
+  fi
+
+  #----------
+  # Compensate for shifting fields between "group" and "private" ID numbers
+  # "private" call log entries lack "TG" in the log line, which skews the
+  # data returned when parsing positional fields.  These few lines inject a
+  # bogus "PC" (private contact) place-holder to substitute for the missing
+  # "TG", so as not to skew positional fields.  A hack, but a useful one.
+  if [[ ! "${LOGREC_REMAINING_DATA}" =~ " TG " ]]
+  then
+    LOGREC_REMAINING_DATA="${LOGREC_REMAINING_DATA// to / to PC }"
+  fi
+
+  #----------
   # NEW TA HANDLER
   # At some point, the format of DMR Talker Alias log entries
   # changed.  The data used to come in chunks, and I had to
@@ -4024,14 +4019,14 @@ fnDMR_MAIN()
   # and I no longer have to check to ensure we have all of it.
   if [[ "${LOGREC_REMAINING_DATA}" =~ ", Talker Alias" ]]
   then
-    if [[ ${TA_DISPLAYED} -eq 0 ]]
+    if [[ "${TA_DISPLAYED}" -eq 0 ]]
     then
       TA="$(echo "${LOGREC_REMAINING_DATA}" | grep "Talker Alias" | cut -f2 -d'"')"
       if [[ -n "${TA}" ]]
       then
         echo -en "\r${CLR_EL}"
         echo "${DIM}TA..:${SGR0} ${MAG}${BOLD}${TA}${SGR0}${WHI}${CLR_ED}"
-        TA_DISPLAYED=1
+        TA_DISPLAYED="1"
         fnQSO_IN_PROGRESS
       fi
     fi
@@ -4052,14 +4047,14 @@ fnDMR_MAIN()
     # Don't bother showing if TA is empty or contains only partial data.
     TA_BYTES_RECVD="${FIELD_8%/*}"
     TA_BYTES_TOTAL="${FIELD_8#*/}"
-    if [[ ${TA_BYTES_RECVD} -eq ${TA_BYTES_TOTAL} ]] && [[ ${TA_DISPLAYED} -eq 0 ]]
+    if [[ "${TA_BYTES_RECVD}" -eq "${TA_BYTES_TOTAL}" ]] && [[ "${TA_DISPLAYED}" -eq 0 ]]
     then
       TA="$(echo "${LOGREC_REMAINING_DATA}" | grep "DMR Talker Alias" | cut -f2- -d":" | sed -u -e "s/^ //" -e "s/'//g")"
       if [[ -n "${TA}" ]]
       then
         echo -en "\r${CLR_EL}"
         echo "${DIM}TA..:${SGR0} ${MAG}${BOLD}${TA}${SGR0}${WHI}${CLR_ED}"
-        TA_DISPLAYED=1
+        TA_DISPLAYED="1"
         fnQSO_IN_PROGRESS
       fi
     fi
@@ -4135,7 +4130,7 @@ fnDMR_MAIN()
   # If it was voice traffic...
   if [[ "${LOGREC_REMAINING_DATA}" =~ "end of voice" ]]
   then
-    DATA=0
+    DATA="0"
 
     # The number of seconds the contact lasted
     SECS="${FIELD_15}"
@@ -4266,8 +4261,8 @@ fnDMR_MAIN()
   # It was data traffic...
   if [[ "${LOGREC_REMAINING_DATA}" =~ "ended network data" ]] || [[ "${LOGREC_REMAINING_DATA}" =~ "ended RF data" ]]
   then
-  DATA=1
-    if [[ ${BLOCKS} -gt 1 ]]
+  DATA="1"
+    if [[ "${BLOCKS}" -gt 1 ]]
     then
       S="s"
     else
@@ -5473,15 +5468,13 @@ fnGPS_MAIN()
     if [[ "${LATITUDE}" =~ "-" ]]
     then
       NS="° S"
-      LATITUDE="${LATITUDE#*-}${NS}"
     fi
     if [[ "${LONGITUDE}" =~ "-" ]]
     then
       EW="° W"
-      LONGITUDE="${LONGITUDE#*-}${EW}"
     fi
 
-    echo -e "\r${DIM}GPS :${SGR0} ${BOLD}${WHI}Lat ${LATITUDE}, Long ${LONGITUDE}${SGR0}"
+    echo -e "\r${DIM}GPS :${SGR0} ${BOLD}${WHI}Lat ${LATITUDE}${NS}, Long ${LONGITUDE}${EW}${SGR0}"
   fi
   fnQSO_IN_PROGRESS
   return
@@ -5494,7 +5487,7 @@ fnMAIN_LOOP()
 
   #----------
   # For "live" logs, use tail.  For replay, use cat.
-  if [[ ${REPLAY} -eq 0 ]]
+  if [[ "${REPLAY}" -eq 0 ]]
   then
     CMD="tail -f -n 1"
   else
@@ -5518,7 +5511,7 @@ fnMAIN_LOOP()
     # See if MMDVMHost has shutdown or transitioned to a new log.
     if [[ "${RECORD}" =~ "MMDVMHOST-STOP" ]]
     then
-      if [[ ${REPLAY} -eq 0 ]]
+      if [[ "${REPLAY}" -eq 0 ]]
       then
         # If it did, it has triggered our exit from the loop.
         # We appended an additional blank line into the log, so that when
@@ -5580,48 +5573,48 @@ fnMAIN_LOOP()
         # This flag prevents printing the record multiple
         # times, when received multiple times, during a
         # single transmission.
-        GPS_HIT=1
+        GPS_HIT="1"
         ;;
       "DMR")
         CONTACT_COLOR="${DMR_COLOR}"
         LINE_COLOR="${BLU}"
         fnDMR_MAIN
-        GPS_HIT=0
+        GPS_HIT="0"
         ;;
       "YSF")
         CONTACT_COLOR="${YSF_COLOR}"
         LINE_COLOR="${MAG}"
         fnYSF_MAIN
-        GPS_HIT=0
+        GPS_HIT="0"
         ;;
       "NXDN")
         CONTACT_COLOR="${NXDN_COLOR}"
         LINE_COLOR="${DIM}${WHI}"
         fnNXDN_MAIN
-        GPS_HIT=0
+        GPS_HIT="0"
         ;;
       "D-Star")
         CONTACT_COLOR="${DSTAR_COLOR}"
         LINE_COLOR="${CYA}"
         fnDSTAR_MAIN
-        GPS_HIT=0
+        GPS_HIT="0"
         ;;
       "P25")
         CONTACT_COLOR="${P25_COLOR}"
         LINE_COLOR="${DIM}${YEL}"
         fnP25_MAIN
-        GPS_HIT=0
+        GPS_HIT="0"
         ;;
       "M17")
         CONTACT_COLOR="${M17_COLOR}"
         LINE_COLOR="${WHI}"
         fnM17_MAIN
-        GPS_HIT=0
+        GPS_HIT="0"
         ;;
       *)
         CONTACT_COLOR="${OTHER_COLOR}"
         LINE_COLOR="${DIM}${WHI}"
-        GPS_HIT=0
+        GPS_HIT="0"
         ;;
     esac
   done
@@ -5646,7 +5639,7 @@ fnABORT()
   echo -n "${WRAP_ON}${CUR_ON}${SGR0}${RMCUP}"
 
   #----------
-  if [[ ${HAS_BUFFER} -eq 0 ]]
+  if [[ "${HAS_BUFFER}" -eq 0 ]]
   then
     fnLOGO
   fi
@@ -5695,7 +5688,7 @@ fnWINCH()
   clear
 
   #----------
-  if [[ ${TOP} -eq 1 ]]
+  if [[ "${TOP}" -eq 1 ]]
   then
     tput cup "${BELOW_NOSCROLL}" 0
     fnNOSCROLL_ZONE
@@ -5734,7 +5727,7 @@ fnDOWNLOAD_CTYDAT
 fnDEFINE_BOXCHARS
 
 #----------
-if [[ ${LOGO} -eq 1 ]]
+if [[ "${LOGO}" -eq 1 ]]
 then
   fnLOGO
   tput cup 22 2
@@ -5745,7 +5738,7 @@ fi
 #----------
 # If running normally (not in replay mode)... ensure that
 # MMDVMHost is running, and that it is writing to the log.
-if [[ ${REPLAY} -eq 0 ]]
+if [[ "${REPLAY}" -eq 0 ]]
 then
   echo -en "\r${CLR_EL}${SGR0}${WHI}Checking MMDVMHost... "
   if [[ "$(pgrep -f "/usr/local/bin/MMDVMHost /etc/mmdvmhost")" = "" ]]
@@ -5819,10 +5812,10 @@ sleep .5
 # CREATE A FRESH EMPTY HISTORY
 # These will store the history to be displayed, if the
 # no-scroll region is called upon.
-if [[ ${TOP} = 1 ]]
+if [[ "${TOP}" = 1 ]]
 then
-  HIST_COUNT=1
-  until [[ ${HIST_COUNT} -gt ${HIST_MAX} ]]
+  HIST_COUNT="1"
+  until [[ "${HIST_COUNT}" -gt "${HIST_MAX}" ]]
   do
     HISTORY[HIST_COUNT]="         ${SBOX_VL}            ${SBOX_VL}            ${SBOX_VL}       ${SBOX_VL}       ${SBOX_VL}     ${SBOX_VL}${SGR0}${WHI}"
     echo -e "HISTORY[${HIST_COUNT}]=\"${HISTORY[HIST_COUNT]}\"" >> "${HISTORY_FILE}"
@@ -5838,7 +5831,7 @@ fnTOP_DATA
 echo -en "\r${CLR_EL}${SMCUP}"
 echo -n "${CUR_HOME}"
 
-if [[ ${TOP} -eq 1 ]]
+if [[ "${TOP}" -eq 1 ]]
 then
   fnNOSCROLL_ZONE
   tput cup "${BELOW_NOSCROLL}" 0
@@ -5859,7 +5852,7 @@ do
   . "${COUNT_FILE}"
 
   #----------
-  if [[ ${REPLAY} -eq 0 ]]
+  if [[ "${REPLAY}" -eq 0 ]]
   then
     # This forks fnMMDVMLOG_FUSER into the background as a child process.
     # It runs "fuser" against the log.  If "MMDVMHost" no longer shows
@@ -5889,7 +5882,7 @@ do
 
   #----------
   # See if we were replaying a log.  If so, we've reached the end of the log.
-  if [[ ${REPLAY} -eq 1 ]]
+  if [[ "${REPLAY}" -eq 1 ]]
   then
     if [[ ! "$(sudo fuser -v "${WORKING_LOG}" 2>&1)" =~ "cat" ]]
     then
@@ -5962,8 +5955,8 @@ do
 
   # Push all the entries one position later, in the list.
   # This opens the first position for the restart indicator.
-  HIST_COUNT=${HIST_MAX}
-  until [[ ${HIST_COUNT} -eq 0 ]]
+  HIST_COUNT="${HIST_MAX}"
+  until [[ "${HIST_COUNT}" -eq 0 ]]
   do
     HISTORY[HIST_COUNT]="${HISTORY[$((HIST_COUNT - 1))]}"
     ((HIST_COUNT--))
@@ -5974,8 +5967,8 @@ do
 
   # Save the updated history to a file, newest through oldest.
   rm "${HISTORY_FILE}" 2>/dev/null
-  HIST_COUNT=1
-  until [[ ${HIST_COUNT} -gt ${HIST_MAX} ]]
+  HIST_COUNT="1"
+  until [[ "${HIST_COUNT}" -gt "${HIST_MAX}" ]]
   do
     echo -e "HISTORY[${HIST_COUNT}]=\"${HISTORY[HIST_COUNT]}\"" >> "${HISTORY_FILE}"
     ((HIST_COUNT++))

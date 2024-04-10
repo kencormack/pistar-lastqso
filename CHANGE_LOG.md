@@ -1,4 +1,13 @@
 ```
+CHANGES: V3.26
+ 1. Further cleanup of US "CLUB" callsigns.
+
+ 2. Fixed a bug with DMR GPS coordinates.
+
+ 3. Minor cleanups to limit non-0 returns in
+    the debug log, and a few bash stylistic
+    fixes (mainly quoting variables).
+
 CHANGES: V3.25
  1. Fixed bug introduced in #4 of V3.24 below.
 
