@@ -74,7 +74,6 @@
 9Z4ADG:Trinidad & Tobago
 9Z4DAA:Trinidad & Tobago
 A92AAB:Bahrain
-A99AA:Bahrain
 AA2JL:United States
 AA4AL:United States
 AA7DS:United States
@@ -140,6 +139,7 @@ AK6DP:United States
 AL7G:United States
 AL8T:Alaska
 BH8USU:China
+BH8UXNC:China
 BM2NJN:Taiwan
 BU4AK:Taiwan
 CD3ITN:Chile
@@ -299,7 +299,6 @@ F6FHM:France
 FT5D:France
 FT5DR:France
 G0AUW:England
-G0CXW:England
 G0DLDG:England
 G0DMH:England
 G0DMK:England
@@ -324,6 +323,7 @@ G1GLZ:England
 G1GWNB:England
 G1GXF:England
 G1HKR:England
+G1HTR:England
 G1IKV:England
 G1IVLB:England
 G1MKP:England
@@ -348,6 +348,7 @@ G4CEP:England
 G4ELP:England
 G4HBD:England
 G4HUN:England
+G4ICM:England
 G4NDR:England
 G4SKU:England
 G4TXK:England
@@ -522,6 +523,7 @@ JS2IMQ:Japan
 JS6TXN:Japan
 K0BRV:United States
 K0DTM:United States
+K0GSA:United States
 K0GUT:United States
 K0IS:United States
 K0KSH:United States
@@ -555,6 +557,7 @@ K2SBP:United States
 K2WEK:United States
 K3CDL:United States
 K3CL:United States
+K3IKO:United States
 K3JEL:United States
 K3KCB:United States
 K3LE:United States
@@ -590,7 +593,6 @@ K5CYA:United States
 K5DMF:United States
 K5JDX:United States
 K5MTW:United States
-K5NTT:United States
 K5WTS:United States
 K5XOM:United States
 K5ZIV:United States
@@ -606,6 +608,7 @@ K7DER:United States
 K7EGA:United States
 K7ELJ:United States
 K7FYN:United States
+K7GNT:United States
 K7HDX:United States
 K7JLT:United States
 K7KKR:United States
@@ -680,8 +683,10 @@ KB1RPJ:United States
 KB1TCX:United States
 KB1WID:United States
 KB1ZSW:United States
+KB2LKH:United States
 KB2OIEXMIC:United States
 KB2VDO:United States
+KB3EBA:United States
 KB3HTD:United States
 KB3IBT:United States
 KB3JRH:United States
@@ -734,7 +739,6 @@ KC0SAL:United States
 KC0SKY:United States
 KC0ZPS:United States
 KC1BEK:United States
-KC1DJQ:United States
 KC1EZV:United States
 KC1HHK:United States
 KC1HXS:United States
@@ -793,7 +797,6 @@ KC3QOX:United States
 KC3QZZ:United States
 KC3RFQ:United States
 KC3SIG:United States
-KC3SPL:United States
 KC3SPLF:United States
 KC3TIQ:United States
 KC3UUQ:United States
@@ -997,6 +1000,7 @@ KE7JUX:United States
 KE7QWZ:United States
 KE8GDN:United States
 KE8GNX:United States
+KE8JWEB:United States
 KE8MYP:United States
 KE8NAD:United States
 KE8NAX:United States
@@ -1168,6 +1172,7 @@ KI5YOE:United States
 KI5YZA:United States
 KI5ZQC:United States
 KI5ZYB:United States
+KI6CA:United States
 KI6CDI:United States
 KI6HJU:United States
 KI6WJ:United States
@@ -1206,6 +1211,7 @@ KJ5CAM:United States
 KJ5CGT:United States
 KJ5EKJ:United States
 KJ5EKZ:United States
+KJ5EKZCLAY:United States
 KJ5EXP:United States
 KJ5EYK:United States
 KJ5FFF:United States
@@ -1547,6 +1553,7 @@ M0IXYA:England
 M0JPU:England
 M0JTL:England
 M0JYP:England
+M0KEO:England
 M0KJX:England
 M0LHTA:England
 M0OAT:England
@@ -1629,6 +1636,7 @@ M7GLW:England
 M7GMPZ:England
 M7GZM:England
 M7HFD:England
+M7HWQ:England
 M7ICK:England
 M7IG:England
 M7JBN:England
@@ -1726,6 +1734,7 @@ N1QBQ:United States
 N1SDQ:United States
 N1UHF:United States
 N1VPU:United States
+N1YMM:United States
 N2AGH:United States
 N2CAV:United States
 N2CLJ:United States
@@ -1882,6 +1891,7 @@ NC8X:United States
 ND5N:United States
 NE6CG:United States
 NE7LT:United States
+NE7RD:United States
 NF7B:United States
 NH2A:United States
 NH6Y:Hawaii
@@ -1905,7 +1915,6 @@ NX9I:United States
 NY3E:United States
 NZ0B:United States
 NZ1N:United States
-NZ5R:United States
 OE0XXX:Austria
 OE1BXM:Austria
 OE1CJG:Austria
@@ -2004,9 +2013,7 @@ UA0L:Asiatic Russia
 VA1KMA:Canada
 VA2MVX:Canada
 VA3AUI:Canada
-VA3BFX:Canada
 VA3COF:Canada
-VA3FRK:Canada
 VA3KS1AEA:Canada
 VA3KWG:Canada
 VA3MU:Canada
@@ -2035,6 +2042,7 @@ VA7PSA:Canada
 VA7PUG:Canada
 VA7PWF:Canada
 VA7SDX:Canada
+VA7UT:Canada
 VA7VY:Canada
 VA7WB:Canada
 VA7ZAT:Canada
@@ -2082,7 +2090,6 @@ VE3UJK:Canada
 VE3VLY:Canada
 VE3VT:Canada
 VE3XFD:Canada
-VE3XVK:Canada
 VE3YDN:Canada
 VE3YMJ:Canada
 VE3ZYT:Canada
@@ -2451,7 +2458,6 @@ ZL1KN:New Zealand
 ZL1MYL:New Zealand
 ZL1SGC:New Zealand
 ZL1TBE:New Zealand
-ZL1WDC:New Zealand
 ZL2ACK:New Zealand
 ZL2JML:New Zealand
 ZL2JMLM:New Zealand
@@ -2466,3 +2472,4 @@ ZS6BUN:South Africa
 ZS6BYTB:South Africa
 ZS6IRQ:South Africa
 kA2NYO:United States
+w2rsm:United States
